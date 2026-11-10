@@ -154,10 +154,79 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 </ul>
 <p>能做到这一点的，就是下一步要讲的 log（对数）。</p>
 <p><strong>一句话</strong>：训练时的"扣分"只看一件事：模型给正确答案那个词的概率 p；p 越大越好，下一步把它变成"越小越好"的 loss。</p>
+<h3 id="loge-2026-11-10">第二步：log（对数）："e 的几次方等于它？"（2026-11-10）</h3>
+<p><strong>先回忆前作第 5 章</strong>：e ≈ 2.718，<span class="arithmatex">\(e^{x}\)</span> 是"e 乘自己 x 次"。比如 <span class="arithmatex">\(e^{2} = 2.718 \times 2.718 \approx 7.389\)</span>；<span class="arithmatex">\(e^{0} = 1\)</span>；<span class="arithmatex">\(e^{-1} \approx 0.368\)</span>（负数次方 = 倒过来，<span class="arithmatex">\(1/e\)</span>）。</p>
+<p><strong>log 是反过来问。</strong> <span class="arithmatex">\(e^{x}\)</span> 是"给你 x，问结果"；<strong>log 是"给你结果，问 x"</strong>：</p>
+<div class="arithmatex">\[\log y = x \quad\Longleftrightarrow\quad e^{x} = y\]</div>
+<p>读作"log y 等于 x"，意思是"<strong>e 的 x 次方正好等于 y</strong>"。机器学习里写 log，默认都是以 e 为底（数学课上叫 ln，自然对数）。</p>
+<p><strong>类比：查表倒着查。</strong> 第 5 章有一张"x → <span class="arithmatex">\(e^{x}\)</span>"的表；log 就是拿着右边的数，回头找左边的 x。</p>
+<p><strong>数字演示</strong>（都可以用"e 的几次方"倒推验证）：</p>
+<table>
+<thead>
+<tr>
+<th>y</th>
+<th>log y</th>
+<th>验证：e 的这么多次方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7.389</td>
+<td>2</td>
+<td><span class="arithmatex">\(e^{2} \approx 7.389\)</span></td>
+</tr>
+<tr>
+<td>2.718（= e）</td>
+<td>1</td>
+<td><span class="arithmatex">\(e^{1} = e\)</span></td>
+</tr>
+<tr>
+<td>1</td>
+<td><strong>0</strong></td>
+<td><span class="arithmatex">\(e^{0} = 1\)</span></td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>−0.693</td>
+<td><span class="arithmatex">\(e^{-0.693} \approx 0.5\)</span></td>
+</tr>
+<tr>
+<td>0.1</td>
+<td>−2.303</td>
+<td><span class="arithmatex">\(e^{-2.303} \approx 0.1\)</span></td>
+</tr>
+<tr>
+<td>0.01</td>
+<td>−4.605</td>
+<td><span class="arithmatex">\(e^{-4.605} \approx 0.01\)</span></td>
+</tr>
+<tr>
+<td>0.001</td>
+<td>−6.908</td>
+<td><span class="arithmatex">\(e^{-6.908} \approx 0.001\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><strong>看出三件事</strong>（第三步全靠它们）：</p>
+<ol>
+<li><strong>log 1 = 0</strong>：因为 <span class="arithmatex">\(e^{0} = 1\)</span>。</li>
+<li><strong>y 在 0 到 1 之间时，log y 是负数</strong>：要让 e 的几次方变得比 1 小，次方只能是负的。</li>
+<li><strong>y 越接近 0，log y 越往负的方向跑，而且越跑越快</strong>：0.1 → −2.3，0.01 → −4.6，0.001 → −6.9。y 每缩小 10 倍，log y 就再减 2.3。y 趋近 0 时，log y 趋向 −∞（前作第 17 章说 <span class="arithmatex">\(e^{-\infty} = 0\)</span>，这里正好倒过来）。</li>
+</ol>
+<p><strong>注意：log 0 没有定义</strong>。e 的任何次方都大于 0，找不到一个 x 让 <span class="arithmatex">\(e^{x} = 0\)</span>。所以概率 p 不能是 0，否则 log p 算不出来（实际上 softmax 给每个词的概率都大于 0，第 6 章讲过 <span class="arithmatex">\(e^{x}\)</span> 永远是正数）。</p>
+<p><strong>一句话</strong>：log y 问的是"e 的几次方等于 y"；log 1 = 0，0 到 1 之间的数取 log 是负数，越接近 0 越负、负得越快。</p>
 <h2 id="_2">练习与作答记录</h2>
 <p><strong>题 1</strong>（第一步）：训练句子是"小明 爱 吃 苹果"。模型已经看到"小明 爱 吃"，要猜下一个词。
 （a）正确答案是哪个词？在 <span class="arithmatex">\(p_\theta(x_{i+1} \mid x_{1:i})\)</span> 里，这时 i 等于几？
-（b）模型甲给"苹果"的概率是 0.2，模型乙给 0.6。哪个模型猜得更好？为什么只看"苹果"这一格就够了？</p><nav class="pager"><span></span><span></span></nav>
+（b）模型甲给"苹果"的概率是 0.2，模型乙给 0.6。哪个模型猜得更好？为什么只看"苹果"这一格就够了？</p>
+<p><strong>作答</strong>（2026-11-10）："-3"</p>
+<p>按"i = 3"理解（多打了一个"-"）：✓ 模型已经看到"小明 爱 吃"3 个词，所以 i = 3，要猜的是第 i + 1 = 4 个词。i 数的是"已经看到几个词"，不会是负数。（a）的"正确答案是哪个词"和（b）还没答。</p>
+<p><strong>作答</strong>（2026-11-10）："第二个更好"</p>
+<p>✓ 模型乙给"苹果"0.6，比甲的 0.2 大，猜得更好。补全（a）：正确答案是"苹果"。（b）后半问"为什么只看苹果这一格"没答，答案在第一步：正确答案只有一个；softmax 的概率加起来固定是 1，给正确词的多了，别的词自然少了。</p>
+<p><strong>题 2</strong>（第二步 log）：
+（a）e 的几次方等于 1？所以 log 1 等于几？
+（b）已知 <span class="arithmatex">\(e^{-2.303} \approx 0.1\)</span>，那么 log 0.1 约等于几？
+（c）p 是 0 到 1 之间的概率时，log p 是正数还是负数？p 越接近 0，log p 怎么变？</p><nav class="pager"><span></span><span></span></nav>
 </main>
 <footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a></footer>
 </body></html>
