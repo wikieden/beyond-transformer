@@ -44,12 +44,12 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <a href="../lessons/appendix-glossary.html">缩写表</a>
 </div></header>
 <main>
-<h1 id="1-loss">第 1 章 · 交叉熵 loss：模型猜错了多少，怎么量</h1>
+<h1 id="1-loss">第 1 章 · 交叉熵 loss：模型猜错了多少，怎么量</h1><p><a class="btn" href="../animations/01-cross-entropy.html">▶ 打开本章可交互动画</a></p>
 <blockquote>
 <p>本章回答：训练时说"把每个参数往猜得更对的方向挪一点"，那"猜得对不对"总得有个分数。这个分数是怎么算的？为什么是 −log？困惑度又是什么？<br />
 讲解日期：2026-11-10 起 · 上一章：无（前作《<a href="https://wikieden.github.io/transformer-visual/">从零读懂 Transformer</a>》讲完第 24 章）· 下一章：第 2 章 梯度与反向传播（待写）<br />
-对应原文：CS336 a1 handout <code>cs336-spring2025/materials/text/cs336_spring2025_assignment1_basics.txt</code> §4 开头 L1362–L1368，§4.1 L1370–L1416（式 16、17、18 和脚注 6、7）<br />
-本章缩写：loss（损失：模型这一次猜错了多少，越小越好）；LM = Language Model（语言 / 模型：根据前面的词猜下一个词的模型）；θ（读作"西塔"，theta）：模型里全部参数的统称；<span class="arithmatex">\(p_\theta\)</span>：参数为 θ 的模型给出的概率（p = probability：概率）；<span class="arithmatex">\(x_{1:i}\)</span>：第 1 到第 i 个词；log（对数，本章第二步讲）。全部缩写见 <a href="../lessons/appendix-glossary.html">缩写与术语表</a></p>
+对应原文：CS336 a1 handout <code>cs336-spring2025/materials/text/cs336_spring2025_assignment1_basics.txt</code> §4 开头 L1362–L1368，§4.1 L1370–L1416（式 16、17、18 和脚注 6、7）；AIAYN <code>transformer-deep-dive/materials/text/papers/attention-is-all-you-need-1706.03762.txt</code> §5.4 label smoothing L409–L410、Table 3 困惑度 L446–L454<br />
+本章缩写：loss（损失：模型这一次猜错了多少，越小越好）；LM = Language Model（语言 / 模型：根据前面的词猜下一个词的模型）；θ（读作"西塔"，theta）：模型里全部参数的统称；<span class="arithmatex">\(p_\theta\)</span>：参数为 θ 的模型给出的概率（p = probability：概率）；<span class="arithmatex">\(x_{1:i}\)</span>：第 1 到第 i 个词；log（对数，本章第二步讲）；exp = exponential（指数：<span class="arithmatex">\(e^{x}\)</span>）；NLL = Negative Log-Likelihood（负 / 对数 / 似然）；<span class="arithmatex">\(o_i\)</span>：第 i 个位置的 logits（o = output：输出）；vocab_size（vocabulary size：词表大小）；inf = infinity（无穷大）；batch（一批）；perplexity（困惑度）。全部缩写见 <a href="../lessons/appendix-glossary.html">缩写与术语表</a></p>
 </blockquote>
 <h2 id="_1">讲解</h2>
 <h3 id="2026-11-10">第一步：给每次猜测打一个"扣分"：只看正确答案那个词的概率（2026-11-10）</h3>
@@ -215,6 +215,322 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 </ol>
 <p><strong>注意：log 0 没有定义</strong>。e 的任何次方都大于 0，找不到一个 x 让 <span class="arithmatex">\(e^{x} = 0\)</span>。所以概率 p 不能是 0，否则 log p 算不出来（实际上 softmax 给每个词的概率都大于 0，第 6 章讲过 <span class="arithmatex">\(e^{x}\)</span> 永远是正数）。</p>
 <p><strong>一句话</strong>：log y 问的是"e 的几次方等于 y"；log 1 = 0，0 到 1 之间的数取 log 是负数，越接近 0 越负、负得越快。</p>
+<h3 id="log-p2026-11-14">第三步：扣分 = −log p：猜对不扣，越离谱扣得越狠（2026-11-14）</h3>
+<p><strong>把第二步的三件事拿来用。</strong> log p 在 p = 1 时是 0，p 在 0 到 1 之间时是负数，p 越接近 0 越负。我们要的扣分是"越小越好、最小是 0"，所以<strong>前面加个负号，把它翻成正数</strong>：</p>
+<div class="arithmatex">\[\ell = -\log p\]</div>
+<p>ℓ（手写体的 l，读作"艾尔"）就是这一次猜测的 loss，p 是模型给<strong>正确答案</strong>那个词的概率（第一步那一格）。handout 题目里写成 <span class="arithmatex">\(\ell_i = -\log \text{softmax}(o_i)[x_{i+1}]\)</span>（L1392），意思一样，第四步再拆。</p>
+<p><strong>数字演示</strong>：第一步的三个模型，再加几个更极端的：</p>
+<table>
+<thead>
+<tr>
+<th>正确词的概率 p</th>
+<th>log p</th>
+<th>扣分 −log p</th>
+<th>对照：如果用 1 − p 当扣分</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1（百分之百确定，猜对）</td>
+<td>0</td>
+<td><strong>0</strong></td>
+<td>0</td>
+</tr>
+<tr>
+<td>0.9（模型 B）</td>
+<td>−0.105</td>
+<td><strong>0.105</strong></td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>0.537（模型 A）</td>
+<td>−0.622</td>
+<td><strong>0.622</strong></td>
+<td>0.463</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>−0.693</td>
+<td>0.693</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>0.1</td>
+<td>−2.303</td>
+<td>2.303</td>
+<td>0.9</td>
+</tr>
+<tr>
+<td>0.05（模型 C）</td>
+<td>−2.996</td>
+<td><strong>2.996</strong></td>
+<td>0.95</td>
+</tr>
+<tr>
+<td>0.01</td>
+<td>−4.605</td>
+<td>4.605</td>
+<td>0.99</td>
+</tr>
+<tr>
+<td>0.001</td>
+<td>−6.908</td>
+<td>6.908</td>
+<td>0.999</td>
+</tr>
+</tbody>
+</table>
+<p>第一步要的两条都满足了：</p>
+<ol>
+<li>p = 1 时扣分是 0；</li>
+<li>p 越接近 0 扣得越多，而且越来越快：p 从 0.01 降到 0.001，−log p 从 4.6 涨到 6.9。</li>
+</ol>
+<p><strong>为什么不直接用 1 − p？</strong> 看最右一列：1 − p 最多只扣 1 分。p = 0.01 和 p = 0.001 扣的分几乎一样（0.99 和 0.999），模型分不清"错得离谱"和"错得更离谱"。−log p 没有上限，<strong>越是自信地猜错，罚得越重</strong>，模型就会优先改掉最离谱的错。</p>
+<p><strong>第二个好处：整句的概率是连乘，取 log 后变成相加。</strong> 模型给整句"狗 咬 人"的概率，是每一步正确词的概率乘起来：比如 0.5（猜对"咬"）× 0.8（猜对"人"）= 0.4。句子一长，几百个小于 1 的数连乘，结果小到电脑存不下。log 有一条性质：</p>
+<div class="arithmatex">\[\log(a \times b) = \log a + \log b\]</div>
+<p>原因就是前作第 5 章的指数法则"同底相乘，指数相加"：<span class="arithmatex">\(e^{x} \times e^{y} = e^{x+y}\)</span>。验证一下：0.1 × 0.01 = 0.001，log 0.1 + log 0.01 = −2.303 + (−4.605) = −6.908 = log 0.001 ✓。所以"整句概率越大越好"就等价于"每个词的 −log p 加起来越小越好"，连乘变成了相加，不会小到存不下。</p>
+<p><strong>名字从哪来</strong>：</p>
+<ul>
+<li><strong>negative log-likelihood</strong>（负 / 对数 / 似然，简称 NLL）：likelihood 是"模型认为这份正确答案出现的可能性"，也就是 p；取 log，再取负。−log p 就是它。</li>
+<li><strong>cross-entropy</strong>（交叉 / 熵）：handout 脚注 7 说，这是"只在正确词上为 1 的分布"和"模型的 softmax 分布"之间的交叉熵。一般的交叉熵是 <span class="arithmatex">\(-\sum_a q_a \log p_a\)</span>：q 是正确答案的分布，p 是模型的分布，对词表里每个词 a 都算一项再加起来。正确答案的分布 q 只有正确词那一格是 1、其余都是 0（这种分布叫 Dirac delta，狄拉克 δ 分布，就是"全部押在一个点上"）。乘 0 的项全消失，只剩 <span class="arithmatex">\(-1 \times \log p_{\text{正确词}}\)</span>。所以<strong>交叉熵 loss 就是 −log(正确词的概率)</strong>，两个名字说的是同一件事。</li>
+</ul>
+<p><strong>一句话</strong>：一次猜测的 loss = −log(正确词的概率)：猜对是 0，越离谱罚得越狠而且没有上限；整句的概率连乘，取 log 后变成每个词的 loss 相加。</p>
+<h3 id="1617-logits-loss2026-11-14">第四步：式 16、17：所有位置取平均；从 logits 直接算 loss（2026-11-14）</h3>
+<p><strong>式 16：整个训练集的 loss = 所有句子、所有位置的扣分取平均</strong>（L1371–L1378）：</p>
+<div class="arithmatex">\[\ell(\theta; D) = \frac{1}{|D|\,m} \sum_{x \in D} \sum_{i=1}^{m} -\log p_\theta(x_{i+1} \mid x_{1:i})\]</div>
+<p>逐个符号读：</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>读法</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\ell(\theta; D)\)</span></td>
+<td>艾尔 θ 分号 D</td>
+<td>参数为 θ 的模型在训练集 D 上的 loss；训练就是调 θ 让它变小</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(D\)</span></td>
+<td>D（Dataset：数据集）</td>
+<td>训练集，里面是一句一句的序列</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\lvert D \rvert\)</span></td>
+<td>D 的绝对值</td>
+<td>这里是"D 里有几句"</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(m\)</span></td>
+<td>m</td>
+<td>每句要猜几次。handout 说每句长 m + 1 个词，第 1 个词没有前文可猜，所以猜 m 次</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sum_{x \in D}\)</span></td>
+<td>对 D 里每一句 x 求和</td>
+<td>Σ（西格玛）= 加起来，前作第 4 章讲过</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sum_{i=1}^{m}\)</span></td>
+<td>i 从 1 到 m 求和</td>
+<td>一句里的每个位置都算一次</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\frac{1}{\lvert D \rvert m}\)</span></td>
+<td></td>
+<td>一共猜了 <span class="arithmatex">\(\lvert D \rvert \times m\)</span> 次，除以次数就是平均</td>
+</tr>
+</tbody>
+</table>
+<p><strong>数字演示</strong>：训练集只有两句，每句 3 个词（m = 2，每句猜 2 次）：</p>
+<table>
+<thead>
+<tr>
+<th>句子 x</th>
+<th>位置 i</th>
+<th>已经看到</th>
+<th>正确答案</th>
+<th>模型给的 p</th>
+<th>−log p</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>狗 咬 人</td>
+<td>1</td>
+<td>狗</td>
+<td>咬</td>
+<td>0.5</td>
+<td>0.693</td>
+</tr>
+<tr>
+<td>狗 咬 人</td>
+<td>2</td>
+<td>狗 咬</td>
+<td>人</td>
+<td>0.8</td>
+<td>0.223</td>
+</tr>
+<tr>
+<td>猫 吃 鱼</td>
+<td>1</td>
+<td>猫</td>
+<td>吃</td>
+<td>0.4</td>
+<td>0.916</td>
+</tr>
+<tr>
+<td>猫 吃 鱼</td>
+<td>2</td>
+<td>猫 吃</td>
+<td>鱼</td>
+<td>0.9</td>
+<td>0.105</td>
+</tr>
+</tbody>
+</table>
+<p>加起来 1.938，一共猜了 |D| × m = 2 × 2 = 4 次，平均 <strong>ℓ = 1.938 / 4 ≈ 0.484</strong>。</p>
+<p><strong>一次前向就能拿到所有位置</strong>（handout L1380 括号里那句）：前作第 17 章的 causal mask（因果 / 遮罩）让第 i 个位置只看得到前 i 个词。所以把"狗 咬 人"整句一次送进 decoder，第 1 行输出就是"看到'狗'时的猜测"，第 2 行就是"看到'狗 咬'时的猜测"，同时出来，不用一个位置跑一遍。这一点和生成时不同：前作第 21 章生成译文时每轮只能多出一个词，要跑很多轮；训练时正确答案都已知，一次全算完。</p>
+<p><strong>式 17：p 是从 logits 来的</strong>（L1381–L1384）：</p>
+<div class="arithmatex">\[p(x_{i+1} \mid x_{1:i}) = \text{softmax}(o_i)[x_{i+1}] = \frac{\exp(o_i[x_{i+1}])}{\sum_{a=1}^{\text{vocab\_size}} \exp(o_i[a])}\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(o_i\)</span></td>
+<td>第 i 个位置的 logits（o = output：输出），一行 vocab_size 个分数，就是前作第 22 章最后一行 h 乘 <span class="arithmatex">\(W_{out}\)</span> 得到的那一行</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(o_i \in \mathbb{R}^{\text{vocab\_size}}\)</span></td>
+<td>这一行有 vocab_size（词表大小）个实数（<span class="arithmatex">\(\mathbb{R}\)</span> = real numbers：实数）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(o_i[k]\)</span></td>
+<td>这一行里第 k 个数，也就是第 k 个词的分数（脚注 6）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\exp(x)\)</span></td>
+<td>就是 <span class="arithmatex">\(e^{x}\)</span>，写成 exp（exponential：指数）是为了在分数线上好排版</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(a\)</span></td>
+<td>求和用的编号，从 1 走到 vocab_size，把词表里每个词都算一遍</td>
+</tr>
+</tbody>
+</table>
+<p>这就是前作第 6 章的 softmax：分子是正确词分数的 e 次方，分母是所有词的 e 次方之和。</p>
+<p><strong>把 log 和 exp 抵消掉</strong>（handout L1396 要求的第二条）。loss 是 −log 这个分数。用两条性质：<span class="arithmatex">\(\log(a / b) = \log a - \log b\)</span>（除法变减法，和第三步"乘法变加法"是同一回事），以及 <span class="arithmatex">\(\log e^{x} = x\)</span>（log 本来就是 e 的次方倒着查）：</p>
+<div class="arithmatex">\[\ell_i = -\log \frac{e^{o_i[x_{i+1}]}}{\sum_a e^{o_i[a]}} = -\,o_i[x_{i+1}] + \log \sum_{a} e^{o_i[a]}\]</div>
+<p>读法：<strong>loss = −(正确词的分数) + log(所有词 e 次方之和)</strong>。后面那一项叫 log-sum-exp（对数 / 求和 / 指数：先取 exp、再求和、再取 log）。好处是不用先算出概率再取 log：概率很小时（比如 <span class="arithmatex">\(10^{-30}\)</span>）先算出来会丢精度，直接从分数算就没这个问题。</p>
+<p><strong>数字演示</strong>：前作第 22 章那 8 个分数，正确答案 bites 是 2.9：</p>
+<table>
+<thead>
+<tr>
+<th>词</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7 bites</th>
+<th>8</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>分数 <span class="arithmatex">\(o[a]\)</span></td>
+<td>0.7</td>
+<td>−1.7</td>
+<td>1.7</td>
+<td>−1.6</td>
+<td>2.0</td>
+<td>−1.5</td>
+<td><strong>2.9</strong></td>
+<td>−1.6</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>所有词的 <span class="arithmatex">\(e^{o[a]}\)</span> 加起来 ≈ 33.86；</li>
+<li>log 33.86 ≈ 3.522；</li>
+<li>ℓ = −2.9 + 3.522 = <strong>0.622</strong>。</li>
+</ol>
+<p>和第三步模型 A 那一行（p = 0.537，−log p = 0.622）一模一样：两种算法结果相同。</p>
+<p><strong>再减去最大值</strong>（handout L1395 要求的第一条）。如果分数是 [1000, 999, 998]，<span class="arithmatex">\(e^{1000}\)</span> 远远超出电脑能存的范围（float32 最大约 <span class="arithmatex">\(3.4 \times 10^{38}\)</span>，大约 <span class="arithmatex">\(e^{88.7}\)</span> 就到头了），会得到 inf（infinity：无穷大），结果算不出来。前作第 6、7 章讲过：<strong>所有分数同时减去同一个数，softmax 不变</strong>。所以先减去最大值 1000，变成 [0, −1, −2]：</p>
+<div class="arithmatex">\[\log \sum_a e^{o[a]} = \max(o) + \log \sum_a e^{o[a] - \max(o)}\]</div>
+<p>[0, −1, −2] 的 e 次方是 1 + 0.368 + 0.135 = 1.503，log 1.503 = 0.408；正确词若是第一个，ℓ = −0 + 0.408 = 0.408。最大的那项变成 <span class="arithmatex">\(e^{0} = 1\)</span>，永远不会溢出。上面 bites 那个例子也可以这样算：最大值 2.9，减完后 e 次方之和 ≈ 1.863，log 1.863 = 0.622，再加回 2.9 得 3.522，结果不变。</p>
+<p><strong>一个 batch 再平均一次</strong>：训练时一次送进很多句（batch：一批），每个位置各算一个 <span class="arithmatex">\(\ell_i\)</span>，最后取平均，这就是式 16 里的 <span class="arithmatex">\(\frac{1}{\lvert D \rvert m}\)</span>。</p>
+<p><strong>一句话</strong>：式 16 是"所有句子、所有位置的 −log p 取平均"，一次前向就拿到全部位置；式 17 把 p 换成 logits，loss = −正确词的分数 + log-sum-exp，算之前先减最大值防溢出。</p>
+<h3 id="perplexity2026-11-14">第五步：困惑度 perplexity：相当于在几个词里瞎猜（2026-11-14）</h3>
+<p><strong>问题</strong>：loss 0.484 是好是坏？这个数不直观。评估模型时，handout 还要报 <strong>perplexity</strong>（困惑度，L1405–L1410）：</p>
+<div class="arithmatex">\[\text{perplexity} = \exp\left(\frac{1}{m} \sum_{i=1}^{m} \ell_i\right)\]</div>
+<p>读法：先把每个位置的 loss <span class="arithmatex">\(\ell_1, \dots, \ell_m\)</span> 取平均，再取 e 的次方。exp 正好把 log 倒回去。</p>
+<p><strong>类比：相当于在几个词里闭眼抽。</strong> 如果模型每次都在 k 个词里平均地猜（每个给 1/k），那么正确词的概率是 1/k，loss = −log(1/k) = log k，困惑度 = <span class="arithmatex">\(e^{\log k}\)</span> = <strong>k</strong>。所以困惑度读作"<strong>模型平均相当于在几个词里犹豫</strong>"。</p>
+<p><strong>数字演示</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>平均 loss</th>
+<th>困惑度</th>
+<th>怎么理解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每次都百分之百猜对</td>
+<td>0</td>
+<td><span class="arithmatex">\(e^{0}\)</span> = <strong>1</strong></td>
+<td>不犹豫，只有一个选项</td>
+</tr>
+<tr>
+<td>第四步那两句</td>
+<td>0.484</td>
+<td><span class="arithmatex">\(e^{0.484}\)</span> ≈ <strong>1.62</strong></td>
+<td>平均在一两个词里犹豫</td>
+</tr>
+<tr>
+<td>4 个词里瞎猜</td>
+<td>log 4 = 1.386</td>
+<td><strong>4</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>刚开始训练、啥都不会的模型，词表 10000（a1 用 TinyStories 训练时的词表大小，L1910）</td>
+<td>log 10000 ≈ 9.21</td>
+<td><strong>10000</strong></td>
+<td>等于在整个词表里瞎猜</td>
+</tr>
+<tr>
+<td>AIAYN base 模型（Table 3 L451–L454）</td>
+<td>log 4.92 ≈ 1.59</td>
+<td><strong>4.92</strong></td>
+<td>平均在约 5 个 token 里犹豫</td>
+</tr>
+</tbody>
+</table>
+<p>所以 loss 和困惑度是一回事的两种写法：<strong>loss 越小，困惑度越接近 1</strong>。看训练日志时，刚开始 loss 应该接近 log(词表大小)，如果一开始就远大于它，多半是代码写错了。</p>
+<p><strong>注意</strong>：困惑度只能在同一种切词方式下比较。AIAYN Table 3 的注里特意说，它报的困惑度是按 BPE 切出来的 token 算的（per-wordpiece），不能和按整词算的困惑度比（L448–L449）：切得越碎，每次要猜的东西越简单，困惑度自然越低。</p>
+<p><strong>顺带：label smoothing</strong>（标签 / 平滑，AIAYN §5.4 L409–L410）。训练时不让正确词的目标是 1，而是 0.9，剩下 0.1 分给其他词。交叉熵里 q 不再只有一格非零，模型会"没那么自信"。原文说这会让困惑度变差，但翻译更准。</p>
+<p><strong>一句话</strong>：困惑度 = exp(平均 loss)，读作"模型平均相当于在几个词里犹豫"；全对是 1，在整个词表里瞎猜就是词表大小。</p>
+<h3 id="p-log-p">动画演示：正确词的概率 p 和扣分 −log p</h3>
+<p><img alt="交叉熵 loss" src="../animations/01-cross-entropy.gif" /></p>
+<p>可交互版：<a href="../animations/01-cross-entropy.html">animations/01-cross-entropy.html</a>（需要用本地服务打开，见 <a href="../animations/index.html">animations/README.md</a>"跑起来看"；滑块：把正确词的概率 p 从 0.01 拖到 0.99，看 −log p、1 − p 和"相当于在几个词里猜"怎么变）。</p>
+<p>看点：</p>
+<ol>
+<li>p = 0.9、0.537、0.05、0.01 依次出现，扣分 0.105 → 0.622 → 2.996 → 4.605；</li>
+<li>曲线越往左越陡：p 越小，罚得越狠；虚线 1 − p 最多到 1，分不清"离谱"和"更离谱"；</li>
+<li>最后一帧把第四步那两句的 4 次扣分取平均得 0.484，再取 exp 得困惑度 1.62。</li>
+</ol>
 <h2 id="_2">练习与作答记录</h2>
 <p><strong>题 1</strong>（第一步）：训练句子是"小明 爱 吃 苹果"。模型已经看到"小明 爱 吃"，要猜下一个词。
 （a）正确答案是哪个词？在 <span class="arithmatex">\(p_\theta(x_{i+1} \mid x_{1:i})\)</span> 里，这时 i 等于几？
@@ -226,7 +542,118 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <p><strong>题 2</strong>（第二步 log）：
 （a）e 的几次方等于 1？所以 log 1 等于几？
 （b）已知 <span class="arithmatex">\(e^{-2.303} \approx 0.1\)</span>，那么 log 0.1 约等于几？
-（c）p 是 0 到 1 之间的概率时，log p 是正数还是负数？p 越接近 0，log p 怎么变？</p><nav class="pager"><span></span><span></span></nav>
+（c）p 是 0 到 1 之间的概率时，log p 是正数还是负数？p 越接近 0，log p 怎么变？</p>
+<p><strong>题 3</strong>（第三步 −log p）：
+（a）模型给正确词的概率是 0.1，扣分 −log p 是多少？（用第二步的表）
+（b）甲模型给正确词 0.01，乙模型给 0.001。用 1 − p 扣分，两者差多少？用 −log p 扣分，差多少？哪种扣分更能分出"更离谱"？
+（c）一句话"狗 咬 人"，猜"咬"的概率 0.5，猜"人"的概率 0.8。整句的概率是多少？两步的 −log p 加起来，等于整句概率的 −log 吗？</p>
+<p><strong>题 4</strong>（第四步 式 16、17）：
+（a）训练集 3 句，每句 5 个词。式 16 里 |D| 和 m 各是几？一共猜了几次？
+（b）三个词的分数是 [3, 1, 0]，正确答案是第一个。用"−正确词分数 + log-sum-exp"算 loss（提示：<span class="arithmatex">\(e^{3} \approx 20.09\)</span>，<span class="arithmatex">\(e^{1} \approx 2.718\)</span>，log 23.81 ≈ 3.170）。
+（c）分数变成 [103, 101, 100]，loss 会变吗？为什么实现时要先减去最大值？</p>
+<p><strong>题 5</strong>（第五步 困惑度）：
+（a）一个模型平均 loss 是 log 8 ≈ 2.079，困惑度是多少？用一句话说它是什么意思。
+（b）词表 10000 的模型刚开始训练，loss 大约应该是多少？如果日志里第一步 loss 是 50，你会怎么想？</p>
+<h2 id="_3">口诀</h2>
+<blockquote>
+<p>句子自己当答案，只看正确那一格。<br />
+log 问"e 的几次方"，1 是零、越小越负。<br />
+扣分就取负 log：猜对不扣，越错越狠没上限；连乘变相加，整句不怕小。<br />
+全部位置取平均，一次前向全拿到；分数直接算，减去最大不溢出。<br />
+平均 loss 取 exp，就是困惑度：相当于在几个词里犹豫。</p>
+</blockquote>
+<h2 id="_4">本章复习卡片</h2>
+<p>必背公式：<a href="../review.html">B01–B03</a>（B01 −log p 和名字的由来；B02 从 logits 直接算、减最大值；B03 困惑度）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_5">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。<br />
+- CS336 handout 在 <code>cs336-spring2025/materials/text/cs336_spring2025_assignment1_basics.txt</code>。<br />
+- 本地论文的文本版在 <code>transformer-deep-dive/materials/text/papers/</code>，表里的行号就是指这个文本版。</p>
+</blockquote>
+<h3 id="_6">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ CS336 assignment 1 handout</td>
+<td>§4.1 L1370–L1416（式 16、17、18，脚注 6、7，Problem cross_entropy）</td>
+<td>本章原文；动手题：写 <code>run_cross_entropy</code>，要求减最大值、log 和 exp 抵消、对 batch 取平均（<code>uv run pytest -k test_cross_entropy</code>）</td>
+</tr>
+<tr>
+<td>★ CS336 assignment 1 handout</td>
+<td>§3.5.4 softmax 式 (10) 及其后一段（L1137–L1147）</td>
+<td>同一个"先减最大值"的技巧，用在 softmax 上</td>
+</tr>
+<tr>
+<td>Attention Is All You Need</td>
+<td>§5.4 L409–L410；Table 3 L446–L454</td>
+<td>label smoothing 让困惑度变差但 BLEU 变好；困惑度按 wordpiece 算，不能和按词算的比</td>
+</tr>
+<tr>
+<td>Phuong &amp; Hutter 2022，Formal Algorithms for Transformers</td>
+<td><code>formal-algorithms-transformers-2207.09238.txt</code>，Algorithm 13 DTraining（训练算法，L853 起）</td>
+<td>用伪代码看"所有位置的 −log p 加起来，再对参数求梯度"（下一章接着讲梯度）</td>
+</tr>
+<tr>
+<td>Goodfellow, Bengio, Courville《Deep Learning》</td>
+<td>第 3.13 节 Information Theory；第 5.5 节 Maximum Likelihood Estimation</td>
+<td>熵、交叉熵、KL 散度的定义；为什么"最大化似然"等于"最小化交叉熵"</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">数学原理</h3>
+<ul>
+<li><strong>log 的三条性质</strong>：<span class="arithmatex">\(\log(ab) = \log a + \log b\)</span>（乘法变加法），<span class="arithmatex">\(\log(a/b) = \log a - \log b\)</span>（除法变减法），<span class="arithmatex">\(\log e^{x} = x\)</span>。都来自指数法则 <span class="arithmatex">\(e^{x} e^{y} = e^{x+y}\)</span>。</li>
+<li><strong>交叉熵</strong>：<span class="arithmatex">\(H(q, p) = -\sum_a q_a \log p_a\)</span>。q 是 one-hot（只有正确词是 1）时，只剩 <span class="arithmatex">\(-\log p_{\text{正确词}}\)</span>。</li>
+<li><strong>最大似然 = 最小交叉熵</strong>：整句概率 <span class="arithmatex">\(\prod_i p_i\)</span> 越大越好 ⇔ <span class="arithmatex">\(\sum_i -\log p_i\)</span> 越小越好（log 单调递增，取 log 不改变谁大谁小）。</li>
+<li><strong>log-sum-exp 平移</strong>：<span class="arithmatex">\(\log \sum_a e^{o_a} = c + \log \sum_a e^{o_a - c}\)</span>，取 <span class="arithmatex">\(c = \max(o)\)</span> 防溢出。</li>
+<li><strong>均匀猜测的困惑度 = 选项个数</strong>：每个给 1/k，loss = log k，exp 回去就是 k。</li>
+</ul>
+<h3 id="_8">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\log y = x \iff e^{x} = y\)</span></td>
+<td>log 是 e 的几次方倒着查</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\ell = -\log p_\theta(x_{i+1} \mid x_{1:i})\)</span></td>
+<td>一次猜测的交叉熵 loss</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\ell(\theta; D) = \frac{1}{\lvert D \rvert m} \sum_{x \in D} \sum_{i=1}^{m} -\log p_\theta(x_{i+1} \mid x_{1:i})\)</span></td>
+<td>式 16：所有句子、所有位置取平均</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(p = \frac{\exp(o_i[x_{i+1}])}{\sum_a \exp(o_i[a])}\)</span></td>
+<td>式 17：概率来自 logits 的 softmax</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\ell_i = -o_i[x_{i+1}] + \log \sum_a e^{o_i[a]}\)</span></td>
+<td>从 logits 直接算，log 和 exp 抵消</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\log \sum_a e^{o_a} = \max(o) + \log \sum_a e^{o_a - \max(o)}\)</span></td>
+<td>减最大值防溢出</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\text{perplexity} = \exp\left(\frac{1}{m}\sum_i \ell_i\right)\)</span></td>
+<td>式 18：困惑度</td>
+</tr>
+</tbody>
+</table><nav class="pager"><span></span><span></span></nav>
 </main>
 <footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a></footer>
 </body></html>

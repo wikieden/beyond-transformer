@@ -77,6 +77,54 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>第 1 到第 i 个词（已经看到的前文）</td>
 <td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
 </tr>
+<tr>
+<td>log</td>
+<td>logarithm（对数）</td>
+<td>log y 问"e 的几次方等于 y"；默认以 e 为底（ln）</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>exp</td>
+<td>exponential（指数）</td>
+<td><span class="arithmatex">\(\exp(x) = e^{x}\)</span></td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>ℓ</td>
+<td>手写体 l，读作"艾尔"</td>
+<td>一次猜测（或整个训练集）的 loss</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(D\)</span>、<span class="arithmatex">\(\lvert D \rvert\)</span></td>
+<td>Dataset（数据集）</td>
+<td>训练集；<span class="arithmatex">\(\lvert D \rvert\)</span> 是里面有几句</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(o_i\)</span></td>
+<td>o = output（输出）</td>
+<td>第 i 个位置的 logits，一行 vocab_size 个分数；<span class="arithmatex">\(o_i[k]\)</span> 是第 k 个词的分数</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>vocab_size</td>
+<td>vocabulary size（词汇 / 大小）</td>
+<td>词表里一共多少个 token</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathbb{R}\)</span></td>
+<td>real numbers（实数）</td>
+<td><span class="arithmatex">\(o_i \in \mathbb{R}^{\text{vocab\_size}}\)</span>：一行 vocab_size 个实数</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>inf</td>
+<td>infinity（无穷大）</td>
+<td>数太大存不下时电脑给的结果，比如 <span class="arithmatex">\(e^{1000}\)</span></td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
 </tbody>
 </table>
 <h2 id="_3">训练</h2>
@@ -100,6 +148,48 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>LM</td>
 <td>Language Model</td>
 <td>语言模型：根据前面的词猜下一个词</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>cross-entropy</td>
+<td>cross（交叉）+ entropy（熵）</td>
+<td><span class="arithmatex">\(-\sum_a q_a \log p_a\)</span>；q 只有正确词是 1 时就是 −log(正确词的概率)</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>NLL</td>
+<td>Negative Log-Likelihood（负 / 对数 / 似然）</td>
+<td>−log p：交叉熵 loss 的另一个名字</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>Dirac delta</td>
+<td>狄拉克 δ 分布</td>
+<td>全部概率押在一个点上：只有正确词是 1，其余是 0</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>log-sum-exp</td>
+<td>log（对数）/ sum（求和）/ exp（指数）</td>
+<td><span class="arithmatex">\(\log \sum_a e^{o_a}\)</span>；先减最大值再算，防溢出</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>batch</td>
+<td>一批</td>
+<td>一次一起送进模型的若干句</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>perplexity</td>
+<td>困惑度</td>
+<td>exp(平均 loss)：模型平均相当于在几个词里犹豫</td>
+<td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+<tr>
+<td>label smoothing</td>
+<td>label（标签）/ smoothing（平滑）</td>
+<td>正确词的目标设成 0.9 而不是 1，剩下的分给别的词（AIAYN §5.4）</td>
 <td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
 </tr>
 </tbody>

@@ -54,7 +54,30 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 </ol>
 <p><strong>复习间隔</strong>（按答对的次数）：第 1 次 → 隔 1 天 → 隔 3 天 → 隔 7 天 → 隔 14 天 → 隔 30 天。连续答对 5 次的卡片移到文末"已掌握"。</p>
 <hr />
-<p>（还没有卡片：正文写好、做练习时再加。）</p>
+<h3 id="b01-loss-1-p">B01 · 一次猜测的交叉熵 loss 怎么算？为什么前面有负号？为什么不用 1 − p？</h3>
+<p>来源：<a href="lessons/01-cross-entropy.html">第 1 章</a> · 加入 2026-11-14 · 复习记录：（必背公式，还没考）</p>
+<details>
+<summary>答案</summary>
+<div class="arithmatex">\[\ell = -\log p_\theta(x_{i+1} \mid x_{1:i})\]</div>
+<p>p 是模型给<strong>正确答案那个词</strong>的概率（只看这一格）。log p 在 0 &lt; p &lt; 1 时是负数，加负号翻成正的扣分：p = 1 → 0；p = 0.9 → 0.105；p = 0.537 → 0.622；p = 0.05 → 2.996；p = 0.01 → 4.605。</p>
+<p>1 − p 最多扣 1 分，分不清 0.01 和 0.001（0.99 vs 0.999）；−log p 没有上限，越自信地猜错罚得越重。另外 <span class="arithmatex">\(\log(ab) = \log a + \log b\)</span>：整句概率连乘，取 log 后变成每个词的 loss 相加。</p>
+<p>又叫 NLL（Negative Log-Likelihood：负 / 对数 / 似然）。叫交叉熵是因为 <span class="arithmatex">\(-\sum_a q_a \log p_a\)</span> 里 q 只有正确词是 1（Dirac delta），只剩 <span class="arithmatex">\(-\log p_{\text{正确词}}\)</span>（handout 脚注 7）。</p>
+</details>
+<h3 id="b02-logits">B02 · 从 logits 直接算交叉熵，公式是什么？为什么先减最大值？</h3>
+<p>来源：<a href="lessons/01-cross-entropy.html">第 1 章</a> · 加入 2026-11-14 · 复习记录：（必背公式，还没考）</p>
+<details>
+<summary>答案</summary>
+<div class="arithmatex">\[\ell_i = -\log \text{softmax}(o_i)[x_{i+1}] = -\,o_i[x_{i+1}] + \log \sum_a e^{o_i[a]}\]</div>
+<p>用 <span class="arithmatex">\(\log(a/b) = \log a - \log b\)</span> 和 <span class="arithmatex">\(\log e^{x} = x\)</span>，log 和 exp 抵消，不用先算出很小的概率（handout L1392–L1396）。例：前作第 22 章 8 个分数，bites = 2.9，<span class="arithmatex">\(\sum e^{o} \approx 33.86\)</span>，log ≈ 3.522，ℓ = −2.9 + 3.522 = 0.622。</p>
+<p>减最大值：<span class="arithmatex">\(\log \sum_a e^{o_a} = \max(o) + \log \sum_a e^{o_a - \max(o)}\)</span>。所有分数减同一个数，softmax 不变；最大项变成 <span class="arithmatex">\(e^0 = 1\)</span>，不会溢出（<span class="arithmatex">\(e^{1000}\)</span> = inf）。整个训练集的 loss 是所有句子、所有位置取平均（式 16），一次前向就拿到所有位置（causal mask）。</p>
+</details>
+<h3 id="b03-perplexity">B03 · 困惑度 perplexity 怎么算？怎么理解？刚开始训练时应该是多少？</h3>
+<p>来源：<a href="lessons/01-cross-entropy.html">第 1 章</a> · 加入 2026-11-14 · 复习记录：（必背公式，还没考）</p>
+<details>
+<summary>答案</summary>
+<div class="arithmatex">\[\text{perplexity} = \exp\left(\frac{1}{m} \sum_{i=1}^{m} \ell_i\right)\]</div>
+<p>先对 loss 取平均，再取 e 的次方（handout 式 18）。读作"模型平均相当于在几个词里犹豫"：k 个词里平均瞎猜，loss = log k，困惑度 = k。全对 = 1；词表 10000 的模型刚开始 loss ≈ log 10000 ≈ 9.21，困惑度 ≈ 10000。AIAYN base 的 4.92 是按 BPE token 算的，不能和按整词算的比（Table 3 注）。</p>
+</details>
 <hr />
 <h2 id="_2">已掌握</h2>
 <p>（连续答对 5 次的卡片移到这里，每月抽查一次。）</p>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>交叉熵 loss</title><link rel="stylesheet" href="anim.css">
+<style>svg text.big{font-size:15px}svg text.cap{font-size:15px;font-weight:500}svg text.v{font-size:12px}</style></head>
+<body><main>
+<h1>第 1 章 · 交叉熵 loss：猜对不扣，越离谱扣得越狠</h1>
+<p class="sub">配套讲义：<a href="../lessons/01-cross-entropy.html">第 1 章 · 交叉熵 loss：模型猜错了多少，怎么量</a>。横轴是模型给正确词的概率 p，纵轴是扣分。紫色实线 −log p（交叉熵），灰色虚线 1 − p（对照）。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 400"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="p">自己拖：正确词的概率 p</label><input type="range" id="p" min="1" max="99" step="1" value="54"><span id="pv">0.54</span></div>
+<p class="note">看点：① p = 0.9、0.537、0.05、0.01 依次出现，扣分 0.105 → 0.622 → 2.996 → 4.605；② 曲线越往左越陡，p 越小罚得越狠；虚线 1 − p 最多到 1，0.01 和 0.001 几乎分不开；③ 最后一帧：两句话 4 次猜测的扣分取平均得 0.484，再取 exp 得困惑度 1.62。滑块：拖 p，看 −log p、1 − p 和"相当于在几个词里猜"（1/p）怎么变。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+const f3=v=>(Math.round(v*1000)/1000).toFixed(3);
+const L=p=>-Math.log(p);
+const X0=90,X1=640,Y0=340,YT=110,YM=5;
+const X=p=>X0+p*(X1-X0),Y=v=>Y0-Math.min(v,YM)/YM*(Y0-YT);
+const ST=[
+ {p:0.9,cap:'模型 B：正确词 0.9，扣分 −log 0.9 = 0.105',say:'很有把握又猜对了：几乎不扣'},
+ {p:0.537,cap:'模型 A：正确词 0.537，扣分 0.622',say:'前作第 22 章那张表：还行'},
+ {p:0.05,cap:'模型 C：正确词 0.05，扣分 2.996',say:'几乎没想到正确答案：扣得多'},
+ {p:0.01,cap:'正确词只有 0.01，扣分 4.605',say:'越离谱扣得越狠，而且越来越快'},
+ {cmp:true,cap:'对照：1 − p 最多扣 1 分，−log p 没有上限',say:''},
+ {avg:true,cap:'两句话 4 次猜测：取平均是 loss，再取 exp 是困惑度',say:''}];
+const FR=[];ST.forEach((_,i)=>{FR.push(i);FR.push(i)});FR.push(5);
+let k=0,custom=null;
+function axes(cmp){
+  el('line',{x1:X0,y1:Y0,x2:X1,y2:Y0,stroke:'var(--muted)'},sv);el('line',{x1:X0,y1:Y0,x2:X0,y2:YT-6,stroke:'var(--muted)'},sv);
+  for(let v=0;v<=YM;v++){txt(String(v),{x:X0-8,y:Y(v)+4,'text-anchor':'end',class:'m'},sv);
+    if(v)el('line',{x1:X0,y1:Y(v),x2:X1,y2:Y(v),stroke:'var(--line)','stroke-dasharray':'2 4'},sv)}
+  [0,0.25,0.5,0.75,1].forEach(p=>txt(String(p),{x:X(p),y:Y0+18,'text-anchor':'middle',class:'m'},sv));
+  txt('正确词的概率 p',{x:X1,y:Y0+36,'text-anchor':'end',class:'m'},sv);txt('扣分',{x:X0-8,y:YT-12,'text-anchor':'end',class:'m'},sv);
+  let d='';for(let p=0.0068;p<=1.0001;p+=0.002)d+=(d?'L':'M')+X(p).toFixed(1)+','+Y(L(p)).toFixed(1);
+  el('path',{d,fill:'none',stroke:'var(--purple)','stroke-width':3},sv);
+  el('line',{x1:X(0),y1:Y(1),x2:X(1),y2:Y(0),stroke:'var(--muted)','stroke-width':2,'stroke-dasharray':'6 5',opacity:cmp?1:.45},sv);
+  txt('−log p',{x:X(0.13)+6,y:Y(2.3),class:'big'},sv).style.fill='var(--purple)';
+  txt('1 − p',{x:X(0.3),y:Y(0.7)-8,class:'m'},sv);
+}
+function mark(p,c){const v=L(p);el('line',{x1:X(p),y1:Y0,x2:X(p),y2:Y(v),stroke:c,'stroke-dasharray':'3 3'},sv);
+  el('circle',{cx:X(p),cy:Y(v),r:7,fill:c},sv);
+  txt(`p = ${p}，扣 ${f3(v)}`,{x:X(p)+(p>0.6?-12:12),y:Y(v)-12,'text-anchor':p>0.6?'end':'start',class:'big'},sv).style.fill=c}
+function bar(p){const w=440,x0=160,y=56;txt('正确词分到',{x:x0-10,y:y+17,'text-anchor':'end',class:'m'},sv);
+  el('rect',{x:x0,y,width:w,height:24,rx:5,fill:'none',stroke:'var(--line)'},sv);
+  el('rect',{x:x0,y,width:Math.max(2,w*p),height:24,rx:5,fill:'var(--teal)'},sv);
+  txt(`${Math.round(p*1000)/10}%（其余 ${Math.round((1-p)*1000)/10}% 分给别的词）`,{x:x0+w+0,y:y+40,'text-anchor':'end',class:'m'},sv)}
+function avgView(){
+  const R=[['狗 → 咬',0.5],['狗 咬 → 人',0.8],['猫 → 吃',0.4],['猫 吃 → 鱼',0.9]];
+  const bx=250,bw=110;let sum=0;
+  R.forEach(([lab,p],i)=>{const y=80+i*50,v=L(p);sum+=v;
+    txt(`${lab}　p = ${p}`,{x:bx-14,y:y+20,'text-anchor':'end',class:'big'},sv);
+    el('rect',{x:bx,y,width:v*bw*3,height:30,rx:5,fill:'var(--purple)',opacity:.85},sv);
+    txt(`−log ${p} = ${f3(v)}`,{x:676,y:y+20,'text-anchor':'end',class:'v'},sv)});
+  const m=sum/4;
+  el('line',{x1:bx+m*bw*3,y1:72,x2:bx+m*bw*3,y2:282,stroke:'var(--warm)','stroke-width':2,'stroke-dasharray':'5 4'},sv);
+  txt(`平均 ${f3(m)}`,{x:bx+m*bw*3,y:298,'text-anchor':'middle',class:'v'},sv).style.fill='var(--warm)';
+  txt(`式 16：loss = (${R.map(r=>f3(L(r[1]))).join(' + ')}) ÷ 4 ≈ ${f3(m)}`,{x:340,y:330,'text-anchor':'middle',class:'big'},sv);
+  txt(`式 18：困惑度 = e^${f3(m)} ≈ ${(Math.exp(m)).toFixed(2)}：平均相当于在一两个词里犹豫`,{x:340,y:360,'text-anchor':'middle',class:'big'},sv).style.fill='var(--warm)';
+}
+function draw(){
+  clear(sv);
+  if(custom!==null){const p=custom,v=L(p);
+    txt(`p = ${p.toFixed(2)}：−log p = ${f3(v)}，1 − p = ${f3(1-p)}，相当于在 ${(1/p).toFixed(1)} 个词里猜`,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+    bar(p);axes(true);mark(+p.toFixed(2),'var(--warm)');
+    el('circle',{cx:X(p),cy:Y(1-p),r:5,fill:'var(--muted)'},sv);return}
+  const f=ST[FR[k]];txt(f.cap,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+  if(f.avg){avgView();return}
+  if(f.cmp){axes(true);mark(0.01,'var(--warm)');
+    [[0.01,'0.99'],[0.001,'0.999']].forEach(([p,s],i)=>txt(`p = ${p}：1 − p = ${s}，−log p = ${f3(L(p))}`,{x:X(0.42),y:Y(3.6)+i*22,class:'big'},sv));
+    txt('1 − p 分不清"离谱"和"更离谱"；−log p 越自信地猜错，罚得越重',{x:X(0.42),y:Y(3.6)+52,class:'m'},sv);return}
+  bar(f.p);axes(false);
+  for(let j=0;j<=FR[k]&&j<4;j++)mark(ST[j].p,j===FR[k]?'var(--warm)':'var(--teal)');
+  txt(f.say,{x:X(0.42),y:Y(3.4),class:'big'},sv);
+}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=FR.length-1)return false;k++;draw();return true}
+$('p').oninput=e=>{ANIM.stop();custom=+e.target.value/100;$('pv').textContent=custom.toFixed(2);draw()};
+setupPlayer({captureSeed:1,reset,next},1800);
+</script></body></html>
