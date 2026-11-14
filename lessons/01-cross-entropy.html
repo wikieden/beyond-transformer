@@ -395,7 +395,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <p>加起来 1.938，一共猜了 |D| × m = 2 × 2 = 4 次，平均 <strong>ℓ = 1.938 / 4 ≈ 0.484</strong>。</p>
 <p><strong>一次前向就能拿到所有位置</strong>（handout L1380 括号里那句）：前作第 17 章的 causal mask（因果 / 遮罩）让第 i 个位置只看得到前 i 个词。所以把"狗 咬 人"整句一次送进 decoder，第 1 行输出就是"看到'狗'时的猜测"，第 2 行就是"看到'狗 咬'时的猜测"，同时出来，不用一个位置跑一遍。这一点和生成时不同：前作第 21 章生成译文时每轮只能多出一个词，要跑很多轮；训练时正确答案都已知，一次全算完。</p>
 <p><strong>式 17：p 是从 logits 来的</strong>（L1381–L1384）：</p>
-<div class="arithmatex">\[p(x_{i+1} \mid x_{1:i}) = \text{softmax}(o_i)[x_{i+1}] = \frac{\exp(o_i[x_{i+1}])}{\sum_{a=1}^{\text{vocab\_size}} \exp(o_i[a])}\]</div>
+<div class="arithmatex">\[p(x_{i+1} \mid x_{1:i}) = \text{softmax}(o_i)[x_{i+1}] = \frac{\exp(o_i[x_{i+1}])}{\sum_{a=1}^{\mathrm{vocab\_size}} \exp(o_i[a])}\]</div>
 <table>
 <thead>
 <tr>
@@ -409,7 +409,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>第 i 个位置的 logits（o = output：输出），一行 vocab_size 个分数，就是前作第 22 章最后一行 h 乘 <span class="arithmatex">\(W_{out}\)</span> 得到的那一行</td>
 </tr>
 <tr>
-<td><span class="arithmatex">\(o_i \in \mathbb{R}^{\text{vocab\_size}}\)</span></td>
+<td><span class="arithmatex">\(o_i \in \mathbb{R}^{\mathrm{vocab\_size}}\)</span></td>
 <td>这一行有 vocab_size（词表大小）个实数（<span class="arithmatex">\(\mathbb{R}\)</span> = real numbers：实数）</td>
 </tr>
 <tr>
