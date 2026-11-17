@@ -1,6 +1,6 @@
 # 超越原版 Transformer
 
-**在线阅读：<https://wikieden.github.io/beyond-transformer/>** · [讲义目录](https://wikieden.github.io/beyond-transformer/lessons/index.html) · [全部动画](https://wikieden.github.io/beyond-transformer/animations/index.html) · [复习卡片](https://wikieden.github.io/beyond-transformer/review.html)
+**在线阅读：<https://wikieden.github.io/beyond-transformer/>** · [讲义目录](https://wikieden.github.io/beyond-transformer/lessons/index.html) · [全部动画](https://wikieden.github.io/beyond-transformer/animations/index.html) · [复习卡片](https://wikieden.github.io/beyond-transformer/review.html) · [全部讲义书](https://wikieden.github.io/ai-books/)
 
 > 在线阅读：<https://wikieden.github.io/beyond-transformer/> · 前作：《[从零读懂 Transformer](https://wikieden.github.io/transformer-visual/)》（24 章）
 > 计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 第 1 章正文完成（练习进行中）
