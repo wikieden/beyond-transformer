@@ -1,4 +1,4 @@
-# 超越原版 Transformer
+# 超越 Transformer
 
 **在线阅读：<https://wikieden.github.io/beyond-transformer/>** · [讲义目录](https://wikieden.github.io/beyond-transformer/lessons/index.html) · [全部动画](https://wikieden.github.io/beyond-transformer/animations/index.html) · [复习卡片](https://wikieden.github.io/beyond-transformer/review.html) · [全部讲义书](https://wikieden.github.io/ai-books/)
 
