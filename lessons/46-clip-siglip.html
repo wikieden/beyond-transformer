@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 46 章 · CLIP 与 SigLIP：图和文字配不配，用点积打分 · 超越 Transformer</title>
+<style>
+:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;margin:8px 0 16px} h2{font-size:22px;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:18px;margin:28px 0 8px}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:17px;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+</div></header>
+<main>
+<h1 id="46-clip-siglip">第 46 章 · CLIP 与 SigLIP：图和文字配不配，用点积打分</h1><p><a class="btn" href="../animations/46-clip-siglip.html">▶ 打开本章可交互动画</a></p>
+<blockquote>
+<p>本章回答：给图片打标签又贵又慢，网上却有几亿张"图 + 配文"。怎么用它们教模型看图？CLIP 的"一批里 N × N 的分数表，对角线是正确答案"是什么意思？为什么训完不用再训就能分类（zero-shot）？SigLIP 把 softmax 换成 sigmoid 又图什么？<br />
+讲解日期：2026-11-18 · 上一章：<a href="../lessons/45-swin-vivit.html">第 45 章 Swin 与 ViViT</a> · 下一章：<a href="../lessons/47-mae-dino.html">第 47 章 MAE 与 DINO</a><br />
+对应原文：CLIP <code>transformer-deep-dive/materials/text/papers/clip-2103.00020.txt</code> 数据 L143、§2.3 L228–L240、Figure 3 伪代码 L290–L316、温度 L266–L271 与 L325–L329、§3.1 zero-shot L364–L380、提示模板 L466–L471、ImageNet 76.2% L401；SigLIP <code>siglip-2303.15343.txt</code> §3.1 L125–L194、§3.2 L202–L231、初始化 L174–L186、Algorithm 1 L60–L80<br />
+本章缩写：CLIP = Contrastive Language–Image Pre-training（对比式 / 语言–图像 / 预训练）；SigLIP = Sigmoid loss for Language–Image Pre-training（sigmoid 损失的语言–图像预训练）；contrastive（对比：拿配对的和不配对的比）；embedding（嵌入向量，前作第 22 章）；L2 normalize（L2 归一化：把向量的长度缩放成 1，L2 = 欧几里得长度）；cos = cosine（余弦相似度）；τ（tau，读作"套"）：温度；t：温度的倒数（CLIP 伪代码里的放大倍数）；zero-shot（零样本：没见过这个任务的训练样本，直接上）；prompt（提示：套在类名外面的一句话）；σ = sigmoid（S 形函数，前作第 20 章）；b = bias（偏置）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-18">第一步：两个编码器，把图和文字放进同一个空间（2026-11-18）</h3>
+<p><strong>类比：两种语言的同义词词典。</strong> 中文"狗"和英文"dog"是两个词，但在一本好的双语词典里它们挨在一起。CLIP 想做一本"图片 ↔ 文字"的词典：一张狗的照片和一句"一只狗"，要落在同一个地方。</p>
+<p><strong>数据</strong>：不用人标"这是狗"，直接用网上的图片和它的配文，一共 4 亿对（L143）。配文本身就是答案，和第 1 章"句子本身就是答案"一个道理。</p>
+<p><strong>结构</strong>（Figure 3，L290–L306）：</p>
+<ol>
+<li>图片编码器（ViT，第 44 章；或 ResNet）把图片变成一个向量 <span class="arithmatex">\(I_f\)</span>；</li>
+<li>文字编码器（Transformer）把配文变成一个向量 <span class="arithmatex">\(T_f\)</span>；</li>
+<li>各乘一个投影矩阵 <span class="arithmatex">\(W_i\)</span>、<span class="arithmatex">\(W_t\)</span>，变成同样长度 <span class="arithmatex">\(d_e\)</span>；</li>
+<li><strong>L2 归一化</strong>：把每个向量的长度缩成 1。</li>
+</ol>
+<p>长度都是 1 之后，<strong>点积就等于余弦相似度</strong>：两个向量方向越一致，点积越接近 1；垂直是 0。这就是前作第 2 章"点积量相似"的直接应用。</p>
+<p><strong>数字演示</strong>（编的，<span class="arithmatex">\(d_e\)</span> = 2，已经归一化）：一批 3 对</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>图片向量</th>
+<th>配文</th>
+<th>文字向量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第 1 对</td>
+<td><span class="arithmatex">\(I_1\)</span> = [1, 0]（狗的照片）</td>
+<td>"一只狗"</td>
+<td><span class="arithmatex">\(T_1\)</span> = [0.96, 0.28]</td>
+</tr>
+<tr>
+<td>第 2 对</td>
+<td><span class="arithmatex">\(I_2\)</span> = [0, 1]（猫的照片）</td>
+<td>"一只猫"</td>
+<td><span class="arithmatex">\(T_2\)</span> = [0.28, 0.96]</td>
+</tr>
+<tr>
+<td>第 3 对</td>
+<td><span class="arithmatex">\(I_3\)</span> = [0.6, 0.8]（鸟的照片）</td>
+<td>"一只鸟"</td>
+<td><span class="arithmatex">\(T_3\)</span> = [0.6, 0.8]</td>
+</tr>
+</tbody>
+</table>
+<p>验证长度：<span class="arithmatex">\(0.96^2 + 0.28^2 = 0.9216 + 0.0784 = 1\)</span> ✓。</p>
+<p><strong>一句话</strong>：图和文字各用一个编码器变成向量，投影到同一长度再归一化，点积就是"像不像"。</p>
+<h3 id="n-n-n-2026-11-18">第二步：一批 N 对 → N × N 的分数表，对角线是正确答案（2026-11-18）</h3>
+<p><strong>类比：联谊会配对。</strong> 3 个人各带一张照片，3 张纸条写着介绍。把每张照片和每张纸条都比一遍，得到 3 × 3 的表。真正一起来的那 3 对在对角线上，其余 <span class="arithmatex">\(N^2 - N\)</span> = 6 格都是"配错的"（L234–L235）。</p>
+<p><strong>分数表</strong>：<span class="arithmatex">\(S = I_e T_e^\top\)</span>（N × d 乘 d × N = N × N），第 i 行第 j 列 = 第 i 张图和第 j 段文字的余弦相似度：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><span class="arithmatex">\(T_1\)</span> 狗</th>
+<th><span class="arithmatex">\(T_2\)</span> 猫</th>
+<th><span class="arithmatex">\(T_3\)</span> 鸟</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(I_1\)</span> 狗图</td>
+<td><strong>0.96</strong></td>
+<td>0.28</td>
+<td>0.6</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(I_2\)</span> 猫图</td>
+<td>0.28</td>
+<td><strong>0.96</strong></td>
+<td>0.8</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(I_3\)</span> 鸟图</td>
+<td>0.8</td>
+<td>0.936</td>
+<td><strong>1.0</strong></td>
+</tr>
+</tbody>
+</table>
+<p>例：<span class="arithmatex">\(I_3 \cdot T_2 = 0.6 \times 0.28 + 0.8 \times 0.96 = 0.168 + 0.768 = 0.936\)</span>。鸟图和"一只猫"也挺像，这一格待会儿会被罚。</p>
+<p><strong>温度</strong>：余弦只在 −1 到 1 之间，直接进 softmax 太"平"（前作第 7 章：分数差得小，比例就分不开）。所以乘一个放大倍数：</p>
+<div class="arithmatex">\[\text{logits} = I_e T_e^\top \cdot e^{t}\]</div>
+<p>伪代码里写 <code>np.exp(t)</code>（L308），t 是学出来的；原文用温度 τ 表示（放大倍数 = 1/τ），初始 τ = 0.07（放大约 14.3 倍），放大倍数最多 100，防止训练不稳（L325–L328）。下面为了好算，<strong>放大 10 倍</strong>：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>狗</th>
+<th>猫</th>
+<th>鸟</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>狗图</td>
+<td><strong>9.6</strong></td>
+<td>2.8</td>
+<td>6.0</td>
+</tr>
+<tr>
+<td>猫图</td>
+<td>2.8</td>
+<td><strong>9.6</strong></td>
+<td>8.0</td>
+</tr>
+<tr>
+<td>鸟图</td>
+<td>8.0</td>
+<td>9.36</td>
+<td><strong>10.0</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话</strong>：一批 N 对两两打分得到 N × N 的表，正确配对在对角线上；乘上温度放大，让 softmax 分得开。</p>
+<h3 id="2026-11-18_1">第三步：对称的交叉熵：按行猜文字，按列猜图片（2026-11-18）</h3>
+<p><strong>两个方向各做一次"选择题"</strong>（伪代码 L311–L314）：</p>
+<ul>
+<li><strong>按行</strong>：给一张图，在 N 段文字里选哪段是它的。每一行做 softmax，正确答案是对角线那一格，算交叉熵（第 1 章 −log p）。</li>
+<li><strong>按列</strong>：给一段文字，在 N 张图里选。每一列做 softmax，同样看对角线。</li>
+<li>两个方向取平均，所以叫"对称的交叉熵"（symmetric cross entropy，L236）。</li>
+</ul>
+<pre><code class="language-text">labels = np.arange(n)                              # 第 i 行的正确答案是第 i 列
+loss_i = cross_entropy_loss(logits, labels, axis=0)
+loss_t = cross_entropy_loss(logits, labels, axis=1)
+loss   = (loss_i + loss_t)/2
+</code></pre>
+<p><strong>数字演示</strong>：</p>
+<p>按行 softmax（每行加起来是 1）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>狗</th>
+<th>猫</th>
+<th>鸟</th>
+<th>对角线 p</th>
+<th>−log p</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>狗图</td>
+<td><strong>0.972</strong></td>
+<td>0.001</td>
+<td>0.027</td>
+<td>0.972</td>
+<td>0.028</td>
+</tr>
+<tr>
+<td>猫图</td>
+<td>0.001</td>
+<td><strong>0.831</strong></td>
+<td>0.168</td>
+<td>0.831</td>
+<td>0.185</td>
+</tr>
+<tr>
+<td>鸟图</td>
+<td>0.081</td>
+<td>0.317</td>
+<td><strong>0.601</strong></td>
+<td>0.601</td>
+<td>0.508</td>
+</tr>
+</tbody>
+</table>
+<p>按行平均 ≈ (0.028 + 0.185 + 0.508) / 3 ≈ <strong>0.240</strong>。</p>
+<p>按列 softmax（每列加起来是 1）的对角线：狗 0.831、猫 0.559、鸟 0.867，−log 分别是 0.185、0.581、0.143，平均 ≈ <strong>0.303</strong>。</p>
+<p>总 loss ≈ (0.240 + 0.303) / 2 ≈ <strong>0.272</strong>。</p>
+<p><strong>训练会怎么推</strong>：要让对角线的概率变大，就得把对角线的分数往上推、其他格往下压。比如鸟图那一行，"一只猫"那格 9.36 太高，会被往下压，鸟图向量和"猫"的文字向量会被推开。一批里每张图都把其余 N − 1 段文字当"反面例子"，CLIP 用的 batch 是 32768（L329），一次就有三万多个反面例子。</p>
+<p><strong>一句话</strong>：每一行 softmax 是"图找文"，每一列 softmax 是"文找图"，都用对角线算交叉熵再取平均；一批越大，反面例子越多。</p>
+<h3 id="zero-shot2026-11-18">第四步：zero-shot：把类名写成一句话，比谁最像（2026-11-18）</h3>
+<p><strong>类比：拿着词典认东西。</strong> 训练时从没教过"这 1000 类是什么"。要分类时，把每个类名套进一句话（prompt）：</p>
+<blockquote>
+<p>"A photo of a {label}."（L470–L471）</p>
+</blockquote>
+<p>用文字编码器把这 1000 句话各变成一个向量，再和图片向量算余弦，乘温度、softmax，挑最大的（§3.1，L364–L380）。原文说这等于一个"输入和权重都归一化、没有偏置、带温度"的线性分类器，只是权重是由文字编码器现场生成的（L376–L380）。</p>
+<p><strong>数字演示</strong>：一张新照片，向量 [0.96, 0.28]。三句话就用上面的 <span class="arithmatex">\(T_1, T_2, T_3\)</span>：</p>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>余弦</th>
+<th>× 10</th>
+<th>softmax</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>狗</td>
+<td>0.96 × 0.96 + 0.28 × 0.28 = <strong>1.0</strong></td>
+<td>10.0</td>
+<td><strong>0.873</strong></td>
+</tr>
+<tr>
+<td>猫</td>
+<td>0.96 × 0.28 + 0.28 × 0.96 = 0.538</td>
+<td>5.38</td>
+<td>0.009</td>
+</tr>
+<tr>
+<td>鸟</td>
+<td>0.96 × 0.6 + 0.28 × 0.8 = 0.8</td>
+<td>8.0</td>
+<td>0.118</td>
+</tr>
+</tbody>
+</table>
+<p>判成"狗"。</p>
+<p><strong>为什么要套一句话</strong>：网上的配文大多是整句，很少只有一个词；套上"A photo of a …"更像训练时见过的文字（L466–L470）。CLIP 不用 ImageNet 的 128 万张标注图训练，zero-shot 在 ImageNet 上拿到 76.2%，和原版 ResNet-50 持平（L401）。</p>
+<p><strong>一句话</strong>：zero-shot 分类就是把每个类名套成一句话变成文字向量，和图片向量比余弦，最像的那个就是答案。</p>
+<h3 id="siglip2026-11-18">第五步：SigLIP：每一格单独判"配不配"（2026-11-18）</h3>
+<p><strong>问题</strong>：CLIP 的每一行、每一列都要做 softmax，分母要把整行、整列加起来（L196–L199）。batch 分在很多张卡上时，得先把所有卡的向量收集到一起才能算分母，又慢又占内存。</p>
+<p><strong>SigLIP 的做法</strong>（§3.2，L202–L231）：不做选择题了，<strong>每一格单独做一道判断题</strong>："这张图和这段文字是不是一对？"用前作第 20 章的 sigmoid 把分数变成 0 到 1 的概率：</p>
+<div class="arithmatex">\[\sigma(x) = \frac{1}{1 + e^{-x}}\]</div>
+<div class="arithmatex">\[\mathcal{L} = -\frac{1}{|B|} \sum_{i=1}^{|B|} \sum_{j=1}^{|B|} \log \frac{1}{1 + e^{z_{ij}(-t\,x_i \cdot y_j + b)}}\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\lvert B \rvert\)</span></td>
+<td>一批几对</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x_i \cdot y_j\)</span></td>
+<td>第 i 张图和第 j 段文字的余弦（就是分数表那一格）</td>
+</tr>
+<tr>
+<td>t</td>
+<td>放大倍数（温度的倒数）</td>
+</tr>
+<tr>
+<td>b</td>
+<td>偏置，所有格子共用一个，学出来的</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(z_{ij}\)</span></td>
+<td>标签：对角线（配对）是 +1，其余是 −1</td>
+</tr>
+<tr>
+<td>每一项</td>
+<td><span class="arithmatex">\(-\log \sigma(z_{ij}(t\,x_i \cdot y_j + b))\)</span>：配对的格子要分数高，不配对的要分数低</td>
+</tr>
+</tbody>
+</table>
+<p><strong>为什么要偏置 b</strong>：N 对里只有 N 格是正例，<span class="arithmatex">\(N^2 - N\)</span> 格是反例，反例多得多。一开始如果什么都不偏，loss 会被大量反例主导，第一步就猛地改一大截。所以初始化 t = 10（t′ = log 10）、<strong>b = −10</strong>，让模型一开始就倾向于说"不配"（L174–L186）。</p>
+<p><strong>数字演示</strong>：同一张分数表，t = 10，b = −10，每格 logit = 10 × 余弦 − 10：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>狗</th>
+<th>猫</th>
+<th>鸟</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>狗图</td>
+<td><strong>−0.4</strong></td>
+<td>−7.2</td>
+<td>−4.0</td>
+</tr>
+<tr>
+<td>猫图</td>
+<td>−7.2</td>
+<td><strong>−0.4</strong></td>
+<td>−2.0</td>
+</tr>
+<tr>
+<td>鸟图</td>
+<td>−2.0</td>
+<td>−0.64</td>
+<td><strong>0.0</strong></td>
+</tr>
+</tbody>
+</table>
+<p>每格的 loss = −log σ(z × logit)：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>狗</th>
+<th>猫</th>
+<th>鸟</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>狗图</td>
+<td><strong>0.913</strong>（σ(−0.4) = 0.401）</td>
+<td>0.001</td>
+<td>0.018</td>
+</tr>
+<tr>
+<td>猫图</td>
+<td>0.001</td>
+<td><strong>0.913</strong></td>
+<td>0.127</td>
+</tr>
+<tr>
+<td>鸟图</td>
+<td>0.127</td>
+<td>0.423</td>
+<td><strong>0.693</strong></td>
+</tr>
+</tbody>
+</table>
+<p>加起来除以 |B| = 3：≈ <strong>1.07</strong>。对角线三格扣分最多：b = −10 让模型先说"都不配"，训练要做的是把配对的那几格往上推。</p>
+<p><strong>好处</strong>：每一格的 loss 只和这一格有关，不需要整行整列的分母。分数表可以一块一块地算（"chunked"，§3.3），batch 不大时（低于 16k）效果明显好于 softmax 版（L290–L293）。</p>
+<p><strong>一句话</strong>：SigLIP 把"N 选 1 的选择题"换成"每格一道判断题"，用 sigmoid、标签 ±1 和偏置 b = −10，不需要整行整列的 softmax 分母。</p>
+<h3 id="_2">动画演示：一批图文的配对分数表</h3>
+<p><img alt="CLIP 分数表" src="../animations/46-clip-siglip.gif" /></p>
+<p>可交互版：<a href="../animations/46-clip-siglip.html">animations/46-clip-siglip.html</a>（需要用本地服务打开，见 <a href="../animations/index.html">animations/README.md</a>"跑起来看"；滑块：放大倍数从 1 拖到 30，看按行 softmax 的对角线概率和 loss 怎么变）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>3 张图、3 段文字两两点积，得到 3 × 3 的表，对角线是正确配对（第二步）；</li>
+<li>按行 softmax、按列 softmax，对角线取 −log，再平均（第三步）；</li>
+<li>换成 SigLIP：每格各自 sigmoid，对角线标 +1、其余标 −1（第五步）；</li>
+<li>滑块：放大倍数太小，每行的概率都差不多；放大后对角线变得突出。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：向量 [0.6, 0.8] 和 [0.8, 0.6] 的长度各是多少？它们的余弦相似度是多少？</p>
+<p><strong>题 2</strong>（第二、三步）：一批 2 对，放大后的分数表是 [[5, 1], [2, 4]]（行是图，列是文字）。
+（a）按行 softmax 后，对角线的两个概率各是多少？（提示：<span class="arithmatex">\(e^{-4} \approx 0.018\)</span>，<span class="arithmatex">\(e^{-2} \approx 0.135\)</span>）
+（b）按行方向的平均 loss 是多少？</p>
+<p><strong>题 3</strong>（第四步）：zero-shot 分类时，为什么要把类名写成"A photo of a {label}."，而不是只写类名？</p>
+<p><strong>题 4</strong>（第五步）：（a）一批 4 对，SigLIP 里正例格子和反例格子各有几个？（b）偏置 b 初始化成 −10 而不是 0，是为了解决什么问题？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>图走图的编码器，文走文的编码器；投影归一化，点积就是余弦。<br />
+一批 N 对打 N 方格，对角线上是正解；温度放大分得开。<br />
+按行选文、按列选图，交叉熵两边各一半；一批越大反例越多。<br />
+类名套成一句话，最像的就是答案。<br />
+SigLIP 每格判一判，sigmoid 加偏置，不要整行分母。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B08–B09</a>（B08 CLIP 的分数表与对称交叉熵；B09 SigLIP 的 sigmoid 损失与偏置）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ CLIP（Radford 等 2021）</td>
+<td>§2.3 L228–L240；Figure 3 伪代码 L290–L316；§2.5 L323–L330；§3.1.2 L364–L380；提示工程 L466–L520</td>
+<td>本章原文：对比学习、对称交叉熵、温度、zero-shot、prompt</td>
+</tr>
+<tr>
+<td>★ SigLIP（Zhai 等 2023）</td>
+<td>§3.1–§3.3 L125–L300；Algorithm 1 L60–L80；偏置的消融 L600–L640</td>
+<td>sigmoid 损失、偏置初始化、分块实现、batch 大小的影响</td>
+</tr>
+<tr>
+<td>Oord 等 2018，Representation Learning with Contrastive Predictive Coding（InfoNCE）</td>
+<td>全文（本地没有文本版）</td>
+<td>"N 选 1 的对比损失"的一般形式</td>
+</tr>
+<tr>
+<td>本书第 51 章</td>
+<td></td>
+<td>CLIP / SigLIP 的图片编码器怎么接到大语言模型上</td>
+</tr>
+<tr>
+<td>本书第 50 章</td>
+<td></td>
+<td>文生图模型怎么用 CLIP 的文字编码器当条件</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>归一化后点积 = 余弦</strong>：<span class="arithmatex">\(\cos\theta = \frac{a \cdot b}{\lVert a \rVert \lVert b \rVert}\)</span>，长度都为 1 时就是 <span class="arithmatex">\(a \cdot b\)</span>。</li>
+<li><strong>InfoNCE / 对称交叉熵</strong>：每行是一个 N 类分类，正确类在对角线；按列再做一遍。</li>
+<li><strong>温度</strong>：logits 乘 1/τ；τ 越小，softmax 越尖。</li>
+<li><strong>sigmoid 二分类</strong>：<span class="arithmatex">\(-\log \sigma(z \cdot s)\)</span>，z = ±1；和 softmax 不同，各格之间互不影响。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(S = I_e T_e^\top\)</span></td>
+<td>N × N 分数表（余弦）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\text{logits} = S \cdot e^{t}\)</span></td>
+<td>乘放大倍数（1/τ）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathcal{L} = \frac{1}{2}(\text{CE}_{行} + \text{CE}_{列})\)</span>，标签是对角线</td>
+<td>CLIP 对称交叉熵</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\hat y = \arg\max_k \cos(I, T_k)\)</span>，<span class="arithmatex">\(T_k\)</span> = "A photo of a {k}."</td>
+<td>zero-shot 分类</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathcal{L} = -\frac{1}{\lvert B \rvert}\sum_{i,j} \log \sigma\big(z_{ij}(t\,x_i \cdot y_j + b)\big)\)</span></td>
+<td>SigLIP sigmoid 损失</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch46_clip_siglip.py</code>，配套测试 <code>tests/test_ch46.py</code>，notebook 在 <code>notebooks/ch46_clip_siglip.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch46_clip_siglip.py  
+uv run pytest tests/test_ch46.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第二步 分数表</td>
+<td><span class="arithmatex">\(S = I_e T_e^\top\)</span></td>
+<td><code>I @ T.T</code></td>
+<td>对角线 0.96、0.96、1.0；鸟图 × 猫 = 0.936</td>
+</tr>
+<tr>
+<td>第三步 按行</td>
+<td>行 softmax + CE</td>
+<td><code>clip_loss(S, 10)["row"]</code></td>
+<td>对角线概率 0.972、0.831、0.601，平均 loss ≈ 0.240</td>
+</tr>
+<tr>
+<td>第三步 按列、总 loss</td>
+<td>对称</td>
+<td><code>clip_loss(S, 10)</code></td>
+<td>列 ≈ 0.303，总 ≈ 0.272</td>
+</tr>
+<tr>
+<td>第四步 zero-shot</td>
+<td>argmax</td>
+<td><code>zero_shot([0.96, 0.28], T, 10)</code></td>
+<td>狗 0.873、猫 0.009、鸟 0.118</td>
+</tr>
+<tr>
+<td>第五步 SigLIP</td>
+<td>sigmoid 损失</td>
+<td><code>siglip_loss(S, 10, -10)</code></td>
+<td>对角线每格 0.913、0.913、0.693，总 ≈ 1.07</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">logits = scale * (I @ T.T)                                  # N × N 分数表，再放大
+row = -np.log(np.diag(softmax(logits, axis=1)))             # 每张图在 N 段文字里选
+col = -np.log(np.diag(softmax(logits, axis=0)))             # 每段文字在 N 张图里选
+loss = (row.mean() + col.mean()) / 2                        # 对称交叉熵
+
+z = 2 * np.eye(n) - 1                                       # SigLIP 标签：对角线 +1，其余 −1
+loss = -np.log(sigmoid(z * (t * S + b))).sum() / n          # 每格一道判断题，除以 |B|
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li>CLIP 伪代码里 <code>axis=0</code> 是"按列做 softmax"，也就是"文字找图"那一边；和讲义里的行 / 列一一对应时别看反。</li>
+<li>SigLIP 的总和除的是 |B|（对数），不是 |B|² 个格子，所以数值看起来比 CLIP 大。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把放大倍数从 10 改成 1，看按行 softmax 是不是变得几乎均匀，loss 变大。</li>
+<li>把 SigLIP 的 b 改成 0，看对角线和非对角线格子的 loss 各怎么变。</li>
+</ul><nav class="pager"><a href="45-swin-vivit.html">← 第 45 章 · Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="47-mae-dino.html">第 47 章 · MAE 与 DINO：不要标签也能学会看图 →</a></nav>
+</main>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">AI 算法图解讲义（合集）</a></footer>
+</body></html>

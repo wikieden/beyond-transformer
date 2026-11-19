@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 48 章 · DDPM：一步步加噪声，再学着一步步去噪 · 超越 Transformer</title>
+<style>
+:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;margin:8px 0 16px} h2{font-size:22px;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:18px;margin:28px 0 8px}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:17px;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+</div></header>
+<main>
+<h1 id="48-ddpm">第 48 章 · DDPM：一步步加噪声，再学着一步步去噪</h1><p><a class="btn" href="../animations/48-ddpm.html">▶ 打开本章可交互动画</a></p>
+<blockquote>
+<p>本章回答：生成一张图，为什么要先学"把图弄脏"？加噪声的那一路怎么一步跳到任意一步？神经网络到底在学什么，为什么是"猜加进去的噪声"？生成时从一团噪声出发，每一步怎么算，为什么要走 1000 步？<br />
+讲解日期：2026-11-18 · 上一章：<a href="../lessons/47-mae-dino.html">第 47 章 MAE 与 DINO</a> · 下一章：<a href="../lessons/49-latent-diffusion-flow.html">第 49 章 Latent Diffusion 与 Rectified Flow</a><br />
+对应原文：DDPM <code>transformer-deep-dive/materials/text/papers/ddpm-2006.11239.txt</code> §2 L87–L118（式 2、3、4）、§3.2 L156–L230（式 11，<span class="arithmatex">\(\sigma_t^2 = \beta_t\)</span> L159）、Algorithm 1、2 L192–L206、§3.4 式 14 L260–L310、§4 设置 L317–L326<br />
+本章缩写：DDPM = Denoising Diffusion Probabilistic Models（去噪 / 扩散 / 概率 / 模型）；diffusion（扩散：像墨水在水里散开）；Gaussian（高斯分布，也叫正态分布，钟形曲线）；<span class="arithmatex">\(\mathcal{N}(\mu, \sigma^2)\)</span>：平均 μ（读作"缪"）、方差 σ²（σ 读作"西格玛"）的高斯分布；I = Identity（单位矩阵：每个数各自独立加噪）；β（beta，读作"贝塔"）：每一步加多少噪声；α = 1 − β；<span class="arithmatex">\(\bar\alpha_t\)</span>（读作"alpha bar t"）：前 t 步的 α 连乘；ε（epsilon，读作"艾普西隆"）：标准高斯噪声；<span class="arithmatex">\(\epsilon_\theta\)</span>：参数为 θ 的网络猜的噪声；T：总步数；U-Net（U 形网络：先缩小再放大、两边有跳线的卷积网络）；ODE = Ordinary Differential Equation（常微分方程，下一章用）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-18">第一步：前向：每一步缩一点、加一点噪声（2026-11-18）</h3>
+<p><strong>类比：一滴墨水在清水里散开。</strong> 散开很容易，每一秒自己就会散一点；1000 秒后整杯水是均匀的淡灰色，看不出原来那滴墨在哪。难的是倒着来：从一杯灰水里"收回"一滴墨。DDPM 的思路是：<strong>散开的过程我们自己定，倒着收回的过程让神经网络学</strong>。</p>
+<p><strong>先补一个概念：高斯噪声。</strong> <span class="arithmatex">\(\epsilon \sim \mathcal{N}(0, 1)\)</span> 读作"ε 服从平均 0、方差 1 的高斯分布"：随机抽一个数，大多落在 −2 到 2 之间，越靠近 0 越常见（钟形曲线）。一张图每个像素各抽一个，就是一张"雪花噪声图"。</p>
+<p><strong>前向过程</strong>（forward process，式 2，L98–L101）：</p>
+<div class="arithmatex">\[q(x_t \mid x_{t-1}) = \mathcal{N}\big(x_t;\ \sqrt{1-\beta_t}\,x_{t-1},\ \beta_t I\big)\]</div>
+<p>换成"怎么算"的写法：</p>
+<div class="arithmatex">\[x_t = \sqrt{1-\beta_t}\;x_{t-1} + \sqrt{\beta_t}\;\epsilon,\qquad \epsilon \sim \mathcal{N}(0, I)\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>读法</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(x_0\)</span></td>
+<td>x 零</td>
+<td>原图（像素缩放到 −1 到 1）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x_t\)</span></td>
+<td>x t</td>
+<td>加了 t 步噪声后的图</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\beta_t\)</span></td>
+<td>贝塔 t</td>
+<td>第 t 步加多少噪声，很小（论文从 0.0001 线性涨到 0.02，L318–L319）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sqrt{1-\beta_t}\)</span></td>
+<td></td>
+<td>先把原来的图<strong>缩一点</strong></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sqrt{\beta_t}\,\epsilon\)</span></td>
+<td></td>
+<td>再加一点新噪声</td>
+</tr>
+</tbody>
+</table>
+<p><strong>为什么要先缩</strong>：如果 x 的方差是 1，缩成 <span class="arithmatex">\(\sqrt{1-\beta}\)</span> 倍后方差变成 1 − β，加上方差 β 的噪声，加起来还是 1。这样走 1000 步，数值不会越加越大，最后正好变成 <span class="arithmatex">\(\mathcal{N}(0, 1)\)</span>。</p>
+<p><strong>数字演示</strong>（一个像素，编的大一点的 β 好算）：<span class="arithmatex">\(x_0\)</span> = 0.8，<span class="arithmatex">\(\beta_1\)</span> = 0.01、<span class="arithmatex">\(\beta_2\)</span> = 0.02；抽到 <span class="arithmatex">\(\epsilon_1\)</span> = 1.0、<span class="arithmatex">\(\epsilon_2\)</span> = −1.0：</p>
+<table>
+<thead>
+<tr>
+<th>步</th>
+<th>算式</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(x_1\)</span></td>
+<td><span class="arithmatex">\(\sqrt{0.99} \times 0.8 + \sqrt{0.01} \times 1.0\)</span> = 0.796 + 0.1</td>
+<td><strong>0.896</strong></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x_2\)</span></td>
+<td><span class="arithmatex">\(\sqrt{0.98} \times 0.896 + \sqrt{0.02} \times (-1.0)\)</span> = 0.887 − 0.141</td>
+<td><strong>0.746</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话</strong>：前向过程每一步把图缩一点（<span class="arithmatex">\(\sqrt{1-\beta_t}\)</span>），再加一点高斯噪声（<span class="arithmatex">\(\sqrt{\beta_t}\,\epsilon\)</span>），走 T 步后变成纯噪声；这一路不用学。</p>
+<h3 id="t-baralpha_t2026-11-18">第二步：一步跳到第 t 步：<span class="arithmatex">\(\bar\alpha_t\)</span>（2026-11-18）</h3>
+<p>训练时要第 500 步的样子，总不能真加 500 次。原文给了直接跳的公式（式 4，L115–L118）：</p>
+<div class="arithmatex">\[x_t = \sqrt{\bar\alpha_t}\;x_0 + \sqrt{1-\bar\alpha_t}\;\epsilon,\qquad \alpha_t = 1-\beta_t,\quad \bar\alpha_t = \alpha_1 \alpha_2 \cdots \alpha_t\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\alpha_t\)</span></td>
+<td>第 t 步保留多少（1 − β）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\bar\alpha_t\)</span></td>
+<td>前 t 步保留比例连乘起来：原图还剩多少</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sqrt{\bar\alpha_t}\)</span></td>
+<td>原图的系数，从 1 一路降到接近 0</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sqrt{1-\bar\alpha_t}\)</span></td>
+<td>噪声的系数，从 0 一路升到接近 1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>为什么能跳</strong>：每一步的噪声都是独立的高斯，几个高斯加起来还是一个高斯，方差相加。所以 t 步的噪声可以合并成一次。</p>
+<p><strong>验证</strong>（接第一步）：<span class="arithmatex">\(\bar\alpha_2\)</span> = 0.99 × 0.98 = 0.9702。一步跳到 t = 2：原图系数 <span class="arithmatex">\(\sqrt{0.9702}\)</span> = 0.985，0.985 × 0.8 = <strong>0.788</strong>；噪声系数 <span class="arithmatex">\(\sqrt{0.0298}\)</span> = <strong>0.173</strong>。第一步那条路走出来是 0.746，等于这里的 ε 抽到了 −0.243：同一个分布，只是抽到的随机数不同。</p>
+<p><strong>论文的设置</strong>（T = 1000，β 从 <span class="arithmatex">\(10^{-4}\)</span> 线性涨到 0.02）：</p>
+<table>
+<thead>
+<tr>
+<th>t</th>
+<th><span class="arithmatex">\(\bar\alpha_t\)</span></th>
+<th>原图系数 <span class="arithmatex">\(\sqrt{\bar\alpha_t}\)</span></th>
+<th>噪声系数 <span class="arithmatex">\(\sqrt{1-\bar\alpha_t}\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0.9999</td>
+<td>0.9999</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>100</td>
+<td>0.897</td>
+<td>0.947</td>
+<td>0.321</td>
+</tr>
+<tr>
+<td>250</td>
+<td>0.524</td>
+<td>0.724</td>
+<td>0.690</td>
+</tr>
+<tr>
+<td>500</td>
+<td>0.079</td>
+<td><strong>0.280</strong></td>
+<td><strong>0.960</strong></td>
+</tr>
+<tr>
+<td>750</td>
+<td>0.0034</td>
+<td>0.058</td>
+<td>0.998</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>0.00004</td>
+<td>0.006</td>
+<td>1.000</td>
+</tr>
+</tbody>
+</table>
+<p>到第 1000 步，原图只剩 0.6%，几乎就是纯噪声。</p>
+<p><strong>一句话</strong>：<span class="arithmatex">\(\bar\alpha_t\)</span> 是前 t 步保留比例的连乘，<span class="arithmatex">\(x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon\)</span> 一步就能造出任意一步的脏图。</p>
+<h3 id="2026-11-18_1">第三步：训练：让网络猜"加进去的是哪团噪声"（2026-11-18）</h3>
+<p><strong>类比：修复老照片的学徒。</strong> 师傅拿一张好照片，故意弄脏到某个程度，问学徒"我刚才撒的是哪些灰"。学徒每次都能对答案，因为脏是师傅亲手弄的。</p>
+<p><strong>Algorithm 1</strong>（L192–L199）：</p>
+<ol>
+<li>从训练集取一张图 <span class="arithmatex">\(x_0\)</span>；</li>
+<li>随机挑一步 t（1 到 1000 均匀抽）；</li>
+<li>抽一团噪声 ε；</li>
+<li>用式 4 造出 <span class="arithmatex">\(x_t\)</span>；</li>
+<li>网络 <span class="arithmatex">\(\epsilon_\theta(x_t, t)\)</span> 看着脏图和步数 t，猜噪声；</li>
+<li>用均方误差（第 47 章）更新：</li>
+</ol>
+<div class="arithmatex">\[L_{\text{simple}} = \mathbb{E}_{t, x_0, \epsilon}\Big[\big\lVert \epsilon - \epsilon_\theta\big(\sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon,\ t\big)\big\rVert^2\Big]\]</div>
+<p>这是式 14（L300）。<span class="arithmatex">\(\mathbb{E}\)</span> 读作"期望"，就是"对随机抽的 t、图、噪声取平均"。</p>
+<p><strong>为什么猜噪声而不直接猜原图</strong>：两者知道一个就能算出另一个（式 4 移项）。原文推导出：真正的目标（式 3，−log p 的上界，和第 1 章的 NLL 是一家）化简后，就是加权的"噪声猜得准不准"；去掉权重后效果反而最好（L260–L310）。</p>
+<p><strong>数字演示</strong>：<span class="arithmatex">\(x_0\)</span> = 0.8，抽到 t = 500、ε = −0.5：</p>
+<ol>
+<li><span class="arithmatex">\(x_{500}\)</span> = 0.280 × 0.8 + 0.960 × (−0.5) = 0.224 − 0.480 = <strong>−0.256</strong>；</li>
+<li>网络猜 <span class="arithmatex">\(\epsilon_\theta\)</span> = −0.4；</li>
+<li>loss = (−0.5 − (−0.4))² = <strong>0.01</strong>。</li>
+</ol>
+<p>用猜的噪声反推原图：<span class="arithmatex">\(\hat x_0 = (x_t - \sqrt{1-\bar\alpha_t}\,\epsilon_\theta)/\sqrt{\bar\alpha_t}\)</span> = (−0.256 + 0.960 × 0.4) / 0.280 ≈ <strong>0.458</strong>（真实是 0.8）。噪声只猜错 0.1，原图就差了 0.34：噪声大的时候，一步猜原图很不准，所以生成时要一小步一小步地走。</p>
+<p><strong>一句话</strong>：训练时随机挑一步、随机加一团噪声，让网络看着脏图和步数猜出这团噪声，loss 是均方误差。</p>
+<h3 id="2026-11-18_2">第四步：生成：从纯噪声出发，一步步减掉猜出的噪声（2026-11-18）</h3>
+<p><strong>Algorithm 2</strong>（L192–L206）：</p>
+<ol>
+<li>抽一张纯噪声 <span class="arithmatex">\(x_T \sim \mathcal{N}(0, I)\)</span>；</li>
+<li>从 t = T 倒着走到 1，每一步：</li>
+</ol>
+<div class="arithmatex">\[x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\Big(x_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\,\epsilon_\theta(x_t, t)\Big) + \sigma_t z,\qquad z \sim \mathcal{N}(0, I)\]</div>
+<ol start="3">
+<li>输出 <span class="arithmatex">\(x_0\)</span>。</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>部分</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\,\epsilon_\theta\)</span></td>
+<td>减掉<strong>一小部分</strong>猜出的噪声（不是全部减掉）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\frac{1}{\sqrt{\alpha_t}}\)</span></td>
+<td>把前向时"缩的那一点"放大回来</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sigma_t z\)</span></td>
+<td>再加一点新的随机噪声，<span class="arithmatex">\(\sigma_t^2 = \beta_t\)</span>（L159）；最后一步 t = 1 不加</td>
+</tr>
+</tbody>
+</table>
+<p>括号里那部分就是式 11 的平均值 <span class="arithmatex">\(\mu_\theta\)</span>（L211）。</p>
+<p><strong>数字演示</strong>：接第三步，t = 500：<span class="arithmatex">\(\alpha_{500}\)</span> = 0.98996，<span class="arithmatex">\(\beta_{500}\)</span> = 0.01004；</p>
+<ol>
+<li>减噪声的系数：0.01004 / 0.960 = 0.01046；</li>
+<li>括号里：−0.256 − 0.01046 × (−0.4) = −0.256 + 0.0042 = −0.2514；</li>
+<li>除以 <span class="arithmatex">\(\sqrt{0.98996}\)</span> = 0.99497：<strong>−0.2528</strong>；</li>
+<li>再加 <span class="arithmatex">\(\sigma_{500} z\)</span>，<span class="arithmatex">\(\sigma_{500} = \sqrt{0.01004} \approx 0.100\)</span>；为了看清楚，这里 z 取 0。</li>
+</ol>
+<p>一步只挪了 0.003：每一步只去掉很少的噪声，所以要走 1000 步，<strong>要跑 1000 次网络</strong>。这就是 DDPM 生成慢的原因，下一章的两个办法都在解决它。</p>
+<p><strong>一句话</strong>：生成时从纯噪声出发，每一步减掉一小部分网络猜出的噪声、放大回来、再撒一点新噪声，走 1000 步得到图。</p>
+<h3 id="u-net-2026-11-18">第五步：网络长什么样：U-Net + 时间步编码（2026-11-18）</h3>
+<p><span class="arithmatex">\(\epsilon_\theta(x_t, t)\)</span> 的输入是一张图、输出是同样大小的一张图（每个像素一个噪声值）。DDPM 用的是 <strong>U-Net</strong>（L323–L326）：</p>
+<ul>
+<li>先一层层缩小（看大局），再一层层放大（恢复细节），同尺寸的两边用跳线连起来；</li>
+<li>在 16 × 16 那一层加了<strong>自注意力</strong>；</li>
+<li><strong>步数 t 怎么告诉网络</strong>：用前作第 14 章 Transformer 的 sin / cos 位置编码，把整数 t 变成一串数加进网络。所有 t <strong>共用一套参数</strong>，网络靠这串数知道"现在有多脏"。</li>
+</ul>
+<p><strong>和本书的关系</strong>：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>本章 DDPM</th>
+<th>第 50 章 DiT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>主干</td>
+<td>U-Net（卷积 + 少量注意力）</td>
+<td>Transformer（第 44 章的切小块）</td>
+</tr>
+<tr>
+<td>时间步 t</td>
+<td>sin / cos 编码加进去</td>
+<td>编码后去调 LayerNorm 的缩放和平移</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话</strong>：猜噪声的网络是输入输出同尺寸的 U-Net，步数 t 用 Transformer 的 sin / cos 编码告诉它，所有步共用一套参数。</p>
+<h3 id="_2">动画演示：一团点逐步变成噪声，再逐步变回来</h3>
+<p><img alt="DDPM 加噪去噪" src="../animations/48-ddpm.gif" /></p>
+<p>可交互版：<a href="../animations/48-ddpm.html">animations/48-ddpm.html</a>（需要用本地服务打开，见 <a href="../animations/index.html">animations/README.md</a>"跑起来看"；滑块：步数 t 从 0 拖到 1000，看点云散开的程度和两个系数 <span class="arithmatex">\(\sqrt{\bar\alpha_t}\)</span>、<span class="arithmatex">\(\sqrt{1-\bar\alpha_t}\)</span>）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>一团二维的点（"数据"是两个弯月形，编的）按式 4 加噪，t = 100、250、500、1000 越来越散，最后变成一团圆形的噪声（第一、二步）；</li>
+<li>从纯噪声出发按 Algorithm 2 倒着走，点又聚回两个弯月（第四步）。这里的"网络"用的是对这组点精确算出来的去噪器，代替训练好的 U-Net；</li>
+<li>滑块：看原图系数和噪声系数怎么此消彼长。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：<span class="arithmatex">\(x_0\)</span> = 0.5，β = 0.04，抽到 ε = 1。算 <span class="arithmatex">\(x_1\)</span>。</p>
+<p><strong>题 2</strong>（第二步）：<span class="arithmatex">\(\beta_1\)</span> = 0.1、<span class="arithmatex">\(\beta_2\)</span> = 0.2。（a）<span class="arithmatex">\(\bar\alpha_2\)</span> 是多少？（b）<span class="arithmatex">\(x_0\)</span> = 1、ε = 0.5，一步跳到 t = 2，<span class="arithmatex">\(x_2\)</span> 是多少？（提示：<span class="arithmatex">\(\sqrt{0.72} \approx 0.849\)</span>，<span class="arithmatex">\(\sqrt{0.28} \approx 0.529\)</span>）</p>
+<p><strong>题 3</strong>（第三步）：（a）训练时 t 为什么要随机挑，而不是每次都从 1 走到 1000？（b）为什么说"猜噪声"和"猜原图"其实是一回事？</p>
+<p><strong>题 4</strong>（第四、五步）：（a）DDPM 生成一张图要调用多少次网络？（b）所有步共用一个网络，网络怎么知道现在是第几步？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>墨水入水散得快，倒着收回要靠学。<br />
+每步先缩再加噪，方差守住还是一。<br />
+阿尔法连乘一步跳，原图系数降、噪声升。<br />
+随机挑步撒噪声，网络专猜撒了啥。<br />
+生成从噪声倒着走，每步减一点、再撒一点，一千步才成图。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B12–B13</a>（B12 前向过程与式 4；B13 训练猜噪声与生成的一步）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Denoising Diffusion Probabilistic Models（DDPM，Ho 等 2020）</td>
+<td>§2 L87–L118；§3.2 L156–L230；Algorithm 1、2 L192–L206；§3.4 L260–L310；§4 L317–L326</td>
+<td>本章原文</td>
+</tr>
+<tr>
+<td>Lilian Weng，What are Diffusion Models?（博客，2021）</td>
+<td>全文</td>
+<td>从式 2 到式 14 的完整推导，配图清楚</td>
+</tr>
+<tr>
+<td>DDIM（Song 等 2020）</td>
+<td>全文（本地没有文本版）</td>
+<td>不改训练、只改生成：几十步就能出图</td>
+</tr>
+<tr>
+<td>Score-Based Generative Modeling through SDEs（Song 等 2021）</td>
+<td>全文（本地没有文本版）</td>
+<td>把加噪看成连续时间的随机微分方程，统一 DDPM 和打分模型</td>
+</tr>
+<tr>
+<td>本书第 49、50 章</td>
+<td></td>
+<td>少走几步的办法（Rectified Flow）、换 Transformer 主干（DiT）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>高斯相加</strong>：独立的 <span class="arithmatex">\(\mathcal{N}(0, a)\)</span> 和 <span class="arithmatex">\(\mathcal{N}(0, b)\)</span> 相加是 <span class="arithmatex">\(\mathcal{N}(0, a+b)\)</span>，所以多步噪声能合成一步（式 4）。</li>
+<li><strong>方差守恒</strong>：<span class="arithmatex">\(\text{Var}(\sqrt{1-\beta}x + \sqrt\beta\epsilon) = (1-\beta)\text{Var}(x) + \beta\)</span>；Var(x) = 1 时结果还是 1。</li>
+<li><strong>变分下界</strong>：<span class="arithmatex">\(-\log p_\theta(x_0) \le L\)</span>（式 3），训练让上界变小，等于让 NLL 变小；化简后每一项都是"猜噪声的平方误差"乘一个权重，DDPM 把权重扔掉得到 <span class="arithmatex">\(L_{\text{simple}}\)</span>。</li>
+<li><strong>重参数化</strong>：<span class="arithmatex">\(\hat x_0 = (x_t - \sqrt{1-\bar\alpha_t}\,\epsilon_\theta)/\sqrt{\bar\alpha_t}\)</span>。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(x_t = \sqrt{1-\beta_t}\,x_{t-1} + \sqrt{\beta_t}\,\epsilon\)</span></td>
+<td>前向一步（式 2）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\bar\alpha_t = \prod_{s=1}^{t}(1-\beta_s)\)</span></td>
+<td>前 t 步保留比例连乘</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon\)</span></td>
+<td>一步跳到第 t 步（式 4）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(L_{\text{simple}} = \mathbb{E}\lVert \epsilon - \epsilon_\theta(x_t, t)\rVert^2\)</span></td>
+<td>训练目标（式 14）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\big(x_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta\big) + \sigma_t z\)</span></td>
+<td>生成的一步（Algorithm 2）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch48_ddpm.py</code>，配套测试 <code>tests/test_ch48.py</code>，notebook 在 <code>notebooks/ch48_ddpm.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch48_ddpm.py  
+uv run pytest tests/test_ch48.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 前向两步</td>
+<td>式 2</td>
+<td><code>forward_step(x, beta, eps)</code></td>
+<td>0.8 → 0.896 → 0.746</td>
+</tr>
+<tr>
+<td>第二步 一步跳</td>
+<td>式 4</td>
+<td><code>schedule()</code>、<code>jump(x0, t, eps)</code></td>
+<td><span class="arithmatex">\(\bar\alpha_2\)</span> = 0.9702；t = 500 时系数 0.280、0.960</td>
+</tr>
+<tr>
+<td>第三步 训练</td>
+<td>式 14</td>
+<td><code>train_example(0.8, 500, -0.5, -0.4)</code></td>
+<td><span class="arithmatex">\(x_{500}\)</span> = −0.256，loss = 0.01，<span class="arithmatex">\(\hat x_0\)</span> ≈ 0.458</td>
+</tr>
+<tr>
+<td>第四步 生成一步</td>
+<td>Algorithm 2</td>
+<td><code>reverse_step(xt, 500, eps_hat, z=0)</code></td>
+<td>−0.2528</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">betas = np.linspace(1e-4, 0.02, 1000)                # 论文的 β：线性从 0.0001 到 0.02
+alpha_bar = np.cumprod(1 - betas)                    # ᾱ_t：前 t 步的 α 连乘
+x_t = np.sqrt(ab) * x0 + np.sqrt(1 - ab) * eps        # 式 4：一步跳到第 t 步
+loss = (eps - eps_hat) ** 2                          # 式 14：猜噪声的平方误差
+mean = (x_t - beta / np.sqrt(1 - ab) * eps_hat) / np.sqrt(alpha)   # 生成：减一点噪声、放大回来
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li>论文的 t 从 1 数到 1000，数组下标从 0 数，所以第 t 步是 <code>betas[t - 1]</code>。</li>
+<li><code>np.cumprod</code> 一次算出全部 1000 个 <span class="arithmatex">\(\bar\alpha_t\)</span>，训练时直接查表，不用真的加 t 次噪声。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 β 的上限从 0.02 改成 0.01，看第 1000 步的原图系数是不是还接近 0。</li>
+<li>在 <code>reverse_step</code> 里把 z 改成 1，看随机项让结果挪了多少。</li>
+</ul><nav class="pager"><a href="47-mae-dino.html">← 第 47 章 · MAE 与 DINO：不要标签也能学会看图</a><a href="49-latent-diffusion-flow.html">第 49 章 · Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步 →</a></nav>
+</main>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">AI 算法图解讲义（合集）</a></footer>
+</body></html>

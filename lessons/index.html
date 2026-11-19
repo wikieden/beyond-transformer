@@ -48,7 +48,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <h1 id="transformer">超越 Transformer · 讲义目录</h1>
 <blockquote>
 <p>在线阅读：<a href="https://wikieden.github.io/beyond-transformer/">https://wikieden.github.io/beyond-transformer/</a> · 前作：《<a href="https://wikieden.github.io/transformer-visual/">从零读懂 Transformer</a>》（24 章）<br />
-计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 第 1 章正文完成（练习进行中）</p>
+计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1 章、第 44–51 章（视觉段整段，练习待做）· 19 张复习卡片</p>
 </blockquote>
 <h2 id="_1">这本书讲什么</h2>
 <p>《从零读懂 Transformer》讲完了 2017 年的原版。可今天的大模型早就不是原版的样子了：训练要用 AdamW 和精心排过的学习率，LayerNorm 换成了 RMSNorm，位置编码换成了 RoPE，attention 加了 GQA、滑动窗口和 FlashAttention，FFN 变成了 MoE，有的模型干脆用 Mamba、线性注意力替掉一部分 attention，图片和视频也被切成小块送进同一套结构。这本书沿着这条路线，把 2017 年到现在每一处改动讲清楚：<strong>改了什么、为什么改、代价是什么</strong>。</p>
@@ -65,20 +65,21 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <li><strong>对照原文</strong>：每章对应具体论文的章节和本地文本行号，引用原句；章节号没把握的先标"待核对"，写正文时核对。</li>
 <li><strong>讲清"为什么换"</strong>：每个新零件都和它替换掉的旧零件对比（Post-LN → Pre-LN、正弦位置编码 → RoPE、dense FFN → MoE、softmax attention → 线性注意力），说明换来了什么、付出了什么。</li>
 <li><strong>学完就动手</strong>：每段结尾对应一个里程碑（T-M0 到 T-M8），都在自己写的模型上改，用实验验证讲过的结论。</li>
-<li><strong>保留真实的学习过程</strong>：练习与作答记录、复习卡片（编号 B01 起）、口诀、延伸阅读，格式和前作一致。</li>
+<li><strong>每章都有代码对照</strong>：章末的"代码对照"用 NumPy 把讲义里的数字算一遍，代码在仓库 <code>beyond-transformer/solutions/chapter-code/</code>，配测试核对和讲义一致，还有一格一格跑的 notebook；只算讲过的例子，不提前给练习答案。</li>
+<li><strong>保留真实的学习过程</strong>：练习与作答记录、复习卡片（编号 B01 起）、口诀、延伸阅读，格式和前作一致。全部口诀汇总在本页末尾。</li>
 </ul>
 <h2 id="_3">示例动画</h2>
-<p>本书的动画还没开始做，下面是前作的动画，本书会沿用同样的风格（▶ 播放、→ 单步、↺ 从头开始，有滑块的可以拖动参数）。每个都标了和本书哪一章衔接。</p>
+<p>每章一个动画：▶ 播放、→ 单步、↺ 从头开始，有滑块的可以拖动参数。全部动画见 <a href="../animations/index.html">animations/</a>；前作的 24 个动画见《<a href="https://wikieden.github.io/transformer-visual/">从零读懂 Transformer</a>》。</p>
 <table>
 <tr>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/09-qkv.gif" width="100%" alt="Q、K、V：图书馆找书"><br><b>Q、K、V：图书馆找书</b><br>原版第 9 章<br><a href="https://wikieden.github.io/transformer-visual/lessons/09-qkv.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/09-qkv.html">▶ 交互</a></td>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/16-multi-clock.gif" width="100%" alt="多档时钟：位置编码"><br><b>多档时钟：位置编码</b><br>原版第 16 章，本书 RoPE 一章会接着用<br><a href="https://wikieden.github.io/transformer-visual/lessons/16-multi-clock.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/16-multi-clock.html">▶ 交互</a></td>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/19-layernorm.gif" width="100%" alt="LayerNorm 与 RMSNorm"><br><b>LayerNorm 与 RMSNorm</b><br>原版第 19 章，本书第 13 章展开<br><a href="https://wikieden.github.io/transformer-visual/lessons/19-layernorm.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/19-layernorm.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="../animations/01-cross-entropy.gif" width="100%" alt="第 1 章 · 交叉熵 loss"><br><b>第 1 章 · 交叉熵 loss</b><br>正确词的概率越小，−log p 扣得越狠<br><a href="../lessons/01-cross-entropy.html">讲义</a> · <a href="../animations/01-cross-entropy.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="../animations/44-vit.gif" width="100%" alt="第 44 章 · ViT"><br><b>第 44 章 · ViT</b><br>一张图切成小块，排成一句话<br><a href="../lessons/44-vit.html">讲义</a> · <a href="../animations/44-vit.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="../animations/45-swin-vivit.gif" width="100%" alt="第 45 章 · Swin"><br><b>第 45 章 · Swin</b><br>只在窗口里看，窗口每层错开半格<br><a href="../lessons/45-swin-vivit.html">讲义</a> · <a href="../animations/45-swin-vivit.html">▶ 交互</a></td>
 </tr>
 <tr>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/20-ffn.gif" width="100%" alt="FFN 与 SwiGLU 闸门"><br><b>FFN 与 SwiGLU 闸门</b><br>原版第 20 章，本书第 14 章复盘<br><a href="https://wikieden.github.io/transformer-visual/lessons/20-ffn.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/20-ffn.html">▶ 交互</a></td>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/23-complexity.gif" width="100%" alt="为什么 attention 是 n²"><br><b>为什么 attention 是 n²</b><br>原版第 23 章，本书段 E、F 的出发点<br><a href="https://wikieden.github.io/transformer-visual/lessons/23-complexity.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/23-complexity.html">▶ 交互</a></td>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/24-wrap-up.gif" width="100%" alt="数参数与 warmup 曲线"><br><b>数参数与 warmup 曲线</b><br>原版第 24 章，本书第 1–5 章接着讲训练<br><a href="https://wikieden.github.io/transformer-visual/lessons/24-wrap-up.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/24-wrap-up.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="../animations/46-clip-siglip.gif" width="100%" alt="第 46 章 · CLIP"><br><b>第 46 章 · CLIP</b><br>N × N 的图文分数表，对角线是正确配对<br><a href="../lessons/46-clip-siglip.html">讲义</a> · <a href="../animations/46-clip-siglip.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="../animations/48-ddpm.gif" width="100%" alt="第 48 章 · DDPM"><br><b>第 48 章 · DDPM</b><br>一团点逐步变成噪声，再逐步变回来<br><a href="../lessons/48-ddpm.html">讲义</a> · <a href="../animations/48-ddpm.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="../animations/49-latent-diffusion-flow.gif" width="100%" alt="第 49 章 · Rectified Flow"><br><b>第 49 章 · Rectified Flow</b><br>噪声到数据：路径弯了要多走几步<br><a href="../lessons/49-latent-diffusion-flow.html">讲义</a> · <a href="../animations/49-latent-diffusion-flow.html">▶ 交互</a></td>
 </tr>
 </table>
 
@@ -671,10 +672,10 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <tr>
 <td>44</td>
 <td>ViT：图片切成小块当"词"；数据少时怎么训（DeiT）</td>
-<td><code>vit-2010.11929.txt</code> §3.1（V1）；<code>deit-2012.12877.txt</code> §4–§5（V2，待核对）</td>
+<td><code>vit-2010.11929.txt</code> §3.1（V1）；<code>deit-2012.12877.txt</code> §4 L245–L320（V2）</td>
 <td>T21、T22</td>
 <td>一张图切成 16 × 16 的小块排成一句话</td>
-<td>待写</td>
+<td><a href="../lessons/44-vit.html">正文完成</a>，练习待做 · <a href="../animations/44-vit.gif">GIF</a> · <a href="../animations/44-vit.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>45</td>
@@ -682,7 +683,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>swin-2103.14030.txt</code> §3.1–§3.2（V3）；<code>vivit-2103.15691.txt</code> §3.2–§3.3（V4）</td>
 <td>23、44</td>
 <td>窗口每层错开半格</td>
-<td>待写</td>
+<td><a href="../lessons/45-swin-vivit.html">正文完成</a>，练习待做 · <a href="../animations/45-swin-vivit.gif">GIF</a> · <a href="../animations/45-swin-vivit.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>46</td>
@@ -690,7 +691,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>clip-2103.00020.txt</code> §2.3（V5）；<code>siglip-2303.15343.txt</code> §3.1–§3.2（V6）</td>
 <td>T2、T6、1</td>
 <td>一批图文的配对分数表，对角线是正确答案</td>
-<td>待写</td>
+<td><a href="../lessons/46-clip-siglip.html">正文完成</a>，练习待做 · <a href="../animations/46-clip-siglip.gif">GIF</a> · <a href="../animations/46-clip-siglip.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>47</td>
@@ -698,7 +699,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>mae-2111.06377.txt</code> §3（V7）；<code>dino-2104.14294.txt</code>、<code>dinov2-2304.07193.txt</code>（V8，摘要 + 图）</td>
 <td>9、44</td>
 <td>图片遮掉大半再补回来</td>
-<td>待写</td>
+<td><a href="../lessons/47-mae-dino.html">正文完成</a>，练习待做 · <a href="../animations/47-mae-dino.gif">GIF</a> · <a href="../animations/47-mae-dino.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>48</td>
@@ -706,15 +707,15 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>ddpm-2006.11239.txt</code> §2–§3（V9）</td>
 <td>1–3</td>
 <td>一张图逐步变成噪声，再逐步变回来</td>
-<td>待写</td>
+<td><a href="../lessons/48-ddpm.html">正文完成</a>，练习待做 · <a href="../animations/48-ddpm.gif">GIF</a> · <a href="../animations/48-ddpm.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>49</td>
 <td>在压缩空间里扩散（Latent Diffusion）；走直线的生成目标（Rectified Flow）</td>
-<td><code>latent-diffusion-2112.10752.txt</code> §3（V10，待核对）；<code>rectified-flow-2209.03003.txt</code> §2（V11，待核对）</td>
+<td><code>latent-diffusion-2112.10752.txt</code> §3 L166–L270（V10）；<code>rectified-flow-2209.03003.txt</code> §2.1 L140–L170（V11）</td>
 <td>48</td>
 <td>弯曲路径 vs 直线路径</td>
-<td>待写</td>
+<td><a href="../lessons/49-latent-diffusion-flow.html">正文完成</a>，练习待做 · <a href="../animations/49-latent-diffusion-flow.gif">GIF</a> · <a href="../animations/49-latent-diffusion-flow.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>50</td>
@@ -722,7 +723,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>dit-2212.09748.txt</code> §3（V12）；<code>sd3-rectified-flow-transformers-2403.03206.txt</code> §2–§4（V13）</td>
 <td>44、48、49</td>
 <td>DiT 块：时间步信息怎么调 LayerNorm</td>
-<td>待写</td>
+<td><a href="../lessons/50-dit-mmdit.html">正文完成</a>，练习待做 · <a href="../animations/50-dit-mmdit.gif">GIF</a> · <a href="../animations/50-dit-mmdit.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>51</td>
@@ -730,7 +731,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>blip2-2301.12597.txt</code>、<code>llava-2304.08485.txt</code> §4.1（V14）；<code>qwen2-vl-2409.12191.txt</code> §2.1（V15）</td>
 <td>15、44</td>
 <td>图片小块 → 投影 → 插进文字序列</td>
-<td>待写</td>
+<td><a href="../lessons/51-vision-llm.html">正文完成</a>，练习待做 · <a href="../animations/51-vision-llm.gif">GIF</a> · <a href="../animations/51-vision-llm.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>★</td>
@@ -742,6 +743,79 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="_6">口诀汇总</h2>
+<p>按章收集每章末尾的口诀，复习时先看这一页，想不起来再点进对应章节。</p>
+<h3 id="1-loss"><a href="../lessons/01-cross-entropy.html">第 1 章 · 交叉熵 loss：模型猜错了多少，怎么量</a></h3>
+<blockquote>
+<p>句子自己当答案，只看正确那一格。<br />
+log 问"e 的几次方"，1 是零、越小越负。<br />
+扣分就取负 log：猜对不扣，越错越狠没上限；连乘变相加，整句不怕小。<br />
+全部位置取平均，一次前向全拿到；分数直接算，减去最大不溢出。<br />
+平均 loss 取 exp，就是困惑度：相当于在几个词里犹豫。</p>
+</blockquote>
+<h3 id="44-vit"><a href="../lessons/44-vit.html">第 44 章 · ViT：把图片切成小块，当成一句话</a></h3>
+<blockquote>
+<p>图片切成邮票块，一块就是一个词；N 等于 HW 除 P 方，块小句长算得慢。<br />
+展平乘 E 变向量，位置编码也是学。<br />
+队首安排记录员，全看不遮取它输出。<br />
+没有看图的常识，数据不够就输给卷积；DeiT 加强增强请老师，ImageNet 也能训。</p>
+</blockquote>
+<h3 id="45-swin-vivit"><a href="../lessons/45-swin-vivit.html">第 45 章 · Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a></h3>
+<blockquote>
+<p>全校大会平方涨，分班开会线性长。<br />
+窗口里头开小会，位置偏置加分数上。<br />
+一层正切一层错，半格一挪信息传；碎窗卷起再遮挡。<br />
+两两拼块压两倍，四层金字塔像卷积。<br />
+视频切成小管子，先看帧内再看帧间。</p>
+</blockquote>
+<h3 id="46-clip-siglip"><a href="../lessons/46-clip-siglip.html">第 46 章 · CLIP 与 SigLIP：图和文字配不配，用点积打分</a></h3>
+<blockquote>
+<p>图走图的编码器，文走文的编码器；投影归一化，点积就是余弦。<br />
+一批 N 对打 N 方格，对角线上是正解；温度放大分得开。<br />
+按行选文、按列选图，交叉熵两边各一半；一批越大反例越多。<br />
+类名套成一句话，最像的就是答案。<br />
+SigLIP 每格判一判，sigmoid 加偏置，不要整行分母。</p>
+</blockquote>
+<h3 id="47-mae-dino"><a href="../lessons/47-mae-dino.html">第 47 章 · MAE 与 DINO：不要标签也能学会看图</a></h3>
+<blockquote>
+<p>拼图只给四分一，图片啰嗦遮得多。<br />
+专家只看露出的，助手占位来补全；训完扔掉助手只留专家。<br />
+只算遮住的那几块，每块归一再比方差。<br />
+两张裁剪同一图，学生去贴老师的分布。<br />
+老师是学生的慢平均；减中心、低温度，两招牵制不坍缩。</p>
+</blockquote>
+<h3 id="48-ddpm"><a href="../lessons/48-ddpm.html">第 48 章 · DDPM：一步步加噪声，再学着一步步去噪</a></h3>
+<blockquote>
+<p>墨水入水散得快，倒着收回要靠学。<br />
+每步先缩再加噪，方差守住还是一。<br />
+阿尔法连乘一步跳，原图系数降、噪声升。<br />
+随机挑步撒噪声，网络专猜撒了啥。<br />
+生成从噪声倒着走，每步减一点、再撒一点，一千步才成图。</p>
+</blockquote>
+<h3 id="49-latent-diffusion-rectified-flow"><a href="../lessons/49-latent-diffusion-flow.html">第 49 章 · Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a></h3>
+<blockquote>
+<p>先画小稿再放大：压成潜空间，扩散在里面；f 取八上下，太小慢、太大糊。<br />
+画师边画看订单：图像当 Q，文字当 K 和 V。<br />
+噪声连图走直线，网络只猜速度：终点减起点。<br />
+欧拉按速走几步，直了一步到；线交改道变弯，reflow 再拉直。</p>
+</blockquote>
+<h3 id="50-dit-mm-dit-transformer"><a href="../lessons/50-dit-mmdit.html">第 50 章 · DiT 与 MM-DiT：用 Transformer 当扩散的主干</a></h3>
+<blockquote>
+<p>画师换成 Transformer：潜图切块当 token，p 减一半算四倍。<br />
+步数类别进 MLP，算出缩放和平移，调好 LayerNorm 再进层。<br />
+残差前面加道门，初始关上先旁听。<br />
+算力越大画越好，XL 斜杠二最强。<br />
+图文拼成一条队，各用各的权重，一起做注意力；t 用 logit 正态，多练中间段。</p>
+</blockquote>
+<h3 id="51"><a href="../lessons/51-vision-llm.html">第 51 章 · 视觉接到大语言模型：图片变成"外语单词"，插进文字序列</a></h3>
+<blockquote>
+<p>作家只读自家词，图片先请翻译来：编码器冻住，连接器来训，长度对齐插队前。<br />
+LLaVA 一个矩阵投，先对齐、再微调。<br />
+BLIP-2 派记者，三十二个去采访，交叉注意力带摘要。<br />
+Qwen 不缩原图切，二乘二合一，首尾加标记。<br />
+位置拆成三个号：时间高宽，文字三同；换段从最大加一接着编。</p>
+</blockquote>
 </main>
 <footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">AI 算法图解讲义（合集）</a></footer>
 </body></html>

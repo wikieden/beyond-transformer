@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 47 章 · MAE 与 DINO：不要标签也能学会看图 · 超越 Transformer</title>
+<style>
+:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;margin:8px 0 16px} h2{font-size:22px;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:18px;margin:28px 0 8px}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:17px;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+</div></header>
+<main>
+<h1 id="47-mae-dino">第 47 章 · MAE 与 DINO：不要标签也能学会看图</h1><p><a class="btn" href="../animations/47-mae-dino.html">▶ 打开本章可交互动画</a></p>
+<blockquote>
+<p>本章回答：CLIP 还要配文，有没有连文字都不要、只靠图片自己就能学的办法？MAE 为什么要遮掉 75% 这么多？只让 encoder 看剩下的 25% 能省多少？DINO 的"学生跟着老师学，老师又是学生的平均"怎么不会学成一团糟？<br />
+讲解日期：2026-11-18 · 上一章：<a href="../lessons/46-clip-siglip.html">第 46 章 CLIP 与 SigLIP</a> · 下一章：<a href="../lessons/48-ddpm.html">第 48 章 DDPM</a><br />
+对应原文：MAE <code>transformer-deep-dive/materials/text/papers/mae-2111.06377.txt</code> 摘要 L23–L30、§3 L115–L223（遮挡、encoder、decoder、MSE、归一化像素、实现）、Figure 2 注 L63；DINO <code>dino-2104.14294.txt</code> Algorithm 1 L105–L131、§3.1 L153–L225（式 3、EMA、式 4 centering）、温度 L259–L261；DINOv2 <code>dinov2-2304.07193.txt</code> 摘要 L37–L43、L108、L235<br />
+本章缩写：MAE = Masked Autoencoder（遮挡的 / 自编码器）；autoencoder（自编码器：先压缩再还原自己）；mask token（遮挡 / 词元：代表"这里被遮了"的共享向量）；MSE = Mean Squared Error（均方 / 误差）；BERT = Bidirectional Encoder Representations from Transformers（双向 / 编码器 / 表示，第 9 章）；DINO = self-DIstillation with NO labels（无标签的自蒸馏）；SSL = Self-Supervised Learning（自监督学习：答案从数据本身来）；EMA = Exponential Moving Average（指数 / 滑动 / 平均）；λ（lambda，读作"兰布达"）：EMA 的保留比例；<span class="arithmatex">\(\tau_s\)</span>、<span class="arithmatex">\(\tau_t\)</span>：学生、老师的温度（s = student，t = teacher）；c：中心（center）向量；collapse（坍缩：所有图都输出一样的东西）；LVD-142M = Large Vision Dataset 142 Million（大型视觉数据集，1.42 亿张）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="752026-11-18">第一步：遮掉 75%，让模型猜回来（2026-11-18）</h3>
+<p><strong>类比：拼图只给四分之一。</strong> 一张图切成 196 块（第 44 章），随机拿走 147 块，只留 49 块，让模型把整张图补回来。要补得像，它就得明白"这是一只狗，耳朵应该在头上"。答案就是原图，不用任何标签，这叫<strong>自监督</strong>（self-supervised）。</p>
+<p>这和 BERT 遮词再猜（第 9 章）是同一个思路，区别在遮多少：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>遮多少</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BERT（文字）</td>
+<td>15%</td>
+<td>一句话信息很密，遮多了猜不出来</td>
+</tr>
+<tr>
+<td>MAE（图片）</td>
+<td><strong>75%</strong></td>
+<td>图片很"啰嗦"：相邻的块长得差不多，遮少了从旁边一抄就补上了，学不到东西</td>
+</tr>
+</tbody>
+</table>
+<p>原文（L127–L140）：随机、均匀地抽块，不放回；遮得多才"去掉冗余"，任务才不能靠"从旁边的块外推"就解决。均匀抽还能避免"中间遮得多、边上遮得少"的偏差。</p>
+<p><strong>数字演示</strong>：ViT-B/16，224 × 224 的图切成 196 块：</p>
+<table>
+<thead>
+<tr>
+<th>遮挡比例</th>
+<th>剩下几块给 encoder</th>
+<th>encoder 注意力格子</th>
+<th>和不遮比</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0%（不遮）</td>
+<td>196</td>
+<td>38416</td>
+<td>1</td>
+</tr>
+<tr>
+<td>50%</td>
+<td>98</td>
+<td>9604</td>
+<td>1/4</td>
+</tr>
+<tr>
+<td><strong>75%</strong></td>
+<td><strong>49</strong></td>
+<td><strong>2401</strong></td>
+<td><strong>1/16</strong></td>
+</tr>
+<tr>
+<td>90%</td>
+<td>20</td>
+<td>400</td>
+<td>约 1/96</td>
+</tr>
+</tbody>
+</table>
+<p>原文 Figure 2 甚至演示了遮 80%、只剩 196 块里的 39 块也能补出像样的图（L63）。</p>
+<p><strong>一句话</strong>：随机遮掉 75% 的小块让模型补回来，答案就是原图；图片冗余大，遮得少就太简单。</p>
+<h3 id="encoder-decoder-2026-11-18">第二步：不对称：encoder 只看露出的块，轻量 decoder 负责补（2026-11-18）</h3>
+<p><strong>类比：专家只看线索，助手负责誊写。</strong> 贵的专家（大 encoder）只研究露出来的 49 块；把专家的笔记交给便宜的助手（小 decoder），助手在空缺处放上"这里缺一块"的占位符，把整张图誊出来。</p>
+<table>
+<thead>
+<tr>
+<th>部分</th>
+<th>看什么</th>
+<th>有多大</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>encoder（ViT）</td>
+<td><strong>只看露出的 25%</strong>，被遮的块直接删掉，不放占位符（L141–L150）</td>
+<td>大：ViT-Large / Huge</td>
+</tr>
+<tr>
+<td>decoder</td>
+<td>全部 196 个位置：encoder 的输出 + mask token（L151–L160）</td>
+<td>小：默认 8 层、宽 512，每个 token 的计算量不到 encoder 的 10%（L183、L249）</td>
+</tr>
+<tr>
+<td>mask token</td>
+<td>一个共享的、学出来的向量，表示"这里缺一块"；还要加位置编码，才知道缺的是哪一块</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>省多少</strong>：encoder 是大头，它只处理 1/4 的 token，注意力格子是 1/16。原文说训练快 3 倍以上，内存也省（L30、L83）。</p>
+<p><strong>实现很简单</strong>（L204–L222）：</p>
+<ol>
+<li>每块投影 + 位置编码（第 44 章式 1）；</li>
+<li>把 196 个 token 随机打乱，砍掉后 75%，剩下的给 encoder；</li>
+<li>encoder 输出后面接上 147 个 mask token，再按原来的顺序还原（unshuffle）；</li>
+<li>整排送进 decoder，每个位置输出一块的像素。</li>
+</ol>
+<p><strong>训完以后</strong>：decoder 扔掉，只留 encoder。用的时候不遮，196 块全给它看，提取的特征拿去分类、检测。</p>
+<p><strong>一句话</strong>：encoder 只处理露出的 25%（省掉大部分计算），被遮的位置换成共享的 mask token 交给小 decoder 去补；训完只留 encoder。</p>
+<h3 id="loss2026-11-18">第三步：loss：只在被遮的块上算均方误差（2026-11-18）</h3>
+<p><strong>loss</strong>（L195–L203）：decoder 对每个被遮的块输出 P²·C 个数（16 × 16 × 3 = 768），和原图那块的像素比，算<strong>均方误差</strong>：</p>
+<div class="arithmatex">\[\text{MSE} = \frac{1}{n}\sum_{k=1}^{n}(\hat x_k - x_k)^2\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(x_k\)</span></td>
+<td>原图这一块第 k 个像素值（目标）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\hat x_k\)</span></td>
+<td>decoder 猜的第 k 个值（读作"x hat"，帽子表示"估计的"）</td>
+</tr>
+<tr>
+<td>n</td>
+<td>一块有几个数</td>
+</tr>
+</tbody>
+</table>
+<p>两个细节：</p>
+<ol>
+<li><strong>只在被遮的块上算</strong>，露出的块不算，和 BERT 一样。原文说在全部块上算会掉约 0.5%（L223 脚注）。</li>
+<li><strong>目标用"归一化像素"</strong>：每一块先减去自己的平均值、除以自己的标准差，再当目标（L198–L203）。这样模型更关注块里的明暗变化（边缘、纹理），不必猜整块的亮度。</li>
+</ol>
+<p><strong>数字演示</strong>（编的，一块只有 4 个数）：被遮的一块原来是 [2, 4, 6, 8]。</p>
+<ol>
+<li>平均值 5，标准差 <span class="arithmatex">\(\sqrt{((−3)^2 + (−1)^2 + 1^2 + 3^2)/4} = \sqrt{5} \approx 2.236\)</span>；</li>
+<li>归一化目标：[−1.342, −0.447, 0.447, 1.342]；</li>
+<li>decoder 猜 [−1, −0.5, 0.5, 1]；</li>
+<li>差的平方：0.117、0.003、0.003、0.117，平均 <strong>≈ 0.060</strong>。</li>
+</ol>
+<p><strong>一句话</strong>：只在被遮的块上，把 decoder 的输出和"每块各自归一化后的像素"比均方误差。</p>
+<h3 id="dino2026-11-18">第四步：DINO：学生学老师的输出分布（2026-11-18）</h3>
+<p><strong>换一种自监督</strong>：MAE 让模型"补图"，DINO 让模型"对同一张图的两个裁剪给出一样的判断"。</p>
+<p><strong>类比：两个人看同一只猫的不同照片。</strong> 一张是全身照，一张只拍到头。老师看全身照说"70% 像 A 类、20% 像 B 类……"，学生看头部特写，要说出和老师一样的分布。这样学生就得学会"头部特写也是这只猫"，而不是记住像素。</p>
+<p><strong>结构</strong>（Algorithm 1，L105–L131）：</p>
+<ol>
+<li>同一张图随机增强两次，得到 <span class="arithmatex">\(x_1\)</span>、<span class="arithmatex">\(x_2\)</span>（DINO 还有多裁剪：2 张 224² 的大图，几张 96² 的小图，L153–L170）；</li>
+<li>学生网络 <span class="arithmatex">\(g_{\theta_s}\)</span> 和老师网络 <span class="arithmatex">\(g_{\theta_t}\)</span> <strong>结构完全一样</strong>（都是 ViT），各输出 K 个数；</li>
+<li>各做 softmax（带温度）变成 K 类上的概率 <span class="arithmatex">\(P_s\)</span>、<span class="arithmatex">\(P_t\)</span>；</li>
+<li>loss 是<strong>交叉熵</strong> <span class="arithmatex">\(H(P_t, P_s) = -\sum_k P_t^{(k)} \log P_s^{(k)}\)</span>（式 3）。这就是第 1 章第三步那个一般形式：正确答案不再只有一格是 1，而是老师给的整个分布；</li>
+<li>两个方向交叉：老师看 <span class="arithmatex">\(x_1\)</span> 教学生看 <span class="arithmatex">\(x_2\)</span>，老师看 <span class="arithmatex">\(x_2\)</span> 教学生看 <span class="arithmatex">\(x_1\)</span>，取平均。梯度只更新学生（<code>t.detach()</code>）。</li>
+</ol>
+<p><strong>数字演示</strong>（编的，K = 3；为了好算，学生温度取 1、老师温度取 0.5，论文是 <span class="arithmatex">\(\tau_s\)</span> = 0.1、<span class="arithmatex">\(\tau_t\)</span> 从 0.04 升到 0.07，L259–L261）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>输出</th>
+<th>处理</th>
+<th>概率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>老师</td>
+<td>[2, 1, 0]</td>
+<td>减中心 c = [1, 0, 0] → [1, 1, 0]，除以 0.5 → [2, 2, 0]</td>
+<td><span class="arithmatex">\(P_t\)</span> = [0.468, 0.468, 0.063]</td>
+</tr>
+<tr>
+<td>学生</td>
+<td>[1, 2, 0]</td>
+<td>除以 1</td>
+<td><span class="arithmatex">\(P_s\)</span> = [0.245, 0.665, 0.090]</td>
+</tr>
+</tbody>
+</table>
+<div class="arithmatex">\[H = -(0.468 \log 0.245 + 0.468 \log 0.665 + 0.063 \log 0.090) \approx 1.003\]</div>
+<p>学生要把第 1 类的概率往上提，才能贴近老师。</p>
+<p><strong>一句话</strong>：同一张图两个裁剪，老师（结构相同）的输出分布当答案，学生用交叉熵去贴；只更新学生。</p>
+<h3 id="centering-sharpening-2026-11-18">第五步：老师从哪来：学生的滑动平均；centering + sharpening 防坍缩（2026-11-18）</h3>
+<p><strong>老师不训练，是学生的平均</strong>（L197–L210）：</p>
+<div class="arithmatex">\[\theta_t \leftarrow \lambda\,\theta_t + (1-\lambda)\,\theta_s\]</div>
+<p>λ 从 0.996 慢慢升到 1。每一步老师只往学生那边挪 0.4%，相当于学生"最近一大段时间的平均"，比此刻的学生更稳，原文观察到老师一直比学生好（L215–L220）。</p>
+<p><strong>数字演示</strong>：某个参数老师是 1.0，学生刚更新到 2.0，λ = 0.996：新老师 = 0.996 × 1.0 + 0.004 × 2.0 = <strong>1.004</strong>。</p>
+<p><strong>坍缩（collapse）</strong>：最偷懒的办法是"不管什么图都输出一样的分布"，学生和老师永远一致，loss 很小，但什么也没学到。DINO 用两招互相牵制（L187–L198）：</p>
+<table>
+<thead>
+<tr>
+<th>招</th>
+<th>做法</th>
+<th>防的是</th>
+<th>单用的副作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>centering（减中心）</td>
+<td>老师的输出先减去一个中心 c，c 是老师最近输出的滑动平均（式 4：<span class="arithmatex">\(c \leftarrow mc + (1-m)\frac{1}{B}\sum_i g_{\theta_t}(x_i)\)</span>）</td>
+<td>某一维一直特别大，所有图都押在同一类</td>
+<td>把输出推向均匀分布</td>
+</tr>
+<tr>
+<td>sharpening（锐化）</td>
+<td>老师用很低的温度 <span class="arithmatex">\(\tau_t\)</span></td>
+<td>均匀分布</td>
+<td>把输出推向只押一类</td>
+</tr>
+</tbody>
+</table>
+<p>两招一起用，正好抵消（L195–L198）。第四步的数字里：老师原始输出 [2, 1, 0] 第 1 维最大，c = [1, 0, 0] 把它压下去；温度 0.5 又把分布变尖：同样是 [2, 1, 0]，温度 1 时是 [0.665, 0.245, 0.090]，温度 0.5 时是 [0.867, 0.117, 0.016]。</p>
+<p><strong>DINOv2</strong>（摘要 L37–L43）：同一条路线做大。先从 12 亿张网络图片里检索、去重，挑出 1.42 亿张"精选"的（LVD-142M，L108、L235）；训一个 10 亿参数的 ViT-g，再蒸馏成小模型。它的特征不用微调（frozen features：冻结特征）就能直接拿去做分类、分割、深度估计，常被当成机器人和视频模型的视觉主干。</p>
+<p><strong>一句话</strong>：老师是学生参数的滑动平均（λ ≈ 0.996）；老师输出先减中心再用低温锐化，两招牵制，防止所有图输出同一个分布。</p>
+<h3 id="_2">动画演示：遮掉大半再补回来</h3>
+<p><img alt="MAE 遮挡" src="../animations/47-mae-dino.gif" /></p>
+<p>可交互版：<a href="../animations/47-mae-dino.html">animations/47-mae-dino.html</a>（需要用本地服务打开，见 <a href="../animations/index.html">animations/README.md</a>"跑起来看"；滑块：遮挡比例从 0% 拖到 95%，看剩几块、encoder 的注意力格子是原来的几分之一）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>一张 14 × 14 = 196 块的图，随机遮掉 75%，剩 49 块（第一步）；</li>
+<li>只有 49 块进 encoder，被遮的位置换成 mask token 交给小 decoder（第二步）；</li>
+<li>decoder 补出整张图，只在被遮的块上算误差（第三步）；</li>
+<li>DINO：两个裁剪分别给学生和老师，老师是学生的滑动平均（第四、五步）。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：一张 224 × 224 的图，P = 14，遮挡比例 75%。一共几块？剩几块给 encoder？encoder 的注意力格子是不遮时的几分之一？</p>
+<p><strong>题 2</strong>（第二步）：（a）MAE 的 encoder 为什么不放 mask token？（b）训完以后 decoder 还用吗？</p>
+<p><strong>题 3</strong>（第三步）：被遮的一块原来是 [1, 1, 3, 3]，decoder 猜 [−1, −1, 1, 1]。先算归一化目标，再算 MSE。</p>
+<p><strong>题 4</strong>（第五步）：（a）某参数老师是 0.5，学生是 1.5，λ = 0.99，更新后老师是多少？（b）只用 centering、不用 sharpening，老师的输出会变成什么样？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>拼图只给四分一，图片啰嗦遮得多。<br />
+专家只看露出的，助手占位来补全；训完扔掉助手只留专家。<br />
+只算遮住的那几块，每块归一再比方差。<br />
+两张裁剪同一图，学生去贴老师的分布。<br />
+老师是学生的慢平均；减中心、低温度，两招牵制不坍缩。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B10–B11</a>（B10 MAE 的遮挡比例、不对称结构和 loss；B11 DINO 的老师、交叉熵和防坍缩）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Masked Autoencoders Are Scalable Vision Learners（MAE，He 等 2021）</td>
+<td>§3 L115–L223；§4.1 消融（遮挡比例曲线、decoder 深度和宽度）L240 起</td>
+<td>本章原文：遮挡、不对称结构、归一化像素目标</td>
+</tr>
+<tr>
+<td>★ Emerging Properties in Self-Supervised Vision Transformers（DINO，Caron 等 2021）</td>
+<td>Algorithm 1 L105–L131；§3.1 L153–L225；§5.3 防坍缩的消融</td>
+<td>自蒸馏、EMA 老师、centering 和 sharpening</td>
+</tr>
+<tr>
+<td>DINOv2（Oquab 等 2023）</td>
+<td>摘要 L37–L43；数据管线 §3 L235 起</td>
+<td>精选数据、10 亿参数、冻结特征</td>
+</tr>
+<tr>
+<td>BEiT（Bao 等 2021）</td>
+<td>全文（本地没有文本版）</td>
+<td>另一种"遮了再猜"：猜离散的视觉 token，不猜像素</td>
+</tr>
+<tr>
+<td>本书第 9 章（BERT，待写）</td>
+<td></td>
+<td>遮词再猜的出处</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>自编码器</strong>：<span class="arithmatex">\(x \to\)</span> encoder <span class="arithmatex">\(\to z \to\)</span> decoder <span class="arithmatex">\(\to \hat x\)</span>，loss 衡量 <span class="arithmatex">\(\hat x\)</span> 和 x 的差。</li>
+<li><strong>归一化</strong>：<span class="arithmatex">\((x - \mu)/\sigma\)</span>，和前作第 19 章 LayerNorm 的"减平均、除标准差"一样，只是这里对一块像素做。</li>
+<li><strong>交叉熵的一般形式</strong>：<span class="arithmatex">\(H(p, q) = -\sum_k p_k \log q_k\)</span>；p 是 one-hot 时就是第 1 章的 −log(正确词的概率)。</li>
+<li><strong>EMA</strong>：<span class="arithmatex">\(\theta_t \leftarrow \lambda\theta_t + (1-\lambda)\theta_s\)</span>，等于对过去的学生参数做指数加权平均，越近的权重越大。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>剩下的块 = 196 × (1 − 遮挡比例)</td>
+<td>MAE encoder 只看这些</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\text{MSE} = \frac{1}{n}\sum_k (\hat x_k - x_k)^2\)</span>，只在被遮的块上</td>
+<td>MAE 的 loss</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x_k \leftarrow (x_k - \mu)/\sigma\)</span>（每块各自）</td>
+<td>归一化像素目标</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(H(P_t, P_s) = -\sum_k P_t^{(k)} \log P_s^{(k)}\)</span></td>
+<td>DINO 式 3</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\theta_t \leftarrow \lambda\theta_t + (1-\lambda)\theta_s\)</span></td>
+<td>老师 = 学生的滑动平均</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(c \leftarrow mc + (1-m)\frac{1}{B}\sum_i g_{\theta_t}(x_i)\)</span></td>
+<td>DINO 式 4：centering 的中心</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch47_mae_dino.py</code>，配套测试 <code>tests/test_ch47.py</code>，notebook 在 <code>notebooks/ch47_mae_dino.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch47_mae_dino.py  
+uv run pytest tests/test_ch47.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 遮挡</td>
+<td>剩下 = 196 × (1 − r)</td>
+<td><code>random_mask(196, 0.75, seed)</code></td>
+<td>留 49 块，遮 147 块；格子 2401，是 38416 的 1/16</td>
+</tr>
+<tr>
+<td>第二步 打乱再还原</td>
+<td>shuffle / unshuffle</td>
+<td><code>shuffle_and_restore(...)</code></td>
+<td>还原后顺序和原来完全一样</td>
+</tr>
+<tr>
+<td>第三步 loss</td>
+<td>归一化 + MSE</td>
+<td><code>mae_loss([2, 4, 6, 8], [-1, -0.5, 0.5, 1])</code></td>
+<td>目标 [−1.342, −0.447, 0.447, 1.342]，MSE ≈ 0.060</td>
+</tr>
+<tr>
+<td>第四步 DINO</td>
+<td>式 3</td>
+<td><code>dino_loss(...)</code></td>
+<td><span class="arithmatex">\(P_t\)</span> = [0.468, 0.468, 0.063]，<span class="arithmatex">\(P_s\)</span> = [0.245, 0.665, 0.090]，H ≈ 1.003</td>
+</tr>
+<tr>
+<td>第五步 EMA</td>
+<td><span class="arithmatex">\(\lambda\theta_t + (1-\lambda)\theta_s\)</span></td>
+<td><code>ema(1.0, 2.0, 0.996)</code></td>
+<td>1.004</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">perm = rng.permutation(n)                          # 随机打乱 196 个位置
+keep, drop = perm[: n - n_mask], perm[n - n_mask:] # 前 25% 给 encoder，后 75% 遮掉
+target = (x - x.mean()) / x.std()                  # 每块各自归一化
+loss = ((pred - target) ** 2).mean()               # 只对被遮的块算
+
+p_t = softmax((t - c) / tau_t)                     # 老师：减中心，再低温锐化
+loss = -(p_t * np.log(softmax(s / tau_s))).sum()   # 交叉熵：老师分布当答案
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><code>x.std()</code> 默认除以 n（总体标准差），PyTorch 的 <code>std()</code> 默认除以 n − 1，归一化后的数会差一点；MAE 官方实现用的是 <code>var</code> 加一个很小的数再开方。</li>
+<li>DINO 里老师那一边要 <code>detach()</code>（不求梯度），NumPy 里没有梯度，这件事在代码里看不出来，只能记住：只有学生被训练，老师靠 EMA 更新。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li><code>random_mask</code> 的比例改成 0.5、0.9，看剩几块、格子数怎么变。</li>
+<li>把老师的温度从 0.5 改成 1 和 0.1，看 <span class="arithmatex">\(P_t\)</span> 变平还是变尖。</li>
+</ul><nav class="pager"><a href="46-clip-siglip.html">← 第 46 章 · CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="48-ddpm.html">第 48 章 · DDPM：一步步加噪声，再学着一步步去噪 →</a></nav>
+</main>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">AI 算法图解讲义（合集）</a></footer>
+</body></html>

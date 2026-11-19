@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>视觉接 LLM</title><link rel="stylesheet" href="anim.css">
+<style>svg text.big{font-size:15px}svg text.cap{font-size:15px;font-weight:500}svg text.v{font-size:12px}</style></head>
+<body><main>
+<h1>第 51 章 · 视觉接 LLM：图片小块 → 投影 → 插进文字序列</h1>
+<p class="sub">配套讲义：<a href="../lessons/51-vision-llm.html">第 51 章 · 视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a>。三种连接器：LLaVA（一个投影矩阵）、BLIP-2（32 个查询向量）、Qwen2-VL（原尺寸 + 2 × 2 合并 + M-RoPE）。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 400"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="s">自己拖：图片边长（正方形）</label><input type="range" id="s" min="2" max="12" step="1" value="4"><span id="svv">448</span></div>
+<p class="note">看点：① 冻住的 ViT 出特征，连接器变成和词向量一样长的 token，排在文字前面一起进 LLM；② LLaVA：256 个小块 → 256 个 token；③ BLIP-2：32 个查询向量从 257 个特征里"采访"出 32 个 token；④ Qwen2-VL：不缩放，按原尺寸切，2 × 2 合并再加首尾标记；⑤ M-RoPE：每个 token 三个编号（时间, 高, 宽）。滑块：图越大，Qwen2-VL 的 token 越多。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function box(x,y,w,h,t,sub,c){el('rect',{x,y,width:w,height:h,rx:8,fill:c||'var(--accent-bg)',stroke:'var(--accent)'},sv);txt(t,{x:x+w/2,y:y+h/2+(sub?-3:5),'text-anchor':'middle',class:'big'},sv);if(sub)txt(sub,{x:x+w/2,y:y+h/2+15,'text-anchor':'middle',class:'v'},sv)}
+function arrow(x1,y1,x2,y2){el('line',{x1,y1,x2,y2,stroke:'var(--muted)','stroke-width':2},sv);const a=Math.atan2(y2-y1,x2-x1);el('path',{d:`M${x2},${y2}L${x2-8*Math.cos(a-.4)},${y2-8*Math.sin(a-.4)}L${x2-8*Math.cos(a+.4)},${y2-8*Math.sin(a+.4)}Z`,fill:'var(--muted)'},sv)}
+function pic(x,y,w,h){for(let r=0;r<8;r++)for(let c=0;c<8;c++){const sky=r<5;el('rect',{x:x+c*w/8,y:y+r*h/8,width:w/8,height:h/8,fill:sky?`hsl(205,60%,${70-r*3}%)`:`hsl(${100+c*3},45%,${45+r*2}%)`},sv)}el('circle',{cx:x+w*.7,cy:y+h*.25,r:w*.1,fill:'hsl(45,90%,60%)'},sv)}
+function seq(x,y,ni,nt,labI,labT){for(let i=0;i<ni;i++)el('rect',{x:x+i*14,y,width:12,height:22,rx:3,fill:'var(--teal)',opacity:.7},sv);
+  const x2=x+ni*14+6;['这张','图','里','有','什么'].slice(0,nt).forEach((w,i)=>{el('rect',{x:x2+i*36,y,width:33,height:22,rx:3,fill:'var(--purple)',opacity:.3},sv);txt(w,{x:x2+i*36+16,y:y+16,'text-anchor':'middle',class:'v'},sv)});
+  if(labI)txt(labI,{x:x+ni*7,y:y+40,'text-anchor':'middle',class:'v'},sv).style.fill='var(--teal)'}
+const ST=[
+ {cap:'第一步：图片 → 冻住的 ViT → 连接器 → 图片 token，排在文字前面一起进 LLM',v:'pipe'},
+ {cap:'第二步 LLaVA：224 × 224，ViT-L/14 → 16 × 16 = 256 个小块，逐个乘 W → 256 个 token',v:'llava'},
+ {cap:'第三步 BLIP-2：32 个查询向量通过交叉注意力"采访"257 × 1024 的特征 → 32 × 768',v:'blip'},
+ {cap:'第四步 Qwen2-VL：448 × 224 不缩放 → 32 × 16 = 512 块 → 2 × 2 合并 → 128 + 首尾 2 = 130',v:'qwen'},
+ {cap:'第五步 M-RoPE：每个 token 三个编号（时间, 高, 宽）；换段从最大编号 + 1 开始',v:'mrope'}];
+const FR=[];ST.forEach((_,i)=>{FR.push(i);FR.push(i)});
+let k=0,custom=null;
+function draw(){
+  clear(sv);
+  if(custom!==null){const S=custom,n=(S/14)**2,q=n/4+2;
+    txt(`${S} × ${S}：${S/14} × ${S/14} = ${n} 块 → 合并后 ${n/4} + 2 = ${q} 个 token`,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+    const g=S/28,sz=Math.min(280/g,30),x0=40,y0=60;pic(x0,y0,g*sz,g*sz);
+    for(let i=0;i<=g;i++){el('line',{x1:x0+i*sz,y1:y0,x2:x0+i*sz,y2:y0+g*sz,stroke:'#fff','stroke-width':g>24?.3:.8},sv);el('line',{x1:x0,y1:y0+i*sz,x2:x0+g*sz,y2:y0+i*sz,stroke:'#fff','stroke-width':g>24?.3:.8},sv)}
+    txt(`每格 = 合并后的 1 个 token（28 × 28 像素）`,{x:x0,y:y0+g*sz+18,class:'m'},sv);
+    const bars=[['LLaVA（缩到 224）',256,'var(--accent)'],['BLIP-2（固定）',32,'var(--purple)'],[`Qwen2-VL（${S}²）`,q,'var(--teal)']];const mx=Math.max(q,256);
+    bars.forEach((b,i)=>{const y=120+i*60;txt(b[0],{x:400,y,class:'v'},sv);el('rect',{x:400,y:y+8,width:240*b[1]/mx,height:20,rx:4,fill:b[2],opacity:.7},sv);txt(String(b[1]),{x:400+240*b[1]/mx+6,y:y+23,class:'v'},sv)});
+    txt('图越大 token 越多：细节保住了，LLM 的序列也更长',{x:520,y:330,'text-anchor':'middle',class:'m'},sv);return}
+  const f=ST[FR[k]];txt(f.cap,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+  if(f.v==='pipe'){pic(30,90,100,100);arrow(135,140,165,140);box(170,110,100,60,'ViT','冻住','var(--card)');arrow(275,140,305,140);box(310,110,100,60,'连接器','主要训它');arrow(415,140,440,140);
+    seq(445,128,8,0);txt('图片 token',{x:500,y:120,'text-anchor':'middle',class:'v'},sv);
+    seq(120,250,8,5,'图片 token');txt('+ 文字 token',{x:330,y:290,class:'v'},sv).style.fill='var(--purple)';arrow(300,275,300,300);
+    box(240,305,200,50,'LLM（causal 注意力）','文字能看到前面的图片 token');
+    txt('长度必须和词向量一样',{x:500,y:185,'text-anchor':'middle',class:'m'},sv);return}
+  if(f.v==='llava'){pic(30,80,160,160);for(let i=0;i<=16;i++){el('line',{x1:30+i*10,y1:80,x2:30+i*10,y2:240,stroke:'#fff','stroke-width':.4},sv);el('line',{x1:30,y1:80+i*10,x2:190,y2:80+i*10,stroke:'#fff','stroke-width':.4},sv)}
+    arrow(195,160,225,160);box(230,130,80,60,'× W','线性投影');arrow(315,160,340,160);
+    for(let i=0;i<16;i++)for(let j=0;j<16;j++)el('rect',{x:345+j*9,y:90+i*9,width:8,height:8,rx:1,fill:'var(--teal)',opacity:.65},sv);
+    txt('256 个图片 token',{x:417,y:255,'text-anchor':'middle',class:'big'},sv);
+    txt('阶段 1：只训 W（59.5 万对图文）；阶段 2：W + LLM 一起训（15.8 万条指令）',{x:340,y:310,'text-anchor':'middle',class:'m'},sv);
+    txt('例：Z = [[1, 0, 2], [0, 1, 1]]，W = [[1, 0], [0, 1], [0.5, 0.5]] → [[2, 1], [0.5, 1.5]]',{x:340,y:335,'text-anchor':'middle',class:'m'},sv);return}
+  if(f.v==='blip'){for(let i=0;i<16;i++)for(let j=0;j<16;j++)el('rect',{x:30+j*9,y:80+i*9,width:8,height:8,fill:'var(--muted)',opacity:.4},sv);
+    txt('257 × 1024 个特征',{x:102,y:245,'text-anchor':'middle',class:'v'},sv);
+    for(let q=0;q<32;q++){const x=270+(q%8)*24,y=110+Math.floor(q/8)*28;el('circle',{cx:x,cy:y,r:9,fill:'var(--purple)',opacity:.75},sv);if(q%5===0)el('line',{x1:x-9,y1:y,x2:172,y2:90+((q*37)%140),stroke:'var(--purple)','stroke-width':.6,opacity:.6},sv)}
+    txt('32 个可学习的查询向量（Q-Former，1.88 亿参数）',{x:350,y:80,'text-anchor':'middle',class:'v'},sv);
+    txt('交叉注意力：Q = 查询，K、V = 图片特征',{x:350,y:240,'text-anchor':'middle',class:'v'},sv);
+    arrow(450,150,480,150);box(485,120,80,60,'FC','投影');arrow(570,150,595,150);
+    for(let i=0;i<32;i++)el('rect',{x:600+(i%4)*14,y:100+Math.floor(i/4)*14,width:12,height:12,rx:2,fill:'var(--teal)',opacity:.7},sv);
+    txt('32 个 token',{x:628,y:225,'text-anchor':'middle',class:'v'},sv);
+    txt('263168 个数 → 24576 个数：不管图多大，送进 LLM 的都是 32 个',{x:340,y:300,'text-anchor':'middle',class:'big'},sv);return}
+  if(f.v==='qwen'){pic(30,90,192,96);for(let i=0;i<=32;i++)el('line',{x1:30+i*6,y1:90,x2:30+i*6,y2:186,stroke:'#fff','stroke-width':.25},sv);for(let i=0;i<=16;i++)el('line',{x1:30,y1:90+i*6,x2:222,y2:90+i*6,stroke:'#fff','stroke-width':.25},sv);
+    txt('32 × 16 = 512 块（14 × 14 像素）',{x:126,y:205,'text-anchor':'middle',class:'v'},sv);arrow(228,138,262,138);
+    box(266,110,100,56,'MLP','2 × 2 → 1');arrow(370,138,400,138);
+    for(let i=0;i<8;i++)for(let j=0;j<16;j++)el('rect',{x:405+j*14,y:90+i*12,width:12,height:10,rx:2,fill:'var(--teal)',opacity:.7},sv);
+    txt('16 × 8 = 128 个',{x:517,y:205,'text-anchor':'middle',class:'v'},sv);
+    txt('<|vision_start|> + 128 + <|vision_end|> = 130 个 token',{x:340,y:260,'text-anchor':'middle',class:'big'},sv);
+    txt('ViT 里用二维 RoPE 编位置，任意尺寸都行；224 × 224 → 66 个',{x:340,y:290,'text-anchor':'middle',class:'m'},sv);return}
+  const R=[['描述','0, 0, 0','var(--purple)'],['这张','1, 1, 1','var(--purple)'],['图','2, 2, 2','var(--purple)'],['左上','3, 3, 3','var(--teal)'],['右上','3, 3, 4','var(--teal)'],['左下','3, 4, 3','var(--teal)'],['右下','3, 4, 4','var(--teal)'],['。','5, 5, 5','var(--purple)']];
+  R.forEach((r,i)=>{const x=40+i*78;el('rect',{x,y:110,width:70,height:36,rx:6,fill:r[2],opacity:.3},sv);txt(r[0],{x:x+35,y:133,'text-anchor':'middle',class:'big'},sv);txt(`(${r[1]})`,{x:x+35,y:170,'text-anchor':'middle',class:'v'},sv)});
+  txt('文字：三个编号相同 = 普通一维 RoPE',{x:40,y:220,class:'m'},sv);txt('图片：时间相同，高、宽按行列',{x:40,y:245,class:'m'},sv);
+  txt('图片后面的文字：前面最大编号是 4，所以从 5 开始',{x:40,y:270,class:'m'},sv);
+  txt('左上 (3,3,3) 和左下 (3,4,3)：宽一样、高差 1 → 上下相邻',{x:340,y:320,'text-anchor':'middle',class:'big'},sv).style.fill='var(--teal)';
+}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=FR.length-1)return false;k++;draw();return true}
+$('s').oninput=e=>{ANIM.stop();custom=+e.target.value*112;$('svv').textContent=custom;draw()};
+setupPlayer({captureSeed:1,reset,next},1700);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

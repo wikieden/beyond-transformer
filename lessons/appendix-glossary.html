@@ -195,6 +195,343 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 </tr>
 </tbody>
 </table>
+<h2 id="4451">视觉（第 44–51 章）</h2>
+<table>
+<thead>
+<tr>
+<th>缩写</th>
+<th>全称</th>
+<th>意思</th>
+<th>第一次出现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ViT</td>
+<td>Vision Transformer（视觉 / Transformer）</td>
+<td>把图片切成小块当 token 的 Transformer</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>patch</td>
+<td>小块</td>
+<td>图片切出来的 P × P 方格；P = patch size</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>[class] token</td>
+<td>类别 / 词元</td>
+<td>加在最前面、汇总整张图的可学习向量</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>MSA</td>
+<td>Multi-head Self-Attention（多头 / 自 / 注意力）</td>
+<td>前作第 13 章的多头注意力</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>GELU</td>
+<td>Gaussian Error Linear Unit（高斯 / 误差 / 线性 / 单元）</td>
+<td>ViT 的 MLP 用的激活函数</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>CNN</td>
+<td>Convolutional Neural Network（卷积 / 神经 / 网络）</td>
+<td>带"局部性、平移等变"假设的图像网络</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>inductive bias</td>
+<td>归纳 / 偏置</td>
+<td>还没训练就写进结构里的假设</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>DeiT</td>
+<td>Data-efficient image Transformers（数据 / 高效的 / 图像 Transformer）</td>
+<td>只用 ImageNet 训 ViT：强增强 + 蒸馏</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>distillation</td>
+<td>蒸馏</td>
+<td>学生模型学老师模型的输出</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>KL</td>
+<td>Kullback–Leibler divergence（KL 散度）</td>
+<td>两个分布差多远</td>
+<td><a href="../lessons/44-vit.html">第 44 章</a></td>
+</tr>
+<tr>
+<td>Swin</td>
+<td>Shifted window（错开的 / 窗口）</td>
+<td>只在窗口里做注意力、窗口每层错开的视觉 Transformer</td>
+<td><a href="../lessons/45-swin-vivit.html">第 45 章</a></td>
+</tr>
+<tr>
+<td>W-MSA / SW-MSA</td>
+<td>Window / Shifted-Window MSA</td>
+<td>窗口内的 / 错开窗口的多头自注意力</td>
+<td><a href="../lessons/45-swin-vivit.html">第 45 章</a></td>
+</tr>
+<tr>
+<td>Ω</td>
+<td>欧米伽</td>
+<td>计算量（乘加次数）</td>
+<td><a href="../lessons/45-swin-vivit.html">第 45 章</a></td>
+</tr>
+<tr>
+<td>patch merging</td>
+<td>小块 / 合并</td>
+<td>2 × 2 相邻块拼成 4C 再压成 2C</td>
+<td><a href="../lessons/45-swin-vivit.html">第 45 章</a></td>
+</tr>
+<tr>
+<td>cyclic shift</td>
+<td>循环 / 移位</td>
+<td>把图"卷"一下拼满碎窗口，再用 mask 挡住</td>
+<td><a href="../lessons/45-swin-vivit.html">第 45 章</a></td>
+</tr>
+<tr>
+<td>ViViT</td>
+<td>Video Vision Transformer（视频 / 视觉 / Transformer）</td>
+<td>把视频切成 tubelet 的 ViT</td>
+<td><a href="../lessons/45-swin-vivit.html">第 45 章</a></td>
+</tr>
+<tr>
+<td>tubelet</td>
+<td>小管子</td>
+<td>t 帧 × h × w 像素的立体小块</td>
+<td><a href="../lessons/45-swin-vivit.html">第 45 章</a></td>
+</tr>
+<tr>
+<td>CLIP</td>
+<td>Contrastive Language–Image Pre-training（对比式 / 语言–图像 / 预训练）</td>
+<td>图文配对学习，N × N 分数表</td>
+<td><a href="../lessons/46-clip-siglip.html">第 46 章</a></td>
+</tr>
+<tr>
+<td>SigLIP</td>
+<td>Sigmoid loss for Language–Image Pre-training</td>
+<td>每格单独 sigmoid 的 CLIP</td>
+<td><a href="../lessons/46-clip-siglip.html">第 46 章</a></td>
+</tr>
+<tr>
+<td>L2 normalize</td>
+<td>L2 归一化</td>
+<td>把向量长度缩成 1，点积就成了余弦</td>
+<td><a href="../lessons/46-clip-siglip.html">第 46 章</a></td>
+</tr>
+<tr>
+<td>τ</td>
+<td>tau（读作"套"）</td>
+<td>温度：logits 除以它；越小越尖</td>
+<td><a href="../lessons/46-clip-siglip.html">第 46 章</a></td>
+</tr>
+<tr>
+<td>zero-shot</td>
+<td>零样本</td>
+<td>没见过该任务的训练样本，直接上</td>
+<td><a href="../lessons/46-clip-siglip.html">第 46 章</a></td>
+</tr>
+<tr>
+<td>prompt</td>
+<td>提示</td>
+<td>套在类名外面的一句话，如 "A photo of a {label}."</td>
+<td><a href="../lessons/46-clip-siglip.html">第 46 章</a></td>
+</tr>
+<tr>
+<td>σ</td>
+<td>sigmoid（S 形函数）</td>
+<td><span class="arithmatex">\(1/(1+e^{-x})\)</span>，压到 0 到 1</td>
+<td><a href="../lessons/46-clip-siglip.html">第 46 章</a></td>
+</tr>
+<tr>
+<td>MAE</td>
+<td>Masked Autoencoder（遮挡的 / 自编码器）</td>
+<td>遮 75% 再补回来</td>
+<td><a href="../lessons/47-mae-dino.html">第 47 章</a></td>
+</tr>
+<tr>
+<td>mask token</td>
+<td>遮挡 / 词元</td>
+<td>代表"这里被遮了"的共享向量</td>
+<td><a href="../lessons/47-mae-dino.html">第 47 章</a></td>
+</tr>
+<tr>
+<td>MSE</td>
+<td>Mean Squared Error（均方 / 误差）</td>
+<td>差的平方取平均</td>
+<td><a href="../lessons/47-mae-dino.html">第 47 章</a></td>
+</tr>
+<tr>
+<td>SSL</td>
+<td>Self-Supervised Learning（自监督学习）</td>
+<td>答案从数据本身来</td>
+<td><a href="../lessons/47-mae-dino.html">第 47 章</a></td>
+</tr>
+<tr>
+<td>DINO</td>
+<td>self-DIstillation with NO labels（无标签的自蒸馏）</td>
+<td>学生贴老师的输出分布</td>
+<td><a href="../lessons/47-mae-dino.html">第 47 章</a></td>
+</tr>
+<tr>
+<td>EMA</td>
+<td>Exponential Moving Average（指数 / 滑动 / 平均）</td>
+<td>老师 = λ·老师 + (1−λ)·学生</td>
+<td><a href="../lessons/47-mae-dino.html">第 47 章</a></td>
+</tr>
+<tr>
+<td>collapse</td>
+<td>坍缩</td>
+<td>所有图都输出一样的东西</td>
+<td><a href="../lessons/47-mae-dino.html">第 47 章</a></td>
+</tr>
+<tr>
+<td>DDPM</td>
+<td>Denoising Diffusion Probabilistic Models（去噪 / 扩散 / 概率 / 模型）</td>
+<td>加噪 1000 步、学着去噪</td>
+<td><a href="../lessons/48-ddpm.html">第 48 章</a></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathcal{N}(\mu, \sigma^2)\)</span></td>
+<td>Gaussian / 正态分布</td>
+<td>平均 μ、方差 σ² 的钟形分布</td>
+<td><a href="../lessons/48-ddpm.html">第 48 章</a></td>
+</tr>
+<tr>
+<td>β、α、<span class="arithmatex">\(\bar\alpha_t\)</span></td>
+<td>beta、alpha、alpha bar</td>
+<td>每步加多少噪、保留多少、前 t 步保留比例连乘</td>
+<td><a href="../lessons/48-ddpm.html">第 48 章</a></td>
+</tr>
+<tr>
+<td>ε、<span class="arithmatex">\(\epsilon_\theta\)</span></td>
+<td>epsilon</td>
+<td>标准高斯噪声；网络猜的噪声</td>
+<td><a href="../lessons/48-ddpm.html">第 48 章</a></td>
+</tr>
+<tr>
+<td>U-Net</td>
+<td>U 形网络</td>
+<td>先缩小再放大、两边有跳线的卷积网络</td>
+<td><a href="../lessons/48-ddpm.html">第 48 章</a></td>
+</tr>
+<tr>
+<td>LDM</td>
+<td>Latent Diffusion Model（潜空间 / 扩散 / 模型）</td>
+<td>先压缩再在潜空间扩散</td>
+<td><a href="../lessons/49-latent-diffusion-flow.html">第 49 章</a></td>
+</tr>
+<tr>
+<td>f</td>
+<td>downsampling factor（下采样倍数）</td>
+<td><span class="arithmatex">\(f = H/h\)</span></td>
+<td><a href="../lessons/49-latent-diffusion-flow.html">第 49 章</a></td>
+</tr>
+<tr>
+<td>cross-attention</td>
+<td>交叉注意力</td>
+<td>Q 来自一边，K、V 来自另一边</td>
+<td><a href="../lessons/49-latent-diffusion-flow.html">第 49 章</a></td>
+</tr>
+<tr>
+<td>RF</td>
+<td>Rectified Flow（矫正 / 流）</td>
+<td>噪声到数据走直线，网络猜速度</td>
+<td><a href="../lessons/49-latent-diffusion-flow.html">第 49 章</a></td>
+</tr>
+<tr>
+<td>ODE</td>
+<td>Ordinary Differential Equation（常微分方程）</td>
+<td>给出每一刻往哪走多快</td>
+<td><a href="../lessons/49-latent-diffusion-flow.html">第 49 章</a></td>
+</tr>
+<tr>
+<td>Euler</td>
+<td>欧拉法</td>
+<td>按当前速度直线走一小步</td>
+<td><a href="../lessons/49-latent-diffusion-flow.html">第 49 章</a></td>
+</tr>
+<tr>
+<td>reflow</td>
+<td>再流一遍</td>
+<td>用模型自己生成的配对再训，把路径拉直</td>
+<td><a href="../lessons/49-latent-diffusion-flow.html">第 49 章</a></td>
+</tr>
+<tr>
+<td>DiT</td>
+<td>Diffusion Transformer（扩散 / Transformer）</td>
+<td>用 Transformer 当扩散主干</td>
+<td><a href="../lessons/50-dit-mmdit.html">第 50 章</a></td>
+</tr>
+<tr>
+<td>adaLN / adaLN-Zero</td>
+<td>adaptive LayerNorm（自适应 / 层归一化）</td>
+<td>γ、β（和门 α）由条件算出；α 初始为 0</td>
+<td><a href="../lessons/50-dit-mmdit.html">第 50 章</a></td>
+</tr>
+<tr>
+<td>MM-DiT</td>
+<td>Multimodal DiT（多模态 DiT）</td>
+<td>文字和图像 token 拼起来做联合注意力，各用各的权重</td>
+<td><a href="../lessons/50-dit-mmdit.html">第 50 章</a></td>
+</tr>
+<tr>
+<td>Gflops</td>
+<td>Giga floating-point operations（十亿次浮点运算）</td>
+<td>计算量</td>
+<td><a href="../lessons/50-dit-mmdit.html">第 50 章</a></td>
+</tr>
+<tr>
+<td>FID</td>
+<td>Fréchet Inception Distance</td>
+<td>生成图和真图的统计差距，越小越好</td>
+<td><a href="../lessons/50-dit-mmdit.html">第 50 章</a></td>
+</tr>
+<tr>
+<td>logit-normal</td>
+<td>logit 正态</td>
+<td>u ~ 𝒩(m, s²)，t = sigmoid(u)</td>
+<td><a href="../lessons/50-dit-mmdit.html">第 50 章</a></td>
+</tr>
+<tr>
+<td>VLM</td>
+<td>Vision-Language Model（视觉–语言模型）</td>
+<td>看图说话的模型</td>
+<td><a href="../lessons/51-vision-llm.html">第 51 章</a></td>
+</tr>
+<tr>
+<td>LLaVA</td>
+<td>Large Language and Vision Assistant（大型语言与视觉助手）</td>
+<td>一个投影矩阵接 CLIP 和 LLM</td>
+<td><a href="../lessons/51-vision-llm.html">第 51 章</a></td>
+</tr>
+<tr>
+<td>BLIP-2 / Q-Former</td>
+<td>Bootstrapping Language-Image Pre-training / Querying Transformer</td>
+<td>32 个查询向量当瓶颈</td>
+<td><a href="../lessons/51-vision-llm.html">第 51 章</a></td>
+</tr>
+<tr>
+<td>FC</td>
+<td>Fully-Connected（全连接层）</td>
+<td>就是线性层</td>
+<td><a href="../lessons/51-vision-llm.html">第 51 章</a></td>
+</tr>
+<tr>
+<td>M-RoPE</td>
+<td>Multimodal Rotary Position Embedding（多模态 / 旋转 / 位置编码）</td>
+<td>位置拆成（时间, 高, 宽）三个编号</td>
+<td><a href="../lessons/51-vision-llm.html">第 51 章</a></td>
+</tr>
+</tbody>
+</table>
 <h2 id="_4">论文与模型名</h2>
 <table>
 <thead>

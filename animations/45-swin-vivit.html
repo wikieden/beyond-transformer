@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Swin 窗口</title><link rel="stylesheet" href="anim.css">
+<style>svg text.big{font-size:15px}svg text.cap{font-size:15px;font-weight:500}svg text.v{font-size:11px}</style></head>
+<body><main>
+<h1>第 45 章 · Swin：只在窗口里看，窗口每层错开半格</h1>
+<p class="sub">配套讲义：<a href="../lessons/45-swin-vivit.html">第 45 章 · Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a>。8 × 8 的特征图，窗口边长 M = 4；左边第 ℓ 层不错开，右边第 ℓ + 1 层错开 ⌊M/2⌋ = 2 格。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 400"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="t">自己拖：选一个小块</label><input type="range" id="t" min="0" max="63" step="1" value="27"><span id="tv">(3, 3)</span></div>
+<p class="note">看点：① 全局注意力一块要看 64 块，分数格子 4096；② 切成 4 个窗口，只看同窗口的 16 块，格子 1024；③ 下一层窗口错开 2 格，(3, 3) 和 (4, 4) 从两个窗口变成同一个窗口；④ 2 × 2 个相邻块拼起来，8 × 8 变 4 × 4。滑块：任选一块，左右两图标出它在两层里能看见哪些块。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+const WC=['var(--teal)','var(--purple)','var(--amber)','var(--warm)','var(--accent)','var(--good)','var(--bad)','var(--muted)','var(--teal)'];
+const wid=(r,c,s)=>[Math.floor((r-s)/4),Math.floor((c-s)/4)];
+const same=(a,b)=>a[0]===b[0]&&a[1]===b[1];
+const ST=[
+ {cap:'全局注意力：一块要看全部 64 块，分数格子 64 × 64 = 4096',mode:'global'},
+ {cap:'窗口注意力（第二步）：切成 4 个 4 × 4 窗口，只看同窗口：4 × 16² = 1024',mode:'win'},
+ {cap:'下一层错开 2 格（第三步）：边上出现碎窗口，一共 3 × 3 个',mode:'both'},
+ {cap:'(3, 3) 和 (4, 4)：第 ℓ 层不同窗口，第 ℓ + 1 层同一个窗口',mode:'both',pair:true},
+ {cap:'patch merging（第四步）：2 × 2 相邻块拼起来，8 × 8 × C → 4 × 4 × 4C → 线性层 → 2C',mode:'merge'}];
+const FR=[];ST.forEach((_,i)=>{FR.push(i);FR.push(i)});
+let k=0,custom=null;
+function grid(x0,y0,s,shift,sel,label,showWin){const S=30;
+  txt(label,{x:x0+4*S,y:y0-10,'text-anchor':'middle',class:'big'},sv);
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){const w=wid(r,c,shift),ci=(w[0]+1)*3+(w[1]+1);
+    let fill=showWin?WC[shift?ci:(w[0]*2+w[1])]:'var(--muted)',op=showWin?.28:.15;
+    if(sel){const sw=wid(sel[0],sel[1],shift);const vis=s==='global'||same(sw,w);op=vis?.55:.06;if(r===sel[0]&&c===sel[1]){fill='var(--text)';op=.85}}
+    el('rect',{x:x0+c*S,y:y0+r*S,width:S-2,height:S-2,rx:3,fill,opacity:op},sv)}
+  if(showWin){const off=shift?shift*S:0;
+    for(let i=0;i<=8;i+=4){const p=i*S+off;if(p>0&&p<8*S){el('line',{x1:x0+p-1,y1:y0,x2:x0+p-1,y2:y0+8*S,stroke:'var(--text)','stroke-width':2.5},sv);el('line',{x1:x0,y1:y0+p-1,x2:x0+8*S,y2:y0+p-1,stroke:'var(--text)','stroke-width':2.5},sv)}}}
+  el('rect',{x:x0-1,y:y0-1,width:8*S,height:8*S,fill:'none',stroke:'var(--text)','stroke-width':2.5},sv)}
+function mark(x0,y0,r,c,t){const S=30;el('circle',{cx:x0+c*S+14,cy:y0+r*S+14,r:9,fill:'var(--bad)'},sv);txt(t,{x:x0+c*S+14,y:y0+r*S+18,'text-anchor':'middle',class:'v'},sv).style.fill='#fff'}
+function draw(){
+  clear(sv);const L=[50,70],R=[400,70];
+  if(custom!==null){const r=custom>>3,c=custom%8,a=wid(r,c,0),b=wid(r,c,2);
+    txt(`小块 (${r}, ${c})：深色是它这一层能看见的块`,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+    grid(L[0],L[1],null,0,[r,c],'第 ℓ 层：不错开',true);grid(R[0],R[1],null,2,[r,c],'第 ℓ + 1 层：错开 2 格',true);
+    const n=s=>{let k=0;for(let i=0;i<8;i++)for(let j=0;j<8;j++)if(same(wid(i,j,s),wid(r,c,s)))k++;return k};
+    txt(`能看见 ${n(0)} 块`,{x:L[0]+120,y:330,'text-anchor':'middle',class:'big'},sv);txt(`能看见 ${n(2)} 块${n(2)<16?'（碎窗口）':''}`,{x:R[0]+120,y:330,'text-anchor':'middle',class:'big'},sv);
+    txt('两层合起来，信息就能跨过左边的窗口边界',{x:340,y:365,'text-anchor':'middle',class:'m'},sv);return}
+  const f=ST[FR[k]];txt(f.cap,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+  if(f.mode==='global'){grid(L[0],L[1],'global',0,[3,3],'全局：(3, 3) 看所有块',false);
+    txt('图片越大，块越多：',{x:R[0],y:130,class:'big'},sv);txt('分数格子 = 块数²',{x:R[0],y:160,class:'big'},sv);
+    txt('56 × 56 块时，注意力那一项',{x:R[0],y:210,class:'m'},sv);txt('全局 ≈ 18.9 亿次乘加',{x:R[0],y:235,class:'big'},sv).style.fill='var(--warm)';
+    txt('M = 7 的窗口 ≈ 0.30 亿（1/64）',{x:R[0],y:260,class:'big'},sv).style.fill='var(--teal)';return}
+  if(f.mode==='win'){grid(L[0],L[1],'win',0,[3,3],'第 ℓ 层：4 个窗口',true);
+    txt('(3, 3) 只看自己窗口的 16 块',{x:R[0],y:130,class:'big'},sv);txt('全局 4096 格 → 窗口 1024 格',{x:R[0],y:160,class:'big'},sv).style.fill='var(--teal)';
+    txt('问题：窗口之间完全不说话',{x:R[0],y:210,class:'big'},sv).style.fill='var(--warm)';return}
+  if(f.mode==='merge'){const S=30,x0=50,y0=70;
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){const g=(r>>1)*4+(c>>1);el('rect',{x:x0+c*S,y:y0+r*S,width:S-2,height:S-2,rx:3,fill:WC[g%9],opacity:.35},sv)}
+    for(let i=0;i<=8;i+=2){el('line',{x1:x0+i*S-1,y1:y0,x2:x0+i*S-1,y2:y0+8*S,stroke:'var(--text)'},sv);el('line',{x1:x0,y1:y0+i*S-1,x2:x0+8*S,y2:y0+i*S-1,stroke:'var(--text)'},sv)}
+    txt('8 × 8，每块 C 个数',{x:x0+120,y:y0-10,'text-anchor':'middle',class:'big'},sv);
+    txt('→',{x:335,y:195,'text-anchor':'middle',class:'cap'},sv);
+    const x1=400,y1=100,T=45;for(let r=0;r<4;r++)for(let c=0;c<4;c++){const g=r*4+c;el('rect',{x:x1+c*T,y:y1+r*T,width:T-3,height:T-3,rx:4,fill:WC[g%9],opacity:.55},sv)}
+    txt('4 × 4，每块 4C → 2C',{x:x1+90,y:y1-14,'text-anchor':'middle',class:'big'},sv);
+    txt('块数 ÷ 4，向量 × 2：一层层变成 H/4 → H/32 的金字塔',{x:340,y:350,'text-anchor':'middle',class:'m'},sv);return}
+  grid(L[0],L[1],null,0,null,'第 ℓ 层：不错开（2 × 2 个窗口）',true);grid(R[0],R[1],null,2,null,'第 ℓ + 1 层：错开 2 格（3 × 3 个）',true);
+  if(f.pair){[[L,'A'],[R,'A']].forEach(([p])=>{mark(p[0],p[1],3,3,'A');mark(p[0],p[1],4,4,'B')});
+    txt('A、B 不同窗口：互相看不见',{x:L[0]+120,y:340,'text-anchor':'middle',class:'big'},sv).style.fill='var(--warm)';
+    txt('A、B 同一个窗口：可以对话',{x:R[0]+120,y:340,'text-anchor':'middle',class:'big'},sv).style.fill='var(--teal)'}
+  else txt('实现时把图往左上"卷"一下（cyclic shift），碎块拼成满窗口，再用 mask 挡住不相邻的',{x:340,y:345,'text-anchor':'middle',class:'m'},sv);
+}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=FR.length-1)return false;k++;draw();return true}
+$('t').oninput=e=>{ANIM.stop();custom=+e.target.value;$('tv').textContent=`(${custom>>3}, ${custom%8})`;draw()};
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

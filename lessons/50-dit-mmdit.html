@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 50 章 · DiT 与 MM-DiT：用 Transformer 当扩散的主干 · 超越 Transformer</title>
+<style>
+:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;margin:8px 0 16px} h2{font-size:22px;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:18px;margin:28px 0 8px}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:17px;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+</div></header>
+<main>
+<h1 id="50-dit-mm-dit-transformer">第 50 章 · DiT 与 MM-DiT：用 Transformer 当扩散的主干</h1><p><a class="btn" href="../animations/50-dit-mmdit.html">▶ 打开本章可交互动画</a></p>
+<blockquote>
+<p>本章回答：扩散模型里猜噪声的网络一直是 U-Net，能不能换成 Transformer？潜空间的"图"怎么变成 token？步数 t 和类别这些条件怎么告诉 Transformer，为什么"调 LayerNorm 的缩放和平移"最好？Stable Diffusion 3 的 MM-DiT 又怎么把文字和图片放进同一次注意力？<br />
+讲解日期：2026-11-18 · 上一章：<a href="../lessons/49-latent-diffusion-flow.html">第 49 章 Latent Diffusion 与 Rectified Flow</a> · 下一章：<a href="../lessons/51-vision-llm.html">第 51 章 视觉接 LLM</a><br />
+对应原文：DiT <code>transformer-deep-dive/materials/text/papers/dit-2212.09748.txt</code> §3.2 L176–L290（patchify L181–L198、四种条件块 L209–L276、adaLN-Zero L236–L251、Table 1 L226–L236、输出 L265–L272）、Figure 5 L252–L254、FID 2.27 L26；SD3 <code>sd3-rectified-flow-transformers-2403.03206.txt</code> §2 式 13 L120–L127、§3.1 logit-normal L217–L232、§4 MM-DiT L213–L330、文字编码器 L258<br />
+本章缩写：DiT = Diffusion Transformer（扩散 / Transformer）；MM-DiT = Multimodal DiT（多模态 DiT）；SD3 = Stable Diffusion 3；patchify（切小块，第 44 章）；p = patch size；T：token 个数（这里不是扩散总步数）；c = class / condition（类别 / 条件）；LN = LayerNorm（前作第 19 章）；adaLN = adaptive LayerNorm（自适应 / 层归一化：缩放和平移由条件算出来）；γ（gamma）、β（beta）：LayerNorm 的缩放和平移；α（alpha）：残差前的门；MLP = Multi-Layer Perceptron（多层感知机）；Gflops = Giga floating-point operations（十亿次浮点运算）；FID = Fréchet Inception Distance（弗雷歇 / Inception 网络 / 距离：生成图和真图的统计差距，越小越好）；T5 = Text-To-Text Transfer Transformer（文本到文本 / 迁移 / Transformer，一个文字编码器）；logit-normal（logit 正态：先抽一个正态分布的数，再用 sigmoid 压到 0 到 1）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="token2026-11-18">第一步：把潜空间的"图"切成 token（2026-11-18）</h3>
+<p><strong>类比：换一个画师，画法不变。</strong> 第 48、49 章的流程（潜空间、加噪、猜噪声、一步步去噪）一点不变，只把猜噪声的那个网络从 U-Net 换成 Transformer。原文的动机是"架构统一"：Transformer 在语言、视觉上都已经证明能越做越大，扩散也想用上（L66–L73）。</p>
+<p><strong>patchify</strong>（L181–L198）：DiT 在潜空间里工作（第 49 章）。一张 256 × 256 × 3 的图，编码后 z 是 <strong>32 × 32 × 4</strong>（L186）。和第 44 章的 ViT 一模一样，按 p × p 切块、每块线性投影成 d 维、加 sin / cos 位置编码：</p>
+<div class="arithmatex">\[T = \Big(\frac{I}{p}\Big)^2\]</div>
+<table>
+<thead>
+<tr>
+<th>p</th>
+<th>token 个数 T（I = 32）</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8</td>
+<td>16</td>
+<td>每块 8 × 8 × 4 = 256 个数</td>
+</tr>
+<tr>
+<td>4</td>
+<td>64</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>256</strong></td>
+<td>DiT-XL/2 的 "/2"，最好但最贵</td>
+</tr>
+</tbody>
+</table>
+<p>p 减半，T 变 4 倍，计算量至少变 4 倍；参数量几乎不变（L192–L198）。</p>
+<p><strong>输出</strong>：最后一层后，每个 token 线性解码回 p × p × 2C 个数：一半是猜的噪声，一半是方差（L270–L272）。拼回 32 × 32 × 4 的形状，就是"这张图上的噪声"。</p>
+<p><strong>一句话</strong>：DiT 把潜空间的 z 像 ViT 一样切成 <span class="arithmatex">\((I/p)^2\)</span> 个 token，用 Transformer 猜噪声，最后每个 token 解码回一小块噪声。</p>
+<h3 id="adaln-layernorm-2026-11-18">第二步：条件怎么进来：adaLN 用条件算出 LayerNorm 的缩放和平移（2026-11-18）</h3>
+<p>网络要知道两件事：<strong>现在是第几步 t</strong>（有多脏），<strong>要画哪一类 c</strong>。DiT 试了四种做法（L209–L276）：</p>
+<table>
+<thead>
+<tr>
+<th>做法</th>
+<th>怎么做</th>
+<th>代价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>in-context（放在序列里）</td>
+<td>把 t、c 的向量当成两个额外的 token 接在序列里，像第 44 章的 [class]</td>
+<td>几乎不加</td>
+</tr>
+<tr>
+<td>cross-attention</td>
+<td>每块多一个交叉注意力，图像 token 当 Q，t、c 当 K、V（第 49 章）</td>
+<td>多约 15%</td>
+</tr>
+<tr>
+<td><strong>adaLN</strong></td>
+<td>LayerNorm 的 γ、β 不再是固定参数，而是由 t、c 算出来</td>
+<td>最省</td>
+</tr>
+<tr>
+<td><strong>adaLN-Zero</strong></td>
+<td>adaLN 再加一个门 α，初始化成 0（第三步）</td>
+<td>最省，<strong>效果最好</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>先回忆 LayerNorm</strong>（前作第 19 章）：一行数先减平均、除标准差，再乘 γ、加 β。γ、β 是学出来的<strong>固定</strong>参数，所有输入都一样。</p>
+<p><strong>adaLN</strong>：把 t 的向量和 c 的向量加起来，送进一个小 MLP，<strong>算出</strong> γ 和 β（L270–L273）：</p>
+<div class="arithmatex">\[\gamma, \beta = \text{MLP}(e_t + e_c),\qquad \text{adaLN}(x) = \gamma \odot \text{LN}(x) + \beta\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(e_t\)</span>、<span class="arithmatex">\(e_c\)</span></td>
+<td>步数 t 的编码（sin / cos，第 48 章第五步）、类别 c 的嵌入向量</td>
+</tr>
+<tr>
+<td>⊙</td>
+<td>逐个相乘（前作第 20 章）</td>
+</tr>
+<tr>
+<td>γ、β</td>
+<td>每个样本、每一步都不一样：条件变了，缩放和平移就变</td>
+</tr>
+</tbody>
+</table>
+<p><strong>数字演示</strong>（编的）：一行 x = [1, 2, 3]，LN(x) = [−1.225, 0, 1.225]（平均 2、标准差 0.816）：</p>
+<table>
+<thead>
+<tr>
+<th>条件</th>
+<th>MLP 算出的 γ</th>
+<th>β</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>t 很大（很脏）</td>
+<td>[0.5, 0.5, 0.5]</td>
+<td>[0, 0, 0.1]</td>
+<td>[−0.612, 0, 0.712]</td>
+</tr>
+<tr>
+<td>t 很小（快干净了）</td>
+<td>[1.5, 1.5, 1.5]</td>
+<td>[0.2, 0, 0]</td>
+<td>[−1.637, 0, 1.837]</td>
+</tr>
+</tbody>
+</table>
+<p>同一个 x，换了条件，后面注意力和 MLP 看到的就不一样。原文强调 adaLN 对所有 token 用同一组 γ、β（L274–L276）：它是"整张图的调音旋钮"，不能逐个 token 调。</p>
+<p><strong>一句话</strong>：adaLN 用一个小 MLP 从"步数 + 类别"算出 LayerNorm 的 γ 和 β，条件就像旋钮一样调整整张图每一层的数值。</p>
+<h3 id="adaln-zero2026-11-18">第三步：adaLN-Zero：残差前加一个门，一开始关上（2026-11-18）</h3>
+<p><strong>类比：新员工先旁听。</strong> 新加的一层一开始还没学好，与其让它乱改结果，不如先让它"什么都不改"，等学会了再慢慢参与。</p>
+<p><strong>做法</strong>（L236–L251）：除了 γ、β，MLP 再多算一组 α，在每个子层输出加回残差<strong>之前</strong>乘上去：</p>
+<div class="arithmatex">\[x \leftarrow x + \alpha_1 \odot \text{Attention}(\gamma_1 \odot \text{LN}(x) + \beta_1)\]</div>
+<div class="arithmatex">\[x \leftarrow x + \alpha_2 \odot \text{MLP}(\gamma_2 \odot \text{LN}(x) + \beta_2)\]</div>
+<p>一个 DiT 块从条件里一共算出 6 组数：注意力那边的 γ₁、β₁、α₁，MLP 那边的 γ₂、β₂、α₂。</p>
+<p><strong>Zero</strong>：把算 α 的那个 MLP 初始化成<strong>输出全 0</strong>，于是一开始 α = 0，整块等于"x 原样输出"（恒等函数，L249–L250）。这和前作第 18 章残差的想法一脉相承：深网络一开始最好每层都是"什么都不做"，训练稳。</p>
+<p><strong>数字演示</strong>：x = [1, 2, 3]，注意力子层输出 [0.5, −0.5, 1]：</p>
+<table>
+<thead>
+<tr>
+<th>α</th>
+<th>加回残差后</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0（刚初始化）</td>
+<td>[1, 2, 3]：原样不动</td>
+</tr>
+<tr>
+<td>0.2（训练一段后）</td>
+<td>[1.1, 1.9, 3.2]</td>
+</tr>
+</tbody>
+</table>
+<p><strong>结果</strong>：四种做法里 adaLN-Zero 在训练全程 FID 都最好（Figure 5，L252–L254）。</p>
+<p><strong>一句话</strong>：adaLN-Zero 再从条件算一个门 α 乘在子层输出上，α 一开始是 0，每块先当恒等函数，训练更稳、效果最好。</p>
+<h3 id="gflops-2026-11-18">第四步：越大越好：Gflops 和画质（2026-11-18）</h3>
+<p>DiT 沿用 ViT 的尺寸（Table 1，L226–L236）：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>层数</th>
+<th>d</th>
+<th>头数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DiT-S</td>
+<td>12</td>
+<td>384</td>
+<td>6</td>
+</tr>
+<tr>
+<td>DiT-B</td>
+<td>12</td>
+<td>768</td>
+<td>12</td>
+</tr>
+<tr>
+<td>DiT-L</td>
+<td>24</td>
+<td>1024</td>
+<td>16</td>
+</tr>
+<tr>
+<td>DiT-XL</td>
+<td>28</td>
+<td>1152</td>
+<td>16</td>
+</tr>
+</tbody>
+</table>
+<p>再配上 p = 8、4、2，一共 12 个模型。原文的发现：<strong>计算量（Gflops）越大，FID 越好</strong>，不管是加深加宽，还是把 p 变小、token 变多（摘要 L20–L23）。最大的 DiT-XL/2 在 ImageNet 256 × 256 上拿到 FID 2.27，超过之前所有 U-Net 扩散模型（L26、L44）。</p>
+<p>这正是第 44 章 ViT 的老故事：Transformer 少了"看图常识"，但规模上去以后，它的扩展性最好。</p>
+<p><strong>一句话</strong>：DiT 的画质随 Gflops 稳定变好，DiT-XL/2 打败了所有 U-Net 扩散模型。</p>
+<h3 id="mm-ditsd32026-11-18">第五步：MM-DiT（SD3）：文字和图片拼成一条序列，各用各的权重（2026-11-18）</h3>
+<p>DiT 只做"按类别画"（1000 类）。文生图要按一整句话画。SD3 的 MM-DiT（§4，L229–L330）：</p>
+<ol>
+<li><strong>两条序列</strong>：图片潜空间按 2 × 2 切块得到图像 token；文字用三个编码器（CLIP-L/14、CLIP-G/14、T5 XXL，L258）得到文字 token。</li>
+<li><strong>拼起来一起做注意力</strong>（L306–L310）：图像 token 和文字 token 首尾相接，做<strong>一次</strong>自注意力。</li>
+<li><strong>各用各的权重</strong>（L313–L320）：图像 token 用一套 <span class="arithmatex">\(W^Q, W^K, W^V\)</span>、MLP，文字 token 用另一套。原文说：等于"两个独立的 Transformer，只在注意力那一步把两条序列合在一起"，让两边"在自己的空间里工作，又能顾及对方"。</li>
+<li><strong>调制</strong>：步数 t 和"整句话的汇总向量"（pooled，CLIP 的句向量）照 DiT 的 adaLN 方式进来（L229–L238）。</li>
+</ol>
+<p><strong>和第 49 章交叉注意力的区别</strong>（编的：4 个图像 token、2 个文字 token）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>分数表</th>
+<th>谁看谁</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>交叉注意力（LDM）</td>
+<td>4 × 2</td>
+<td>只有图看文字</td>
+</tr>
+<tr>
+<td>MM-DiT 联合注意力</td>
+<td>6 × 6</td>
+<td>图看图、图看文字、<strong>文字看图</strong>、文字看文字</td>
+</tr>
+</tbody>
+</table>
+<p>文字 token 也能看到图，在每一层随着图一起更新，不再是一份固定不变的"订单"。</p>
+<p><strong>训练目标用第 49 章的 Rectified Flow</strong>：SD3 写成 <span class="arithmatex">\(z_t = (1-t)\,x_0 + t\,\epsilon\)</span>（式 13，L124），<strong>注意这里 t = 0 是图、t = 1 是噪声</strong>，和 RF 原论文正好反过来，网络直接输出速度（L126–L127）。另一个改动是 t 不再均匀抽：用 <strong>logit-normal</strong>，先抽 u ~ 𝒩(0, 1)，再 t = sigmoid(u)（L217–L232），让中间的 t 被抽到得更多，因为两头（几乎是图、几乎是噪声）太容易：</p>
+<table>
+<thead>
+<tr>
+<th>u</th>
+<th>−2</th>
+<th>−1</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>t = sigmoid(u)</td>
+<td>0.119</td>
+<td>0.269</td>
+<td>0.5</td>
+<td>0.731</td>
+<td>0.881</td>
+</tr>
+</tbody>
+</table>
+<p>u 大多落在 −2 到 2，t 就大多落在 0.12 到 0.88 之间，靠近 0.5 的最多。</p>
+<p><strong>一句话</strong>：MM-DiT 把文字 token 和图像 token 拼成一条序列做联合注意力，两种 token 各用各的权重；训练用 Rectified Flow，t 用 logit-normal 抽，多练中间那段。</p>
+<h3 id="dit-layernorm">动画演示：一个 DiT 块里，条件怎么调 LayerNorm</h3>
+<p><img alt="DiT 块" src="../animations/50-dit-mmdit.gif" /></p>
+<p>可交互版：<a href="../animations/50-dit-mmdit.html">animations/50-dit-mmdit.html</a>（需要用本地服务打开，见 <a href="../animations/index.html">animations/README.md</a>"跑起来看"；滑块：门 α 从 0 拖到 1，看加回残差后的结果怎么从"原样"慢慢变成"全部采纳"）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>32 × 32 × 4 的潜空间按 p = 2 切成 256 个 token（第一步）；</li>
+<li>步数 t 和类别 c 经 MLP 算出 γ、β、α 六组数（第二、三步）；</li>
+<li>LN 后乘 γ 加 β，进注意力，输出乘 α 再加回 x；α = 0 时整块原样输出（第三步）；</li>
+<li>MM-DiT：文字 token 和图像 token 拼在一起，6 × 6 的联合分数表分成四块（第五步）。</li>
+</ol>
+<h2 id="_2">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：512 × 512 的图，潜空间 64 × 64 × 4，p = 2。一共多少个 token？如果 p = 4 呢？</p>
+<p><strong>题 2</strong>（第二步）：x = [2, 4, 6]，LN(x) = [−1.225, 0, 1.225]。条件算出 γ = [2, 2, 2]、β = [0, 1, 0]，adaLN 的输出是多少？</p>
+<p><strong>题 3</strong>（第三步）：（a）α 初始化成 0，一个 DiT 块一开始输出什么？（b）为什么这样能让训练更稳？</p>
+<p><strong>题 4</strong>（第五步）：3 个图像 token、2 个文字 token。（a）MM-DiT 的联合分数表多大？（b）LDM 式的交叉注意力分数表多大？（c）MM-DiT 里"文字看图"那一块是几乘几？</p>
+<h2 id="_3">口诀</h2>
+<blockquote>
+<p>画师换成 Transformer：潜图切块当 token，p 减一半算四倍。<br />
+步数类别进 MLP，算出缩放和平移，调好 LayerNorm 再进层。<br />
+残差前面加道门，初始关上先旁听。<br />
+算力越大画越好，XL 斜杠二最强。<br />
+图文拼成一条队，各用各的权重，一起做注意力；t 用 logit 正态，多练中间段。</p>
+</blockquote>
+<h2 id="_4">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B16–B17</a>（B16 DiT 的 patchify 和 adaLN-Zero；B17 MM-DiT 的联合注意力与 SD3 的训练设置）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_5">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_6">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Scalable Diffusion Models with Transformers（DiT，Peebles &amp; Xie 2022）</td>
+<td>§3.2 L176–L290；Figure 5 L252；§4 缩放实验 L320 起</td>
+<td>本章原文：patchify、四种条件块、adaLN-Zero、规模和 FID</td>
+</tr>
+<tr>
+<td>★ Scaling Rectified Flow Transformers for High-Resolution Image Synthesis（SD3，Esser 等 2024）</td>
+<td>§2 L71–L127；§3.1 L195–L240；§4 L213–L330；§5.2 架构对比 L474–L547</td>
+<td>MM-DiT、RF 的时间步采样、QK 归一化</td>
+</tr>
+<tr>
+<td>FiLM（Perez 等 2017）</td>
+<td>全文（本地没有文本版）</td>
+<td>"用条件算缩放和平移"的出处</td>
+</tr>
+<tr>
+<td>U-ViT（Bao 等 2022）</td>
+<td>全文（本地没有文本版）</td>
+<td>另一种 Transformer 扩散主干：把 t、c 当 token，加长跳线</td>
+</tr>
+<tr>
+<td>本书第 44、48、49 章</td>
+<td></td>
+<td>切小块、DDPM、潜空间和 Rectified Flow</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">数学原理</h3>
+<ul>
+<li><strong>token 数</strong>：<span class="arithmatex">\(T = (I/p)^2\)</span>，注意力代价 ∝ <span class="arithmatex">\(T^2\)</span>，p 减半代价约 16 倍（注意力部分）、至少 4 倍（全部）。</li>
+<li><strong>FiLM / adaLN</strong>：<span class="arithmatex">\(\gamma(c) \odot h + \beta(c)\)</span>，用条件对特征做逐维仿射变换。</li>
+<li><strong>恒等初始化</strong>：<span class="arithmatex">\(x + 0 \cdot f(x) = x\)</span>；α = 0 让每块开始时什么都不改，梯度仍能流到 α。</li>
+<li><strong>logit-normal</strong>：<span class="arithmatex">\(t = \sigma(u)\)</span>，<span class="arithmatex">\(u \sim \mathcal{N}(m, s^2)\)</span>；m 控制偏向哪头，s 控制多集中（式 19）。</li>
+</ul>
+<h3 id="_8">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(T = (I/p)^2\)</span></td>
+<td>DiT 的 token 数</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\gamma, \beta, \alpha = \text{MLP}(e_t + e_c)\)</span></td>
+<td>条件算出调制参数</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x \leftarrow x + \alpha \odot f(\gamma \odot \text{LN}(x) + \beta)\)</span></td>
+<td>adaLN-Zero 子层（f 是注意力或 MLP）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(z_t = (1-t)\,x_0 + t\,\epsilon\)</span></td>
+<td>SD3 的 RF 写法（t = 0 是图，式 13）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(t = \text{sigmoid}(u)\)</span>，<span class="arithmatex">\(u \sim \mathcal{N}(0, 1)\)</span></td>
+<td>logit-normal 抽 t</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch50_dit_mmdit.py</code>，配套测试 <code>tests/test_ch50.py</code>，notebook 在 <code>notebooks/ch50_dit_mmdit.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch50_dit_mmdit.py  
+uv run pytest tests/test_ch50.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 token 数</td>
+<td><span class="arithmatex">\((I/p)^2\)</span></td>
+<td><code>n_tokens(32, p)</code></td>
+<td>p = 8、4、2 → 16、64、256</td>
+</tr>
+<tr>
+<td>第二步 adaLN</td>
+<td><span class="arithmatex">\(\gamma \odot \text{LN}(x) + \beta\)</span></td>
+<td><code>ada_ln(x, gamma, beta)</code></td>
+<td>[−0.612, 0, 0.712]；[−1.637, 0, 1.837]</td>
+</tr>
+<tr>
+<td>第三步 门 α</td>
+<td><span class="arithmatex">\(x + \alpha \odot f\)</span></td>
+<td><code>gated_residual(x, f_out, alpha)</code></td>
+<td>α = 0 → [1, 2, 3]；α = 0.2 → [1.1, 1.9, 3.2]</td>
+</tr>
+<tr>
+<td>第五步 联合注意力</td>
+<td>拼接</td>
+<td><code>joint_quadrants(4, 2)</code></td>
+<td>6 × 6，四块：4 × 4、4 × 2、2 × 4、2 × 2</td>
+</tr>
+<tr>
+<td>第五步 logit-normal</td>
+<td><span class="arithmatex">\(\sigma(u)\)</span></td>
+<td><code>logit_normal_t([-2, -1, 0, 1, 2])</code></td>
+<td>0.119、0.269、0.5、0.731、0.881</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">ln = (x - x.mean()) / x.std()                  # 普通 LayerNorm（这里没有 eps）
+h = gamma * ln + beta                          # adaLN：γ、β 由条件算出
+x = x + alpha * f(h)                           # adaLN-Zero：门 α 一开始是 0
+seq = np.concatenate([img_tokens, txt_tokens]) # MM-DiT：两条序列拼起来做一次注意力
+t = 1 / (1 + np.exp(-u))                       # logit-normal：u 抽自 N(0, 1)
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li>DiT 官方代码写的是 <code>x * (1 + scale) + shift</code>，scale 初始为 0 时缩放就是 1；讲义写成 γ ⊙ LN(x) + β，两者只差一个"+1"的约定。</li>
+<li>MM-DiT 的"各用各的权重"在代码里就是：拼接前图像 token 和文字 token 分别乘自己的 <span class="arithmatex">\(W^Q, W^K, W^V\)</span>，拼接后算一张大分数表，再按位置拆回两边，各进各的 MLP。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li><code>gated_residual</code> 的 α 从 0 改到 1，看输出怎么从 x 变成 x + f。</li>
+<li><code>logit_normal_t</code> 里把 u 改成从 𝒩(1, 1) 抽（m = 1），看 t 是不是偏向噪声那头。</li>
+</ul><nav class="pager"><a href="49-latent-diffusion-flow.html">← 第 49 章 · Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="51-vision-llm.html">第 51 章 · 视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列 →</a></nav>
+</main>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">AI 算法图解讲义（合集）</a></footer>
+</body></html>

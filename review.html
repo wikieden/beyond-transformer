@@ -55,6 +55,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 </ol>
 <p><strong>复习间隔</strong>（按答对的次数）：第 1 次 → 隔 1 天 → 隔 3 天 → 隔 7 天 → 隔 14 天 → 隔 30 天。连续答对 5 次的卡片移到文末"已掌握"。</p>
 <hr />
+<h2 id="2">② 模型怎么学会的</h2>
 <h3 id="b01-loss-1-p">B01 · 一次猜测的交叉熵 loss 怎么算？为什么前面有负号？为什么不用 1 − p？</h3>
 <p>来源：<a href="lessons/01-cross-entropy.html">第 1 章</a> · 加入 2026-11-14 · 复习记录：（必背公式，还没考）</p>
 <details>
@@ -78,6 +79,198 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <summary>答案</summary>
 <div class="arithmatex">\[\text{perplexity} = \exp\left(\frac{1}{m} \sum_{i=1}^{m} \ell_i\right)\]</div>
 <p>先对 loss 取平均，再取 e 的次方（handout 式 18）。读作"模型平均相当于在几个词里犹豫"：k 个词里平均瞎猜，loss = log k，困惑度 = k。全对 = 1；词表 10000 的模型刚开始 loss ≈ log 10000 ≈ 9.21，困惑度 ≈ 10000。AIAYN base 的 4.92 是按 BPE token 算的，不能和按整词算的比（Table 3 注）。</p>
+</details>
+<h2 id="v-transformer">V 视觉 Transformer</h2>
+<h3 id="b04-vit-tokenn-1">B04 · ViT 怎么把一张图变成一串 token？N 和每块的数怎么算？式 1 里加了哪两样东西？</h3>
+<p>来源：<a href="lessons/44-vit.html">第 44 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>按 P × P 切块：<span class="arithmatex">\(N = HW/P^2\)</span>；每块展平成 <span class="arithmatex">\(P^2 \cdot C\)</span> 个数。224 × 224 彩色图、P = 16 → 196 块，每块 768 个数。</li>
+<li>式 1：<span class="arithmatex">\(z_0 = [x_{class}; x_p^1E; \dots; x_p^NE] + E_{pos}\)</span>：每块乘同一个 E（P²C × D），最前面加可学习的 [class]，再加<strong>学出来的</strong>一维位置编码。序列长 N + 1 = 197。</li>
+<li>最后只取 [class] 那一行 <span class="arithmatex">\(z_L^0\)</span> 去分类；encoder 是 Pre-LN、不遮挡。</li>
+<li>P 减半 → N × 4 → 注意力分数表 × 16。</li>
+</ul>
+<p>口诀：切成邮票当词，展平乘 E，队首记录员，位置也是学</p>
+</details>
+<h3 id="b05-vit-imagenet-cnndeit-loss">B05 · ViT 为什么只用 ImageNet 预训练时打不过 CNN？DeiT 用了哪两招？硬蒸馏的 loss 怎么写？</h3>
+<p>来源：<a href="lessons/44-vit.html">第 44 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>CNN 自带"看图常识"（归纳偏置）：局部性、平移等变；ViT 的注意力从第一层就是全局的，要靠数据自己学。ImageNet（130 万张）上 ViT-L 不如 ViT-B；JFT-300M 上大模型才赢。</li>
+<li>DeiT：① 强数据增强和正则化；② 知识蒸馏：CNN 当老师。</li>
+<li>硬蒸馏（DeiT 式 3）：<span class="arithmatex">\(\mathcal{L} = \frac12\text{CE}(\psi(Z_s), y) + \frac12\text{CE}(\psi(Z_s), y_t)\)</span>，<span class="arithmatex">\(y_t = \arg\max Z_t\)</span>。另加一个 distillation token 专门学老师的标签，测试时两个头的 softmax 相加。</li>
+<li>例：学生 [0.5, 0.1, 0.4]，y = 猫（0.5），老师说狐（0.4）→ (0.693 + 0.916)/2 ≈ 0.805。</li>
+</ul>
+<p>口诀：没常识要大数据；DeiT 加增强、请老师，两个交叉熵各一半</p>
+</details>
+<h3 id="b06-swin">B06 · Swin 的全局注意力和窗口注意力计算量各是多少？窗口之间怎么传信息？</h3>
+<p>来源：<a href="lessons/45-swin-vivit.html">第 45 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>式 1、2：<span class="arithmatex">\(\Omega(\text{MSA}) = 4hwC^2 + 2(hw)^2C\)</span>；<span class="arithmatex">\(\Omega(\text{W-MSA}) = 4hwC^2 + 2M^2hwC\)</span>。注意力项从"块数平方"变成"块数线性"，比值 <span class="arithmatex">\(hw/M^2\)</span>。h = w = 56、M = 7 时差 64 倍。</li>
+<li>每个窗口 M × M 块内部做普通多头注意力，分数上加相对位置偏置 B（式 4）。</li>
+<li>相邻两层：一层按左上角切，下一层窗口挪 <span class="arithmatex">\(\lfloor M/2 \rfloor\)</span> 格（SW-MSA）。原来分属两个窗口的块，下一层落进同一个窗口。</li>
+<li>碎窗口用 cyclic shift（循环移位）拼满，再用 mask 挡住不相邻的块。</li>
+</ul>
+<p>口诀：全校大会平方涨，分班开会线性长；一层正切一层错</p>
+</details>
+<h3 id="b07-swin-patch-merging-vivit-model-2">B07 · Swin 的 patch merging 做了什么？四个阶段的尺寸怎么变？ViViT 怎么切视频、Model 2 怎么省？</h3>
+<p>来源：<a href="lessons/45-swin-vivit.html">第 45 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>起步 4 × 4 像素一块（4 × 4 × 3 = 48 个数）→ C 维；patch merging：相邻 2 × 2 块拼成 4C，线性层压成 2C，块数 ÷ 4。</li>
+<li>Swin-T：56² × 96 → 28² × 192 → 14² × 384 → 7² × 768（H/4 → H/32），层数 {2, 2, 6, 2}，M = 7。多尺度金字塔能直接给检测、分割用。</li>
+<li>ViViT tubelet：t × h × w 立方块，<span class="arithmatex">\(n_t = \lfloor T/t \rfloor\)</span> 等；32 帧 224²、16 × 16 × 2 → 16 × 14 × 14 = 3136 个 token。</li>
+<li>Model 1 全部一起看：<span class="arithmatex">\(O((n_tn_hn_w)^2)\)</span>；Model 2 先帧内（空间 encoder）后帧间（时间 encoder）：<span class="arithmatex">\(O((n_hn_w)^2 + n_t^2)\)</span>，约省 16 倍。</li>
+</ul>
+<p>口诀：两两拼块压两倍，四层金字塔；视频切管子，先帧内再帧间</p>
+</details>
+<h3 id="b08-clip-n-losszero-shot">B08 · CLIP 一批 N 对图文怎么算 loss？温度是干什么的？zero-shot 分类怎么做？</h3>
+<p>来源：<a href="lessons/46-clip-siglip.html">第 46 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>图、文各一个编码器，投影后 L2 归一化，点积 = 余弦。分数表 <span class="arithmatex">\(S = I_eT_e^\top\)</span>（N × N），对角线是正确配对，另外 <span class="arithmatex">\(N^2 - N\)</span> 格是反例。</li>
+<li>logits = S × 放大倍数（1/τ，初始 τ = 0.07，最多放大 100 倍），否则余弦在 ±1 之间 softmax 分不开。</li>
+<li>对称交叉熵：按行 softmax（图找文）、按列 softmax（文找图），都用对角线算 −log，再取平均。batch 32768。</li>
+<li>zero-shot：类名套成 "A photo of a {label}." 变成文字向量，和图片向量比余弦，取最大。ImageNet 76.2%，不用任何标注图训练。</li>
+</ul>
+<p>口诀：按行选文按列选图，对角线是正解；类名套句比余弦</p>
+</details>
+<h3 id="b09-siglip-loss-clip-z-b-b-10">B09 · SigLIP 的 loss 和 CLIP 有什么不同？标签 z 和偏置 b 是什么，b 为什么初始化成 −10？</h3>
+<p>来源：<a href="lessons/46-clip-siglip.html">第 46 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>每一格单独做二分类："这对图文是不是一对"：<span class="arithmatex">\(\mathcal{L} = -\frac{1}{|B|}\sum_{i,j}\log\sigma\big(z_{ij}(t\,x_i\cdot y_j + b)\big)\)</span>，<span class="arithmatex">\(\sigma(x) = 1/(1+e^{-x})\)</span>。</li>
+<li><span class="arithmatex">\(z_{ij}\)</span>：对角线 +1，其余 −1。不需要整行、整列的 softmax 分母，分数表可以分块算，不用收集所有卡的向量。</li>
+<li>反例格子（<span class="arithmatex">\(N^2 - N\)</span>）远多于正例（N），一开始 loss 被反例主导；初始化 t = 10（t′ = log 10）、b = −10，让模型先倾向说"不配"，免得第一步大幅修正。</li>
+<li>batch 小于 16k 时明显好于 softmax 版。</li>
+</ul>
+<p>口诀：每格判一判，sigmoid 加偏置，负十先说不配</p>
+</details>
+<h3 id="b10-mae-encoder-decoder-loss">B10 · MAE 遮多少？encoder 和 decoder 各看什么？loss 在哪些块上算、目标是什么？</h3>
+<p>来源：<a href="lessons/47-mae-dino.html">第 47 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>随机、均匀地遮掉 75%（BERT 只遮 15%）：图片冗余大，遮少了从邻居一抄就补上。196 块只剩 49 块。</li>
+<li>不对称：encoder（大 ViT）只看露出的 25%，不放 mask token，注意力格子 1/16，训练快 3 倍以上；decoder（小，8 层、宽 512）看全部位置，被遮处放共享的可学习 mask token（加位置编码）。训完扔掉 decoder。</li>
+<li>loss：只在被遮的块上算 MSE；目标是"每块各自减平均、除标准差"的归一化像素。</li>
+<li>例：[2, 4, 6, 8] → [−1.342, −0.447, 0.447, 1.342]，猜 [−1, −0.5, 0.5, 1] → MSE ≈ 0.060。</li>
+</ul>
+<p>口诀：遮四分之三，专家只看露出的，助手补全；只算被遮的，每块先归一</p>
+</details>
+<h3 id="b11-dino-loss">B11 · DINO 的学生和老师是什么关系？loss 是什么？怎么防止坍缩？</h3>
+<p>来源：<a href="lessons/47-mae-dino.html">第 47 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>同一张图两个增强裁剪；学生、老师结构相同（ViT），各输出 K 维，带温度 softmax 成 <span class="arithmatex">\(P_s\)</span>、<span class="arithmatex">\(P_t\)</span>。</li>
+<li>loss = 交叉熵 <span class="arithmatex">\(H(P_t, P_s) = -\sum_k P_t^{(k)}\log P_s^{(k)}\)</span>，两个方向交叉取平均；只更新学生（老师 detach）。</li>
+<li>老师 = 学生参数的滑动平均：<span class="arithmatex">\(\theta_t \leftarrow \lambda\theta_t + (1-\lambda)\theta_s\)</span>，λ 从 0.996 升到 1。</li>
+<li>防坍缩：centering（老师输出减中心 c，c 是老师输出的滑动平均，防止某一维独大）+ sharpening（老师用低温 <span class="arithmatex">\(\tau_t\)</span> 0.04→0.07，防止变均匀），两者牵制。</li>
+<li>DINOv2：精选的 LVD-142M、10 亿参数 ViT-g，特征冻住就能用。</li>
+</ul>
+<p>口诀：学生贴老师，老师是学生的慢平均；减中心、低温度，不坍缩</p>
+</details>
+<h3 id="b12-ddpm-baralpha_t-t">B12 · DDPM 的前向过程一步怎么写？<span class="arithmatex">\(\bar\alpha_t\)</span> 是什么？一步跳到第 t 步的公式是什么？</h3>
+<p>来源：<a href="lessons/48-ddpm.html">第 48 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>一步（式 2）：<span class="arithmatex">\(x_t = \sqrt{1-\beta_t}\,x_{t-1} + \sqrt{\beta_t}\,\epsilon\)</span>，<span class="arithmatex">\(\epsilon \sim \mathcal{N}(0, I)\)</span>。先缩再加噪，方差保持 1。</li>
+<li><span class="arithmatex">\(\alpha_t = 1 - \beta_t\)</span>，<span class="arithmatex">\(\bar\alpha_t = \alpha_1\alpha_2\cdots\alpha_t\)</span>：前 t 步保留比例连乘。</li>
+<li>一步跳（式 4）：<span class="arithmatex">\(x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon\)</span>（独立高斯相加还是高斯）。</li>
+<li>论文：T = 1000，β 从 <span class="arithmatex">\(10^{-4}\)</span> 线性到 0.02；t = 500 时系数 0.280 / 0.960，t = 1000 时原图只剩 0.006。</li>
+</ul>
+<p>口诀：每步先缩再加噪，阿尔法连乘一步跳</p>
+</details>
+<h3 id="b13-ddpm-loss">B13 · DDPM 训练时网络学什么？loss 是什么？生成的一步怎么算，为什么慢？</h3>
+<p>来源：<a href="lessons/48-ddpm.html">第 48 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>Algorithm 1：取图 <span class="arithmatex">\(x_0\)</span>，随机抽 t、抽噪声 ε，用式 4 造 <span class="arithmatex">\(x_t\)</span>，网络 <span class="arithmatex">\(\epsilon_\theta(x_t, t)\)</span> 猜 ε，<span class="arithmatex">\(L_{simple} = \mathbb{E}\lVert\epsilon - \epsilon_\theta\rVert^2\)</span>（式 14）。猜噪声和猜原图等价，去掉权重效果最好。</li>
+<li>Algorithm 2：从 <span class="arithmatex">\(x_T \sim \mathcal{N}(0, I)\)</span> 出发，t = T…1：<span class="arithmatex">\(x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\big(x_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta\big) + \sigma_t z\)</span>，<span class="arithmatex">\(\sigma_t^2 = \beta_t\)</span>，最后一步不加 z。</li>
+<li>每步只减一小部分噪声，要走 1000 步 = 调 1000 次网络，所以慢。</li>
+<li>网络：U-Net + 16 × 16 层的自注意力；t 用 Transformer 的 sin / cos 编码告诉网络，所有步共用参数。</li>
+</ul>
+<p>口诀：随机挑步撒噪声，网络专猜撒了啥；生成一千步，每步减一点、撒一点</p>
+</details>
+<h3 id="b14-latent-diffusion-f">B14 · Latent Diffusion 在哪里做扩散？下采样倍数 f 怎么选？文字条件怎么进去？</h3>
+<p>来源：<a href="lessons/49-latent-diffusion-flow.html">第 49 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>先训自编码器：z = E(x)，<span class="arithmatex">\(\tilde x\)</span> = D(z)，<span class="arithmatex">\(f = H/h\)</span>；扩散全在 z 上做，生成后 D 解码。512 × 512 × 3 → 64 × 64 × 4（f = 8），小 48 倍。</li>
+<li>f = 1、2 太慢；4–16 好；32 压太狠画质掉。自编码器管"看得出的细节"，扩散管"语义和构图"。</li>
+<li>条件 y 用 <span class="arithmatex">\(\tau_\theta\)</span>（文生图里是 Transformer）编码成 M 个向量，U-Net 里加交叉注意力：<span class="arithmatex">\(Q = W_Q\varphi(z_t)\)</span>，<span class="arithmatex">\(K = W_K\tau_\theta(y)\)</span>，<span class="arithmatex">\(V = W_V\tau_\theta(y)\)</span>；分数表 N × M（图像位置 × 文字 token）。</li>
+<li>目标：<span class="arithmatex">\(\lVert\epsilon - \epsilon_\theta(z_t, t, \tau_\theta(y))\rVert^2\)</span>。</li>
+</ul>
+<p>口诀：先画小稿再放大；画师边画看订单，图当 Q、文当 K V</p>
+</details>
+<h3 id="b15-rectified-flow-reflow">B15 · Rectified Flow 的训练目标是什么？生成怎么做？路径为什么会弯、reflow 做什么？</h3>
+<p>来源：<a href="lessons/49-latent-diffusion-flow.html">第 49 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>RF 约定 t = 0 噪声 <span class="arithmatex">\(X_0\)</span>、t = 1 数据 <span class="arithmatex">\(X_1\)</span>；直线 <span class="arithmatex">\(X_t = tX_1 + (1-t)X_0\)</span>，目标速度 <span class="arithmatex">\(X_1 - X_0\)</span>；<span class="arithmatex">\(\min_v\mathbb{E}\lVert(X_1 - X_0) - v(X_t, t)\rVert^2\)</span>（式 1）。</li>
+<li>生成：解 ODE <span class="arithmatex">\(dZ_t = v(Z_t, t)dt\)</span>，Euler：<span class="arithmatex">\(Z_{t+1/N} = Z_t + v/N\)</span>。路径是直线时一步就到。</li>
+<li>随机配对的直线会交叉，交叉点的最优速度是各线的平均（<span class="arithmatex">\(v = \mathbb{E}[X_1 - X_0 \mid X_t]\)</span>），ODE 路径不能交叉，于是改道变弯，少步数会走偏。</li>
+<li>reflow：用训好的模型生成新配对 (<span class="arithmatex">\(Z_0\)</span>, <span class="arithmatex">\(Z_1\)</span>) 再训一次，路径几乎变直，1 步 Euler 也能出好图。SD3 用它（SD3 写成 t = 0 是图）。</li>
+</ul>
+<p>口诀：噪声连图走直线，网络只猜终点减起点；线交改道变弯，reflow 拉直</p>
+</details>
+<h3 id="b16-dit-token-tc-adaln-zero-0">B16 · DiT 怎么把潜空间变成 token？条件 t、c 怎么进去？adaLN-Zero 的 α 为什么初始化成 0？</h3>
+<p>来源：<a href="lessons/50-dit-mmdit.html">第 50 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>patchify：潜空间 I × I × C（256² 图 → 32 × 32 × 4）按 p × p 切，<span class="arithmatex">\(T = (I/p)^2\)</span>；p = 2 → 256 个 token。最后每个 token 解码回 p × p × 2C（噪声 + 方差）。</li>
+<li>四种条件方式里 adaLN-Zero 最好：<span class="arithmatex">\(\gamma, \beta, \alpha = \text{MLP}(e_t + e_c)\)</span>，子层 <span class="arithmatex">\(x \leftarrow x + \alpha \odot f(\gamma \odot \text{LN}(x) + \beta)\)</span>。每块 6 组：γ₁β₁α₁（注意力）、γ₂β₂α₂（MLP）；对所有 token 用同一组。</li>
+<li>α 的 MLP 初始化输出 0 → 每块一开始是恒等函数（和残差同理），训练稳。</li>
+<li>Gflops 越大 FID 越好；DiT-XL/2（28 层、d = 1152）FID 2.27。</li>
+</ul>
+<p>口诀：潜图切块当 token；步数类别算出缩放平移；残差前加门，初始关上</p>
+</details>
+<h3 id="b17-sd3-mm-dit-ldm-sd3-t">B17 · SD3 的 MM-DiT 和 LDM 的交叉注意力有什么不同？SD3 怎么抽训练的 t？</h3>
+<p>来源：<a href="lessons/50-dit-mmdit.html">第 50 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>文字 token（CLIP-L、CLIP-G、T5 XXL）和图像 token（潜空间 2 × 2 切块）<strong>拼成一条序列做一次自注意力</strong>；两种 token <strong>各用各的权重</strong>（<span class="arithmatex">\(W^Q, W^K, W^V\)</span>、MLP），只在注意力那一步合在一起。</li>
+<li>交叉注意力只有"图看文"（N_img × N_txt）；联合注意力四块都有：图看图、图看文、文看图、文看文，文字 token 也随层更新。</li>
+<li>t 和整句的 pooled 向量走 adaLN 调制。</li>
+<li>训练用 RF：<span class="arithmatex">\(z_t = (1-t)x_0 + t\epsilon\)</span>（t = 0 是图），网络输出速度；t 用 logit-normal：u ~ 𝒩(0, 1)，t = sigmoid(u)，多练中间段。</li>
+</ul>
+<p>口诀：图文拼成一条队，各用各的权重一起注意；t 用 logit 正态</p>
+</details>
+<h3 id="b18-llavablip-2-llm-token">B18 · 视觉语言模型的三段是什么？LLaVA、BLIP-2 的连接器各怎么做，各给 LLM 几个图片 token？</h3>
+<p>来源：<a href="lessons/51-vision-llm.html">第 51 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>图片编码器（冻住的 CLIP / SigLIP ViT）→ 连接器 → LLM；连接器输出长度必须等于 LLM 词向量长度，图片 token 排在文字前面一起进 LLM。</li>
+<li>LLaVA：一个投影矩阵 <span class="arithmatex">\(H_v = W\cdot Z_v\)</span>，CLIP ViT-L/14、224² → 256 个 token。两阶段：先只训 W（59.5 万对图文，对齐），再 W + LLM 一起微调（15.8 万条指令）。</li>
+<li>BLIP-2：Q-Former（1.88 亿参数）里 32 个可学习的查询向量，用交叉注意力从 257 × 1024 的特征里取信息 → 32 × 768，再 FC 投影给冻住的 LLM。不管图多大都是 32 个 token。</li>
+</ul>
+<p>口诀：作家只读自家词，先请翻译：一个矩阵投，或派三十二个记者采访</p>
+</details>
+<h3 id="b19-qwen2-vl-token-m-rope-token">B19 · Qwen2-VL 的动态分辨率怎么算 token 数？M-RoPE 怎么给文字、图片、视频 token 编位置？</h3>
+<p>来源：<a href="lessons/51-vision-llm.html">第 51 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>不缩放：按原尺寸切 14 × 14 的块；ViT 去掉绝对位置编码，改用二维 RoPE；ViT 后用 MLP 把相邻 2 × 2 合成 1 个；首尾加 <code>&lt;|vision_start|&gt;</code>、<code>&lt;|vision_end|&gt;</code>。token 数 = (H/14)(W/14)/4 + 2，224² → 66。</li>
+<li>M-RoPE：位置拆成（时间, 高, 宽）三个编号。文字三个相同（= 一维 RoPE）；图片时间相同、高宽按行列；视频每帧时间 + 1。</li>
+<li>换模态时，下一段从前面最大编号 + 1 开始。例：文字 0、1、2，2 × 2 的图是 (3,3,3)…(3,4,4)，后面的文字从 5 开始。</li>
+</ul>
+<p>口诀：原图切块二乘二合一，首尾加标记；位置拆三号，换段最大加一</p>
 </details>
 <hr />
 <h2 id="_2">已掌握</h2>

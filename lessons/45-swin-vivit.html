@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 45 章 · Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴 · 超越 Transformer</title>
+<style>
+:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;margin:8px 0 16px} h2{font-size:22px;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:18px;margin:28px 0 8px}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:17px;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+</div></header>
+<main>
+<h1 id="45-swin-vivit">第 45 章 · Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</h1><p><a class="btn" href="../animations/45-swin-vivit.html">▶ 打开本章可交互动画</a></p>
+<blockquote>
+<p>本章回答：ViT 每个小块都看所有小块，图片一大，注意力分数表按块数的平方涨，算不动。Swin 怎么把代价降成"和图片面积成正比"？只在窗口里看，窗口之间的信息怎么传？视频多了一个时间维，ViViT 又怎么切、怎么省？<br />
+讲解日期：2026-11-18 · 上一章：<a href="../lessons/44-vit.html">第 44 章 ViT</a> · 下一章：<a href="../lessons/46-clip-siglip.html">第 46 章 CLIP 与 SigLIP</a><br />
+对应原文：Swin <code>transformer-deep-dive/materials/text/papers/swin-2103.14030.txt</code> §3.1 L149–L172（4 × 4 小块、patch merging）、§3.2 L203–L205（式 1、2）、L229–L252（错开窗口、式 3）、L281–L312（cyclic shift）、L320–L322（相对位置偏置 式 4）、§3.3 L291–L301（M = 7、Swin-T）；ViViT <code>vivit-2103.15691.txt</code> §3.2 L176–L215（tubelet、均匀抽帧）、§3.3 L202–L318（Model 1、2）<br />
+本章缩写：Swin = Shifted window（错开的 / 窗口）；W-MSA = Window-based Multi-head Self-Attention（窗口内 / 多头 / 自注意力）；SW-MSA = Shifted Window MSA（错开窗口的 MSA）；M：一个窗口的边长（几个小块）；Ω（读作"欧米伽"）：计算量；h、w：特征图的高和宽（几个小块）；C：每个小块向量的长度（Channels：通道）；ViViT = Video Vision Transformer（视频 / 视觉 / Transformer）；tubelet（小管子：一段时间里的同一块位置，切成一个立体小块）；<span class="arithmatex">\(n_t, n_h, n_w\)</span>：时间、高、宽三个方向各切出几段（t = time，h = height，w = width）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-18">第一步：问题：全局注意力的代价是块数的平方（2026-11-18）</h3>
+<p><strong>类比：全校大会 vs 分班开会。</strong> ViT 每一层都开"全校大会"：每个小块要和所有小块各对一次话。人一多，"两两对话"的次数按人数平方涨。</p>
+<p>Swin 原文（式 1、2，L203–L205）把两种做法的计算量写出来：</p>
+<div class="arithmatex">\[\Omega(\text{MSA}) = 4hwC^2 + 2(hw)^2C\]</div>
+<div class="arithmatex">\[\Omega(\text{W-MSA}) = 4hwC^2 + 2M^2hwC\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>读法</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ω</td>
+<td>欧米伽</td>
+<td>要做多少次乘加（不算 softmax）</td>
+</tr>
+<tr>
+<td>h, w</td>
+<td></td>
+<td>特征图有 h 行、w 列小块，一共 hw 块</td>
+</tr>
+<tr>
+<td>C</td>
+<td></td>
+<td>每个小块的向量长度</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(4hwC^2\)</span></td>
+<td></td>
+<td>每块乘 <span class="arithmatex">\(W^Q, W^K, W^V\)</span> 和输出矩阵 <span class="arithmatex">\(W^O\)</span>，四个 C × C 矩阵：和块数成正比</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(2(hw)^2C\)</span></td>
+<td></td>
+<td>全局：分数表 hw × hw，每格是长度 C 的点积；再乘 V 又一遍：和块数<strong>平方</strong>成正比</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(2M^2hwC\)</span></td>
+<td></td>
+<td>窗口：每块只和自己窗口里的 <span class="arithmatex">\(M^2\)</span> 块算：和块数成正比</td>
+</tr>
+</tbody>
+</table>
+<p><strong>数字演示</strong>：Swin-T 第一阶段，224 × 224 的图按 4 × 4 切，h = w = 56（3136 块），C = 96，M = 7：</p>
+<table>
+<thead>
+<tr>
+<th>项</th>
+<th>全局 MSA</th>
+<th>窗口 W-MSA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>投影 <span class="arithmatex">\(4hwC^2\)</span></td>
+<td>1.16 亿</td>
+<td>1.16 亿（一样）</td>
+</tr>
+<tr>
+<td>注意力那一项</td>
+<td><span class="arithmatex">\(2 \times 3136^2 \times 96\)</span> ≈ <strong>18.9 亿</strong></td>
+<td><span class="arithmatex">\(2 \times 49 \times 3136 \times 96\)</span> ≈ <strong>0.30 亿</strong></td>
+</tr>
+<tr>
+<td>合计</td>
+<td>≈ 20.0 亿</td>
+<td>≈ 1.45 亿（约 1/14）</td>
+</tr>
+</tbody>
+</table>
+<p>注意力那一项差了 64 倍，正好是 hw / M² = 3136 / 49 = 64。图片边长再翻一倍（h = w = 112），全局那一项变 16 倍（302 亿），窗口那一项只变 4 倍（1.18 亿）。原文的说法是：全局是块数的平方，窗口是线性（L234–L237）。</p>
+<p><strong>一句话</strong>：全局注意力的代价是块数的平方；只在 M × M 的窗口里算，代价就变成和块数成正比。</p>
+<h3 id="2026-11-18_1">第二步：窗口注意力：只在自己的窗口里开会（2026-11-18）</h3>
+<p><strong>类比：分班开会。</strong> 把特征图切成不重叠的 M × M 窗口，每个窗口里的小块只和同窗口的小块做注意力（L245 起"Self-attention in non-overlapped windows"）。每个窗口内部就是普通的多头注意力（前作第 13 章），只是"一句话"变短了。</p>
+<p><strong>数字演示</strong>：一张 8 × 8 的特征图（64 块），M = 4，切成 2 × 2 = 4 个窗口，每个窗口 16 块：</p>
+<table>
+<thead>
+<tr>
+<th>做法</th>
+<th>要算的分数格子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>全局</td>
+<td>64 × 64 = <strong>4096</strong></td>
+</tr>
+<tr>
+<td>窗口</td>
+<td>4 个窗口 × 16 × 16 = <strong>1024</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>相对位置偏置</strong>（式 4，L320–L322）：Swin 不在输入上加位置编码，而是在每个窗口的分数表上加一张学出来的表 B：</p>
+<div class="arithmatex">\[\text{Attention}(Q, K, V) = \text{SoftMax}(QK^\top / \sqrt{d} + B)\,V\]</div>
+<p>B 只看"两块之间差几行几列"，所以每个窗口共用同一张。这和前作第 17 章的 mask"在 softmax 前往分数上加东西"是同一个位置。</p>
+<p><strong>问题</strong>：窗口之间完全不说话。左上窗口的小块，永远不知道右边窗口里发生了什么。</p>
+<p><strong>一句话</strong>：把特征图切成 M × M 的窗口，只在窗口内做注意力，分数表从 64 × 64 变成 4 个 16 × 16；位置用分数上加的相对偏置 B。</p>
+<h3 id="2026-11-18_2">第三步：窗口每层错开半格，信息就能跨窗口传（2026-11-18）</h3>
+<p><strong>类比：换座位。</strong> 第 1 节课按 A、B、C、D 四组坐；第 2 节课每组往右下挪半组，新的一组里就混着原来几组的人。两节课下来，消息就跨组传开了。</p>
+<p>原文（L229–L233）：第 ℓ 层按左上角对齐切窗口；第 ℓ + 1 层把窗口挪 <span class="arithmatex">\((\lfloor M/2 \rfloor, \lfloor M/2 \rfloor)\)</span> 个小块（⌊ ⌋ 是向下取整）。两层成对出现（式 3，L240–L252）：</p>
+<div class="arithmatex">\[\hat z^\ell = \text{W-MSA}(\text{LN}(z^{\ell-1})) + z^{\ell-1},\quad z^\ell = \text{MLP}(\text{LN}(\hat z^\ell)) + \hat z^\ell\]</div>
+<div class="arithmatex">\[\hat z^{\ell+1} = \text{SW-MSA}(\text{LN}(z^\ell)) + z^\ell,\quad z^{\ell+1} = \text{MLP}(\text{LN}(\hat z^{\ell+1})) + \hat z^{\ell+1}\]</div>
+<p>每一行都是第 44 章那种 Pre-LN 的"注意力 + 残差、MLP + 残差"，只是注意力换成了窗口版。</p>
+<p><strong>数字演示</strong>：还是 8 × 8，M = 4，错开 ⌊4/2⌋ = 2 格。行列从 0 数：</p>
+<table>
+<thead>
+<tr>
+<th>小块</th>
+<th>第 ℓ 层（不错开）在哪个窗口</th>
+<th>第 ℓ + 1 层（错开 2 格）在哪个窗口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(3, 3)</td>
+<td>左上窗口（行 0–3，列 0–3）</td>
+<td>中间窗口（行 2–5，列 2–5）</td>
+</tr>
+<tr>
+<td>(4, 4)</td>
+<td>右下窗口（行 4–7，列 4–7）</td>
+<td>中间窗口（行 2–5，列 2–5）</td>
+</tr>
+</tbody>
+</table>
+<p>第 ℓ 层这两块在不同窗口，互相看不见；第 ℓ + 1 层落进同一个窗口，可以直接对话。</p>
+<p><strong>cyclic shift</strong>（循环移位，L281–L312）：错开后边上会多出一些不满 M × M 的碎窗口（2 × 2 个窗口变成 3 × 3 个）。Swin 的做法是把整张图往左上"卷"一下，碎块拼成满的窗口，窗口个数不变；拼在一起但原来不相邻的块，用 mask 挡住不让它们互相看（前作第 17 章的 −∞）。</p>
+<p><strong>一句话</strong>：相邻两层一层正常切、一层错开半个窗口，原来分属两个窗口的块就能在下一层见面；碎窗口用循环移位 + mask 处理。</p>
+<h3 id="2026-11-18_3">第四步：层层合并小块，得到金字塔（2026-11-18）</h3>
+<p><strong>类比：地图缩放。</strong> 街道图看细节，城市图看全局。Swin 一开始用很小的块（4 × 4 像素），越往后越把相邻的块合并成大块，像 CNN 一样得到"由细到粗"的多层特征图。</p>
+<ol>
+<li><strong>起步</strong>：4 × 4 像素一块，每块 4 × 4 × 3 = <strong>48</strong> 个数，线性投影成 C 维（L149–L157）。224 × 224 的图得到 56 × 56 块。</li>
+<li><strong>patch merging</strong>（小块合并，L160–L172）：把每 2 × 2 个相邻块的向量<strong>首尾拼起来</strong>（4C 个数），再用线性层压成 2C。块数变成 1/4，向量变长一倍。</li>
+<li><strong>四个阶段</strong>：</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>特征图（块）</th>
+<th>相对原图</th>
+<th>向量长度（Swin-T）</th>
+<th>Swin 块数（Swin-T）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>56 × 56</td>
+<td>H/4</td>
+<td>C = 96</td>
+<td>2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>28 × 28</td>
+<td>H/8</td>
+<td>192</td>
+<td>2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>14 × 14</td>
+<td>H/16</td>
+<td>384</td>
+<td>6</td>
+</tr>
+<tr>
+<td>4</td>
+<td>7 × 7</td>
+<td>H/32</td>
+<td>768</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>Swin-T 的配置 C = 96、各阶段层数 {2, 2, 6, 2}、M = 7 见 L291、L298。最后一个阶段 7 × 7 正好是一个窗口。</p>
+<p><strong>为什么要金字塔</strong>：检测、分割要知道"东西在哪"，需要高分辨率的特征；ViT 从头到尾都是 14 × 14 一种尺寸。Swin 每一层都能当 CNN 主干的替代品接到检测头上，这是它在 COCO 检测、ADE20K 分割上大幅领先的原因（L84–L88）。</p>
+<p><strong>一句话</strong>：从 4 × 4 像素的小块起步，每个阶段把 2 × 2 个相邻块拼起来再压成 2C，得到 H/4 → H/32 的四层金字塔。</p>
+<h3 id="vivit2026-11-18">第五步：ViViT：视频切成"小管子"，先看空间再看时间（2026-11-18）</h3>
+<p><strong>类比：切蛋糕。</strong> 视频是"一摞照片"：T 帧，每帧 H × W。ViT 是在一张照片上切方块；ViViT 是在整摞上切立方块，每块跨几帧（L176–L186）。</p>
+<p><strong>两种切法</strong>（§3.2，L196 起）：</p>
+<table>
+<thead>
+<tr>
+<th>切法</th>
+<th>怎么切</th>
+<th>token 个数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>均匀抽帧（uniform frame sampling）</td>
+<td>抽 <span class="arithmatex">\(n_t\)</span> 帧，每帧按 ViT 切</td>
+<td><span class="arithmatex">\(n_t \cdot n_h \cdot n_w\)</span></td>
+</tr>
+<tr>
+<td>tubelet 嵌入</td>
+<td>切 t × h × w 的立方块（t 帧 × h × w 像素），相当于三维卷积</td>
+<td><span class="arithmatex">\(n_t = \lfloor T/t \rfloor\)</span>，<span class="arithmatex">\(n_h = \lfloor H/h \rfloor\)</span>，<span class="arithmatex">\(n_w = \lfloor W/w \rfloor\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><strong>数字演示</strong>：32 帧、224 × 224 的视频，tubelet 16 × 16 × 2（ViViT 实验里用的尺寸，L411）：<span class="arithmatex">\(n_t\)</span> = 32 / 2 = 16，<span class="arithmatex">\(n_h = n_w\)</span> = 224 / 16 = 14，一共 16 × 196 = <strong>3136</strong> 个 token。</p>
+<p><strong>两种模型怎么省</strong>（§3.3）：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>做法</th>
+<th>注意力格子数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model 1 时空一起看（L207 起）</td>
+<td>3136 个 token 全部互相看</td>
+<td>3136² ≈ <strong>983 万</strong></td>
+</tr>
+<tr>
+<td>Model 2 先空间、后时间（factorised encoder，L283–L300）</td>
+<td>每一帧的 196 块先在自己帧内看（空间 encoder），每帧汇总成一个向量；16 个帧向量再互相看（时间 encoder）</td>
+<td>16 × 196² + 16² ≈ <strong>61.5 万</strong>（约 1/16）</td>
+</tr>
+</tbody>
+</table>
+<p>原文给的复杂度：Model 2 是 <span class="arithmatex">\(O((n_h n_w)^2 + n_t^2)\)</span>，Model 1 是 <span class="arithmatex">\(O((n_t n_h n_w)^2)\)</span>（L317–L318）。这和 Swin 的"只在窗口里看"是同一个思路：别让所有 token 两两对话，按结构分开看。</p>
+<p><strong>一句话</strong>：视频按 t × h × w 切成小管子；全部一起看是 token 数的平方，先在每帧内看、再在帧之间看能省一个数量级。</p>
+<h3 id="_2">动画演示：窗口和错开的窗口</h3>
+<p><img alt="Swin 窗口" src="../animations/45-swin-vivit.gif" /></p>
+<p>可交互版：<a href="../animations/45-swin-vivit.html">animations/45-swin-vivit.html</a>（需要用本地服务打开，见 <a href="../animations/index.html">animations/README.md</a>"跑起来看"；滑块：选 8 × 8 里的任意一块，同时看它在"不错开"和"错开 2 格"两层里能看见哪些块）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>8 × 8 特征图按 M = 4 切成 4 个窗口，分数格子 4096 → 1024（第二步）；</li>
+<li>(3, 3) 和 (4, 4) 在第 ℓ 层分属两个窗口，第 ℓ + 1 层错开 2 格后落进同一个窗口（第三步）；</li>
+<li>2 × 2 个相邻块拼起来，8 × 8 变 4 × 4，向量从 C 变 2C（第四步）；</li>
+<li>滑块：挑一块，左右两张图分别标出两层里它能看见的范围。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一、二步）：特征图 16 × 16 块，M = 4。
+（a）全局注意力要算多少个分数格子？窗口注意力呢？差几倍？
+（b）用 Ω 的式子说明：特征图边长翻倍时，两种做法的注意力那一项各变几倍？</p>
+<p><strong>题 2</strong>（第三步）：8 × 8、M = 4、错开 2 格。小块 (1, 6) 和 (2, 5) 在第 ℓ 层是不是同一个窗口？第 ℓ + 1 层呢？</p>
+<p><strong>题 3</strong>（第四步）：Swin-B 的 C = 128，第 2 阶段的特征图是 28 × 28、每块 256 个数。经过一次 patch merging 后变成几乘几？拼接后每块几个数？线性层输出几个数？</p>
+<p><strong>题 4</strong>（第五步）：16 帧、224 × 224 的视频，tubelet 16 × 16 × 2。一共多少个 token？用 Model 1 要算多少个分数格子？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>全校大会平方涨，分班开会线性长。<br />
+窗口里头开小会，位置偏置加分数上。<br />
+一层正切一层错，半格一挪信息传；碎窗卷起再遮挡。<br />
+两两拼块压两倍，四层金字塔像卷积。<br />
+视频切成小管子，先看帧内再看帧间。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B06–B07</a>（B06 窗口注意力的代价与错开窗口；B07 patch merging 金字塔与 ViViT 的切法）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。<br />
+- 本地论文的文本版在 <code>transformer-deep-dive/materials/text/papers/</code>，表里的行号就是指这个文本版（Swin 是双栏排版，一行里左右两栏混在一起，按关键词搜更快）。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Swin Transformer（Liu 等 2021）</td>
+<td>§3.1 L149–L172；§3.2 式 1–4 L203–L205、L229–L322；§3.3 L291–L301</td>
+<td>本章原文：窗口、错开、循环移位、相对位置偏置、四阶段</td>
+</tr>
+<tr>
+<td>★ ViViT（Arnab 等 2021）</td>
+<td>§3.2 L196 起；§3.3 Model 1–4 L202–L377；Table 1 L393–L405</td>
+<td>视频怎么切成 token；四种省算力的结构对比</td>
+</tr>
+<tr>
+<td>Swin Transformer V2（Liu 等 2022）</td>
+<td>全文（本地没有文本版）</td>
+<td>更大模型、更高分辨率时怎么稳住训练（余弦注意力、对数间隔的位置偏置）</td>
+</tr>
+<tr>
+<td>前作第 13、17、23 章</td>
+<td></td>
+<td>多头注意力、mask、<span class="arithmatex">\(n^2 \cdot d\)</span> 的复杂度</td>
+</tr>
+<tr>
+<td>本书第 33–36 章（待写）</td>
+<td></td>
+<td>另一条省算力的路：不改"谁看谁"，而是改注意力的算法（FlashAttention、稀疏注意力）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>复杂度</strong>：全局 <span class="arithmatex">\(2(hw)^2C\)</span>，窗口 <span class="arithmatex">\(2M^2hwC\)</span>，比值 <span class="arithmatex">\(hw/M^2\)</span>。</li>
+<li><strong>错开半格</strong>：偏移 <span class="arithmatex">\(\lfloor M/2 \rfloor\)</span>；相邻两层的窗口边界错开，任意两个相邻窗口在下一层都有交集。</li>
+<li><strong>patch merging</strong>：2 × 2 拼接 = 把空间换成通道（space-to-depth），再用线性层把 4C 压到 2C。</li>
+<li><strong>分解注意力</strong>：<span class="arithmatex">\(O((n_t n_h n_w)^2)\)</span> → <span class="arithmatex">\(O(n_t (n_h n_w)^2 + n_t^2)\)</span>。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\Omega(\text{MSA}) = 4hwC^2 + 2(hw)^2C\)</span></td>
+<td>全局注意力的计算量（式 1）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\Omega(\text{W-MSA}) = 4hwC^2 + 2M^2hwC\)</span></td>
+<td>窗口注意力的计算量（式 2）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\hat z^{\ell+1} = \text{SW-MSA}(\text{LN}(z^\ell)) + z^\ell\)</span></td>
+<td>错开窗口的那一层（式 3）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\text{SoftMax}(QK^\top/\sqrt{d} + B)V\)</span></td>
+<td>分数上加相对位置偏置（式 4）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(n_t = \lfloor T/t \rfloor\)</span>，<span class="arithmatex">\(n_h = \lfloor H/h \rfloor\)</span>，<span class="arithmatex">\(n_w = \lfloor W/w \rfloor\)</span></td>
+<td>tubelet 切法</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy（Numerical Python：数值 / Python）。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch45_swin_vivit.py</code>，配套测试 <code>tests/test_ch45.py</code>，notebook 在 <code>notebooks/ch45_swin_vivit.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch45_swin_vivit.py  
+uv run pytest tests/test_ch45.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 计算量</td>
+<td>式 1、2</td>
+<td><code>omega(56, 56, 96, 7)</code></td>
+<td>全局 ≈ 20.0 亿，窗口 ≈ 1.45 亿；注意力项差 64 倍</td>
+</tr>
+<tr>
+<td>第二步 分数格子</td>
+<td></td>
+<td><code>score_cells(8, 4)</code></td>
+<td>全局 4096，窗口 1024</td>
+</tr>
+<tr>
+<td>第三步 哪个窗口</td>
+<td>偏移 ⌊M/2⌋</td>
+<td><code>window_id(r, c, M, shift)</code></td>
+<td>(3, 3) 和 (4, 4)：不错开时不同，错开 2 格时相同</td>
+</tr>
+<tr>
+<td>第四步 合并</td>
+<td>2 × 2 拼接</td>
+<td><code>patch_merge(x)</code></td>
+<td>8 × 8 × C → 4 × 4 × 4C</td>
+</tr>
+<tr>
+<td>第五步 视频</td>
+<td>tubelet</td>
+<td><code>video_tokens(32, 224, 224, 2, 16, 16)</code></td>
+<td>3136 个；Model 1 ≈ 983 万格，Model 2 ≈ 61.5 万格</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">def window_id(r, c, M, shift=0):
+    r, c = r - shift, c - shift              # 窗口往右下挪 shift，等于小块往左上挪
+    return (r // M, c // M)                  # 同一个 (行号, 列号) 就是同一个窗口（负数也一样整除）
+
+x = x.reshape(h // 2, 2, w // 2, 2, C)       # 每 2 × 2 个相邻块分成一组
+merged = x.transpose(0, 2, 1, 3, 4).reshape(h // 2, w // 2, 4 * C)   # 一组 4 个向量首尾拼接
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li>讲义说"窗口往右下挪"，代码里写成"小块坐标减去 shift"，两者等价；负坐标用 Python 的 <code>//</code> 向下取整，碎窗口自然分到边上的编号里，正好对应原文说的 3 × 3 个窗口。</li>
+<li>patch merging 的拼接顺序（先行后列还是先列后行）各家实现不同，只要整个模型一致就行。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li><code>omega(112, 112, 96, 7)</code>：图片边长翻倍，看两项各涨几倍。</li>
+<li><code>window_id</code> 的 shift 改成 0、2、3，看 (3, 3) 和 (4, 4) 什么时候在同一个窗口。</li>
+</ul><nav class="pager"><a href="44-vit.html">← 第 44 章 · ViT：把图片切成小块，当成一句话</a><a href="46-clip-siglip.html">第 46 章 · CLIP 与 SigLIP：图和文字配不配，用点积打分 →</a></nav>
+</main>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">AI 算法图解讲义（合集）</a></footer>
+</body></html>

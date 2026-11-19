@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MAE 遮挡</title><link rel="stylesheet" href="anim.css">
+<style>svg text.big{font-size:15px}svg text.cap{font-size:15px;font-weight:500}svg text.v{font-size:12px}</style></head>
+<body><main>
+<h1>第 47 章 · MAE 与 DINO：遮掉大半再补回来</h1>
+<p class="sub">配套讲义：<a href="../lessons/47-mae-dino.html">第 47 章 · MAE 与 DINO：不要标签也能学会看图</a>。一张 14 × 14 = 196 块的图（编的图案），随机遮掉 75%。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 400"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="r">自己拖：遮挡比例</label><input type="range" id="r" min="0" max="95" step="5" value="75"><span id="rv">75%</span></div>
+<p class="note">看点：① 196 块随机遮掉 147 块，只剩 49 块；② 只有这 49 块进大 encoder，注意力格子 2401，是不遮时 38416 的 1/16；③ 小 decoder 在空位放 mask token，补出整张图，只在被遮的块上算误差；④ DINO：同一张图两个裁剪，学生去贴老师的分布，老师是学生的滑动平均。滑块：遮得越多，encoder 越省，但补起来越难。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');const G=14,S=17;
+function pix(r,c){const dx=c-8.5,dy=r-5.5,sun=Math.exp(-(dx*dx+dy*dy)/9);const sea=r>9?1:0;return {h:sea?205:28+sun*20,l:sea?40+3*Math.sin(c):55+sun*25+r*1.2,s:sea?55:60+sun*30}}
+const col=(r,c)=>{const p=pix(r,c);return `hsl(${p.h},${p.s}%,${p.l}%)`};
+function order(seed){seed&&0;const a=[...Array(G*G).keys()];let s=seed||1;const R=()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const PERM=order(7);
+function maskSet(ratio){const n=Math.round(G*G*ratio);return new Set(PERM.slice(G*G-n))}
+function recon(r,c,M){let best=null,bd=1e9;for(let rr=0;rr<G;rr++)for(let cc=0;cc<G;cc++){if(M.has(rr*G+cc))continue;const d=(rr-r)**2+(cc-c)**2+(rr===r?0:.1);if(d<bd){bd=d;best=[rr,cc]}}
+  if(!best)return 'var(--muted)';const p=pix(best[0],best[1]);return `hsl(${p.h},${p.s*0.7}%,${Math.min(90,p.l+6)}%)`}
+function img(x0,y0,M,mode){for(let r=0;r<G;r++)for(let c=0;c<G;c++){const i=r*G+c,m=M&&M.has(i);let f=col(r,c),op=1;
+  if(m&&mode==='mask'){f='var(--muted)';op=.25}
+  if(m&&mode==='rec')f=recon(r,c,M);
+  el('rect',{x:x0+c*S,y:y0+r*S,width:S-1,height:S-1,fill:f,opacity:op},sv);
+  if(m&&mode==='loss')el('rect',{x:x0+c*S+.5,y:y0+r*S+.5,width:S-2,height:S-2,fill:'none',stroke:'var(--bad)','stroke-width':1.2},sv)}}
+const ST=[
+ {cap:'一张图切成 14 × 14 = 196 块（第 44 章）',v:'full'},
+ {cap:'第一步：随机遮掉 75%（147 块），只剩 49 块',v:'mask'},
+ {cap:'第二步：只有露出的 49 块进大 encoder：注意力格子 49² = 2401，是 196² 的 1/16',v:'enc'},
+ {cap:'小 decoder：空位放共享的 mask token（加位置编码），补出整张图',v:'rec'},
+ {cap:'第三步：只在被遮的块（红框）上算均方误差；目标是每块归一化后的像素',v:'loss'},
+ {cap:'第四、五步 DINO：两个裁剪，学生贴老师的分布；老师 = 学生的滑动平均',v:'dino'}];
+const FR=[];ST.forEach((_,i)=>{FR.push(i);FR.push(i)});
+let k=0,custom=null;
+function box(x,y,w,h,t,sub,c){el('rect',{x,y,width:w,height:h,rx:10,fill:c||'var(--accent-bg)',stroke:'var(--accent)'},sv);txt(t,{x:x+w/2,y:y+h/2+(sub?-4:5),'text-anchor':'middle',class:'big'},sv);if(sub)txt(sub,{x:x+w/2,y:y+h/2+16,'text-anchor':'middle',class:'m'},sv)}
+function arrow(x1,y1,x2,y2){el('line',{x1,y1,x2,y2,stroke:'var(--muted)','stroke-width':2},sv);const a=Math.atan2(y2-y1,x2-x1);el('path',{d:`M${x2},${y2}L${x2-8*Math.cos(a-.4)},${y2-8*Math.sin(a-.4)}L${x2-8*Math.cos(a+.4)},${y2-8*Math.sin(a+.4)}Z`,fill:'var(--muted)'},sv)}
+function draw(){
+  clear(sv);const X=40,Y=70;
+  if(custom!==null){const r=custom,M=maskSet(r),v=G*G-M.size;
+    txt(`遮 ${Math.round(r*100)}%：剩 ${v} 块，encoder 格子 ${v*v}（不遮 38416 的 ${v?'1/'+(38416/(v*v)).toFixed(1):'—'}）`,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+    img(X,Y,M,'mask');img(X+260,Y,M,'rec');
+    txt('露出的块',{x:X+119,y:Y-8,'text-anchor':'middle',class:'m'},sv);txt('只靠露出的块"补"（这里用邻居平均示意）',{x:X+379,y:Y-8,'text-anchor':'middle',class:'m'},sv);
+    txt(r<0.4?'遮得少：从旁边一抄就补上了，学不到东西':r>0.88?'遮得太多：线索太少，补不回来':'遮 75% 左右：既有挑战，又补得出来',{x:340,y:330,'text-anchor':'middle',class:'big'},sv);return}
+  const f=ST[FR[k]];txt(f.cap,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);const M=maskSet(.75);
+  if(f.v==='full'){img(X,Y,null,'full');txt('ViT-B/16：224 × 224 → 196 块',{x:330,y:140,class:'big'},sv);txt('答案就是原图本身：不需要标签',{x:330,y:175,class:'big'},sv).style.fill='var(--teal)';txt('图片很"啰嗦"：相邻的块长得差不多',{x:330,y:210,class:'m'},sv);return}
+  if(f.v==='mask'){img(X,Y,M,'mask');txt('BERT 遮 15% 的词',{x:330,y:140,class:'big'},sv);txt('MAE 遮 75% 的块',{x:330,y:175,class:'big'},sv).style.fill='var(--warm)';txt('随机、均匀地抽，不偏向中间',{x:330,y:210,class:'m'},sv);return}
+  if(f.v==='enc'){img(X,Y,M,'mask');const vis=[...Array(G*G).keys()].filter(i=>!M.has(i));
+    vis.forEach((i,j)=>{const r=Math.floor(i/G),c=i%G;el('rect',{x:300+(j%7)*16,y:90+Math.floor(j/7)*16,width:14,height:14,fill:col(r,c)},sv)});
+    txt('49 个 token',{x:356,y:80,'text-anchor':'middle',class:'m'},sv);arrow(415,150,445,150);
+    box(450,105,190,90,'大 encoder（ViT-L）','只看 25%，不放 mask token');
+    txt('注意力格子：38416 → 2401',{x:545,y:230,'text-anchor':'middle',class:'big'},sv).style.fill='var(--teal)';txt('训练快 3 倍以上',{x:545,y:255,'text-anchor':'middle',class:'m'},sv);return}
+  if(f.v==='rec'||f.v==='loss'){img(X,Y,M,f.v==='rec'?'mask':'loss');
+    if(f.v==='rec'){for(let r=0;r<G;r++)for(let c=0;c<G;c++)if(M.has(r*G+c))txt('M',{x:X+c*S+8,y:Y+r*S+12,'text-anchor':'middle',class:'v'},sv).style.fill='var(--muted)'}
+    arrow(290,190,330,190);box(335,150,120,80,'小 decoder','8 层 · 宽 512');arrow(460,190,480,190);
+    const x2=485,s2=12;for(let r=0;r<G;r++)for(let c=0;c<G;c++){const m=M.has(r*G+c);el('rect',{x:x2+c*s2,y:Y+40+r*s2,width:s2-1,height:s2-1,fill:m?recon(r,c,M):col(r,c)},sv);if(m&&f.v==='loss')el('rect',{x:x2+c*s2+.5,y:Y+40+r*s2+.5,width:s2-2,height:s2-2,fill:'none',stroke:'var(--bad)','stroke-width':.8},sv)}
+    txt('补出的整张图',{x:x2+84,y:Y+30,'text-anchor':'middle',class:'m'},sv);
+    if(f.v==='loss')txt('例：一块 [2, 4, 6, 8] → 目标 [−1.34, −0.45, 0.45, 1.34]，猜 [−1, −0.5, 0.5, 1]，MSE ≈ 0.060',{x:340,y:340,'text-anchor':'middle',class:'m'},sv);
+    else txt('训完扔掉 decoder，只留 encoder；用的时候不遮',{x:340,y:340,'text-anchor':'middle',class:'m'},sv);return}
+  // dino
+  const s2=8;for(let r=0;r<G;r++)for(let c=0;c<G;c++)el('rect',{x:30+c*s2,y:150+r*s2,width:s2,height:s2,fill:col(r,c)},sv);
+  for(let r=2;r<12;r++)for(let c=1;c<13;c++)el('rect',{x:200+(c-1)*7,y:80+(r-2)*7,width:7,height:7,fill:col(r,c)},sv);
+  for(let r=3;r<9;r++)for(let c=5;c<12;c++)el('rect',{x:200+(c-5)*12,y:250+(r-3)*12,width:12,height:12,fill:col(r,c)},sv);
+  txt('裁剪 1（大）',{x:242,y:72,'text-anchor':'middle',class:'m'},sv);txt('裁剪 2（小）',{x:242,y:243,'text-anchor':'middle',class:'m'},sv);
+  arrow(142,190,195,120);arrow(142,215,195,280);arrow(288,115,340,115);arrow(288,290,340,290);
+  box(345,80,130,70,'老师 g_θt','减中心 · 低温锐化','var(--card)');box(345,255,130,70,'学生 g_θs','温度 τs','var(--accent-bg)');
+  el('path',{d:'M410,252 C430,215 430,190 410,153',fill:'none',stroke:'var(--warm)','stroke-width':2,'stroke-dasharray':'5 4'},sv);
+  txt('EMA：θt ← 0.996 θt + 0.004 θs',{x:402,y:205,'text-anchor':'end',class:'v'},sv).style.fill='var(--warm)';
+  arrow(480,115,520,115);arrow(480,290,520,290);txt('Pt = [0.47, 0.47, 0.06]',{x:525,y:120,class:'v'},sv);txt('Ps = [0.25, 0.67, 0.09]',{x:525,y:295,class:'v'},sv);
+  box(520,170,140,60,'H(Pt, Ps) ≈ 1.00','交叉熵：只更新学生');
+}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=FR.length-1)return false;k++;draw();return true}
+$('r').oninput=e=>{ANIM.stop();custom=+e.target.value/100;$('rv').textContent=e.target.value+'%';draw()};
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

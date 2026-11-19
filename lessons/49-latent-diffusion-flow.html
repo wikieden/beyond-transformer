@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 49 章 · Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步 · 超越 Transformer</title>
+<style>
+:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;margin:8px 0 16px} h2{font-size:22px;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:18px;margin:28px 0 8px}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:17px;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+</div></header>
+<main>
+<h1 id="49-latent-diffusion-rectified-flow">第 49 章 · Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</h1><p><a class="btn" href="../animations/49-latent-diffusion-flow.html">▶ 打开本章可交互动画</a></p>
+<blockquote>
+<p>本章回答：DDPM 直接在像素上加噪去噪，一张 512 × 512 的图有 78 万个数，还要走 1000 步，太贵。Latent Diffusion 怎么先把图压小再扩散？文字怎么"告诉"去噪网络要画什么？Rectified Flow 为什么让噪声到图片走直线，就能几步甚至一步生成？<br />
+讲解日期：2026-11-18 · 上一章：<a href="../lessons/48-ddpm.html">第 48 章 DDPM</a> · 下一章：<a href="../lessons/50-dit-mmdit.html">第 50 章 DiT 与 MM-DiT</a><br />
+对应原文：Latent Diffusion <code>transformer-deep-dive/materials/text/papers/latent-diffusion-2112.10752.txt</code> §3.1 L166–L192（编码器、下采样倍数 f）、§3.2 L199–L230（式 2）、§3.3 L206–L270（交叉注意力、式 3）、§4.1 L290–L336（f 的取舍）；Rectified Flow <code>rectified-flow-2209.03003.txt</code> §2.1 L140–L170（式 1、ODE）、Euler 步 L98–L100、reflow L196–L202、Figure 2 L124–L129<br />
+本章缩写：LDM = Latent Diffusion Model（潜空间 / 扩散 / 模型）；latent（潜在的：看不见的压缩表示）；E、D = Encoder、Decoder（编码器、解码器）；f = downsampling factor（下采样倍数）；z：潜空间里的"图"；KL-reg. = KL regularization（KL 正则：让潜空间别太乱）；y：条件（比如一句文字）；<span class="arithmatex">\(\tau_\theta\)</span>（tau theta）：把条件变成向量的编码器；φ（phi，读作"斐"）：去噪网络中间某一层的特征；cross-attention（交叉注意力：Q 来自一边，K、V 来自另一边）；RF = Rectified Flow（矫正 / 流）；ODE = Ordinary Differential Equation（常微分方程：给出"每一刻往哪走多快"）；v = velocity（速度）；Euler（欧拉法：按当前速度直线走一小步）；reflow（再流一遍：用自己生成的配对再训一次）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-18">第一步：先压缩，再扩散（2026-11-18）</h3>
+<p><strong>类比：先画小稿，再上色放大。</strong> 画家不会一上来就在大画布上一笔一笔地改，而是先在小本子上把构图定下来，最后再放大、补细节。LDM 也分两段：</p>
+<ol>
+<li><strong>压缩</strong>：训练一个自编码器（第 47 章），编码器 E 把图 x 压成小得多的 z = E(x)，解码器 D 再还原 <span class="arithmatex">\(\tilde x = D(z)\)</span>（L176–L180）。</li>
+<li><strong>扩散</strong>：第 48 章那一整套（加噪、猜噪声、1000 步生成）<strong>全部在 z 上做</strong>。生成完的 z 交给 D 变回图。</li>
+</ol>
+<p><strong>下采样倍数 f</strong>（L180–L184）：z 的尺寸是 h × w × c，<span class="arithmatex">\(f = H/h = W/w\)</span>，取 2 的幂（2、4、8……）。</p>
+<p><strong>数字演示</strong>：一张 512 × 512 的彩色图：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>尺寸</th>
+<th>有多少个数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>像素 x</td>
+<td>512 × 512 × 3</td>
+<td>786432</td>
+</tr>
+<tr>
+<td>潜空间 z（f = 8，4 个通道，Stable Diffusion 常用的设置）</td>
+<td>64 × 64 × 4</td>
+<td>16384</td>
+</tr>
+<tr>
+<td>比值</td>
+<td></td>
+<td>小 <strong>48</strong> 倍</td>
+</tr>
+</tbody>
+</table>
+<p>去噪网络每一步只处理 1.6 万个数，而不是 78 万个。</p>
+<p><strong>为什么不怕丢细节</strong>：自编码器负责"人眼看得出的细节"（感知压缩，perceptual compression），扩散模型只负责"画什么、怎么摆"（语义）。原文说潜空间把"高频、看不出的细节"抽掉了，更适合做生成（L232–L236）。</p>
+<p><strong>f 怎么选</strong>（§4.1，L290–L336）：</p>
+<table>
+<thead>
+<tr>
+<th>f</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1、2</td>
+<td>压得太少，训练慢（和像素空间差不多）</td>
+</tr>
+<tr>
+<td>4、8、16</td>
+<td>速度和画质都好</td>
+</tr>
+<tr>
+<td>32</td>
+<td>压得太狠，画质掉</td>
+</tr>
+</tbody>
+</table>
+<p><strong>训练目标</strong>（式 2，L199）和第 48 章一样，只是 x 换成 z：</p>
+<div class="arithmatex">\[L_{LDM} = \mathbb{E}_{E(x),\,\epsilon \sim \mathcal{N}(0,1),\,t}\big[\lVert \epsilon - \epsilon_\theta(z_t, t)\rVert_2^2\big]\]</div>
+<p><strong>一句话</strong>：先用自编码器把图压成小 f² 倍的 z，扩散的加噪、去噪全在 z 上做，生成完再解码回图。</p>
+<h3 id="2026-11-18_1">第二步：文字怎么指挥去噪：交叉注意力（2026-11-18）</h3>
+<p><strong>类比：画师边画边看订单。</strong> 去噪网络是画师，文字是订单。画到某个位置时，画师会回头看订单："这里该画什么颜色？"这正是前作第 21 章 decoder 里"译文问原文"的那种注意力：<strong>Q 来自正在画的图，K、V 来自文字</strong>。</p>
+<p>原文（§3.3，L236–L246）：</p>
+<div class="arithmatex">\[Q = W_Q^{(i)} \cdot \varphi_i(z_t),\qquad K = W_K^{(i)} \cdot \tau_\theta(y),\qquad V = W_V^{(i)} \cdot \tau_\theta(y)\]</div>
+<div class="arithmatex">\[\text{Attention}(Q, K, V) = \text{softmax}\Big(\frac{QK^\top}{\sqrt d}\Big) V\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>y</td>
+<td>条件：一句文字（也可以是分割图、布局……）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\tau_\theta(y)\)</span></td>
+<td>把文字编码成 M 个向量（M 个 token），文生图里就是一个 Transformer（L394）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\varphi_i(z_t)\)</span></td>
+<td>去噪 U-Net 第 i 层的特征，展平成 N 个位置</td>
+</tr>
+<tr>
+<td>分数表</td>
+<td>N × M：每个图像位置对每个文字 token 打分</td>
+</tr>
+</tbody>
+</table>
+<p>带条件的训练目标（式 3，L266）只是多给网络一个输入：<span class="arithmatex">\(\lVert \epsilon - \epsilon_\theta(z_t, t, \tau_\theta(y))\rVert^2\)</span>，<span class="arithmatex">\(\tau_\theta\)</span> 和 <span class="arithmatex">\(\epsilon_\theta\)</span> 一起训。</p>
+<p><strong>数字演示</strong>（编的，d = 2，两个维度分别表示"颜色"和"动物"）：文字"一只 红色 猫"：</p>
+<table>
+<thead>
+<tr>
+<th>token</th>
+<th>K</th>
+<th>V</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>一只</td>
+<td>[0, 0]</td>
+<td>[0, 0]</td>
+</tr>
+<tr>
+<td>红色</td>
+<td>[1, 0]</td>
+<td>[1, 0]</td>
+</tr>
+<tr>
+<td>猫</td>
+<td>[0, 1]</td>
+<td>[0, 1]</td>
+</tr>
+</tbody>
+</table>
+<p>图里两个位置：位置 A 的 Q = [2, 0]（在问"颜色"），位置 B 的 Q = [0, 2]（在问"是什么"）。分数 = Q·K / √2：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>一只</th>
+<th>红色</th>
+<th>猫</th>
+<th>softmax</th>
+<th>输出 = 权重 × V</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>0</td>
+<td><strong>1.414</strong></td>
+<td>0</td>
+<td>[0.164, <strong>0.673</strong>, 0.164]</td>
+<td>[0.673, 0.164]：主要拿到"红色"</td>
+</tr>
+<tr>
+<td>B</td>
+<td>0</td>
+<td>0</td>
+<td><strong>1.414</strong></td>
+<td>[0.164, 0.164, <strong>0.673</strong>]</td>
+<td>[0.164, 0.673]：主要拿到"猫"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话</strong>：去噪网络里加交叉注意力，图像位置当 Q、文字 token 当 K 和 V，每个位置去文字里取自己需要的信息。</p>
+<h3 id="rectified-flow2026-11-18">第三步：Rectified Flow：噪声到图片，走直线（2026-11-18）</h3>
+<p><strong>问题</strong>：DDPM 的生成路径弯弯曲曲，每步只敢走一点点，要 1000 步。能不能让路径变直？直线只要一步就走完了。</p>
+<p><strong>类比：从家到学校。</strong> DDPM 像醉汉走路，每步只敢挪一点、还要随机晃；Rectified Flow 是先在地图上把家和学校连一条直线，然后教一个导航"在任何位置、任何时刻，告诉我往哪走、走多快"。</p>
+<p><strong>设定</strong>（§2.1，L146–L157）：<span class="arithmatex">\(X_0\)</span> 是一团噪声（<span class="arithmatex">\(\pi_0\)</span>），<span class="arithmatex">\(X_1\)</span> 是一张真图（<span class="arithmatex">\(\pi_1\)</span>），时间 t 从 0 走到 1。<strong>注意这里和 DDPM 方向相反</strong>：t = 0 是噪声，t = 1 是图。</p>
+<ol>
+<li>随机配一对 (<span class="arithmatex">\(X_0\)</span>, <span class="arithmatex">\(X_1\)</span>)，连一条直线：</li>
+</ol>
+<div class="arithmatex">\[X_t = t\,X_1 + (1-t)\,X_0\]</div>
+<ol start="2">
+<li>沿这条直线走的速度处处都是 <span class="arithmatex">\(X_1 - X_0\)</span>（终点减起点）；</li>
+<li>让网络 <span class="arithmatex">\(v(X_t, t)\)</span> 去猜这个速度（式 1，L157）：</li>
+</ol>
+<div class="arithmatex">\[\min_v \int_0^1 \mathbb{E}\big[\lVert (X_1 - X_0) - v(X_t, t)\rVert^2\big]\,dt\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(X_t\)</span></td>
+<td>直线上 t 时刻的位置：t = 0 是噪声，t = 1 是图，中间按比例混合</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(X_1 - X_0\)</span></td>
+<td>目标速度：一直不变</td>
+</tr>
+<tr>
+<td>v</td>
+<td>网络：看着位置和时间，猜速度</td>
+</tr>
+<tr>
+<td>∫ dt</td>
+<td>对 0 到 1 之间所有 t 平均（实际训练时随机抽 t，和 DDPM 随机抽步一样）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>数字演示</strong>（一个数）：噪声 <span class="arithmatex">\(X_0\)</span> = −1，真图 <span class="arithmatex">\(X_1\)</span> = 0.8，抽到 t = 0.25：</p>
+<ol>
+<li><span class="arithmatex">\(X_{0.25}\)</span> = 0.25 × 0.8 + 0.75 × (−1) = 0.2 − 0.75 = <strong>−0.55</strong>；</li>
+<li>目标速度 = 0.8 − (−1) = <strong>1.8</strong>；</li>
+<li>网络猜 1.5，loss = (1.8 − 1.5)² = <strong>0.09</strong>。</li>
+</ol>
+<p>和 DDPM 比，只是把"猜噪声 ε"换成"猜速度 <span class="arithmatex">\(X_1 - X_0\)</span>"，同样是均方误差。</p>
+<p><strong>一句话</strong>：Rectified Flow 把噪声和图连成直线 <span class="arithmatex">\(X_t = tX_1 + (1-t)X_0\)</span>，让网络在任一位置、任一时刻猜速度 <span class="arithmatex">\(X_1 - X_0\)</span>。</p>
+<h3 id="euler2026-11-18">第四步：生成：按速度一步步走（Euler），路径越直步数越少（2026-11-18）</h3>
+<p><strong>生成</strong>就是解一个常微分方程（ODE）<span class="arithmatex">\(dZ_t = v(Z_t, t)\,dt\)</span>（L150）：从 <span class="arithmatex">\(Z_0\)</span> = 一团噪声出发，每一刻按网络给的速度走。电脑里用 <strong>Euler 法</strong>：步长 1/N，走 N 步（L98）：</p>
+<div class="arithmatex">\[Z_{t + 1/N} = Z_t + \frac{1}{N}\,v(Z_t, t)\]</div>
+<p><strong>数字演示</strong>：接第三步。如果网络在 t = 0.25 的位置 −0.55 猜对了速度 1.8，一步走完剩下的 0.75：−0.55 + 0.75 × 1.8 = <strong>0.8</strong>，正好到真图。<strong>路径是直的，一步就到。</strong></p>
+<p><strong>为什么实际路径会弯</strong>：训练时噪声和图是随机配对的，不同配对的直线会<strong>交叉</strong>。在交叉点上，网络只能给出各条线速度的平均，于是路径在交叉处"改道"、不再交叉，整体变弯（Figure 2，L124–L129；ODE 的解不会交叉，L175）。路径弯了，Euler 一大步就会走偏，需要多走几步。例：数据只有 −1 和 1 两个点，从噪声 0.3 出发，t = 0 时完美速度是两个方向的平均 −0.3，一步走完落在 0，正好在两个点中间、哪个都不是；走 10 步才到 1.0（代码对照里的 <code>generate</code>）。</p>
+<p><strong>reflow</strong>（L196–L202）：用训好的模型从噪声生成一批图，得到新的配对 (<span class="arithmatex">\(Z_0\)</span>, <span class="arithmatex">\(Z_1\)</span>)。这些配对是"顺着流走出来的"，不再交叉；用它们再训一次，路径就变直。原文说 1 次 reflow 后路径几乎是直的，<strong>一步 Euler</strong> 就能出好图（L99–L100、L133–L134）。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>DDPM（第 48 章）</th>
+<th>Rectified Flow</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>网络猜什么</td>
+<td>噪声 ε</td>
+<td>速度 <span class="arithmatex">\(X_1 - X_0\)</span></td>
+</tr>
+<tr>
+<td>路径</td>
+<td>弯，还带随机</td>
+<td>尽量直，确定的 ODE</td>
+</tr>
+<tr>
+<td>生成步数</td>
+<td>1000</td>
+<td>几步到几十步；reflow 后可以 1 步</td>
+</tr>
+<tr>
+<td>用在哪</td>
+<td>Stable Diffusion 1/2</td>
+<td>Stable Diffusion 3、FLUX（第 50 章）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话</strong>：生成时从噪声出发按网络给的速度 Euler 走 N 步；配对交叉会让路径变弯，reflow 用模型自己生成的配对再训一次，把路径拉直，步数就能降到一两步。</p>
+<h3 id="_2">动画演示：弯路径和直路径</h3>
+<p><img alt="Rectified Flow" src="../animations/49-latent-diffusion-flow.gif" /></p>
+<p>可交互版：<a href="../animations/49-latent-diffusion-flow.html">animations/49-latent-diffusion-flow.html</a>（需要用本地服务打开，见 <a href="../animations/index.html">animations/README.md</a>"跑起来看"；滑块：Euler 步数 N 从 1 拖到 30，看生成的点落得准不准）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>左边一团噪声、右边是数据（两个弯月），随机配对连直线，很多线互相交叉（第三步）；</li>
+<li>用"完美速度场"（对这组点精确算出的 v）从噪声出发走，路径在交叉处改道，是弯的（第四步）；</li>
+<li>Euler 步数少时点落不到弯月上，步数多时才准；</li>
+<li>滑块：N = 1、2、5、30 分别试。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：一张 256 × 256 的彩色图，f = 4，潜空间 4 个通道。z 是几乘几乘几？比像素少几倍？</p>
+<p><strong>题 2</strong>（第二步）：接正文的例子，如果位置 C 的 Q = [1, 1]，它对三个 token 的分数各是多少？它更关心哪个 token？（只要说出分数和直觉，不用算 softmax）</p>
+<p><strong>题 3</strong>（第三步）：噪声 <span class="arithmatex">\(X_0\)</span> = 0.5，真图 <span class="arithmatex">\(X_1\)</span> = −0.3，t = 0.5。<span class="arithmatex">\(X_t\)</span> 是多少？目标速度是多少？</p>
+<p><strong>题 4</strong>（第四步）：（a）为什么随机配对会让路径变弯？（b）reflow 做了什么让路径变直？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>先画小稿再放大：压成潜空间，扩散在里面；f 取八上下，太小慢、太大糊。<br />
+画师边画看订单：图像当 Q，文字当 K 和 V。<br />
+噪声连图走直线，网络只猜速度：终点减起点。<br />
+欧拉按速走几步，直了一步到；线交改道变弯，reflow 再拉直。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B14–B15</a>（B14 潜空间扩散与交叉注意力；B15 Rectified Flow 的直线、速度目标和 Euler 生成）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ High-Resolution Image Synthesis with Latent Diffusion Models（LDM，Rombach 等 2021）</td>
+<td>§3.1–§3.3 L166–L270；§4.1 L290–L336；§4.3.1 文生图 L387–L400</td>
+<td>本章原文：压缩、潜空间扩散、交叉注意力</td>
+</tr>
+<tr>
+<td>★ Flow Straight and Fast（Rectified Flow，Liu 等 2022）</td>
+<td>§2.1 L140–L170；Figure 2 L124–L129；reflow L196–L202</td>
+<td>直线路径、速度目标、reflow</td>
+</tr>
+<tr>
+<td>Flow Matching for Generative Modeling（Lipman 等 2022）</td>
+<td>全文（本地没有文本版）</td>
+<td>同时期的另一种写法，和 RF 本质相同</td>
+</tr>
+<tr>
+<td>Classifier-Free Diffusion Guidance（Ho &amp; Salimans 2022）</td>
+<td>全文（本地没有文本版）</td>
+<td>文生图里的"指导强度"（LDM 表里的 c.f.g，L370）</td>
+</tr>
+<tr>
+<td>本书第 50 章</td>
+<td></td>
+<td>SD3 把 RF 和 Transformer 主干结合起来</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>潜空间大小</strong>：<span class="arithmatex">\(h \times w \times c = (H/f) \times (W/f) \times c\)</span>，数据量是像素的 <span class="arithmatex">\(c/(3f^2)\)</span>。</li>
+<li><strong>交叉注意力</strong>：分数表 N × M（图像位置 × 文字 token），和自注意力的区别只是 K、V 的来源。</li>
+<li><strong>线性插值</strong>：<span class="arithmatex">\(X_t = tX_1 + (1-t)X_0\)</span>，<span class="arithmatex">\(\frac{dX_t}{dt} = X_1 - X_0\)</span>。</li>
+<li><strong>ODE 与 Euler</strong>：<span class="arithmatex">\(Z_{t+h} \approx Z_t + h\,v(Z_t, t)\)</span>；路径越直，步长越大误差越小，直线时一步无误差。</li>
+<li><strong>完美速度场</strong>：<span class="arithmatex">\(v(z, t) = \mathbb{E}[X_1 - X_0 \mid X_t = z]\)</span>（L396），交叉处取平均，所以会改道。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(z = E(x)\)</span>，<span class="arithmatex">\(\tilde x = D(z)\)</span>，<span class="arithmatex">\(f = H/h\)</span></td>
+<td>压缩和还原</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(L_{LDM} = \mathbb{E}\lVert \epsilon - \epsilon_\theta(z_t, t, \tau_\theta(y))\rVert^2\)</span></td>
+<td>潜空间里带条件的扩散目标（式 2、3）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(Q = W_Q\varphi(z_t)\)</span>，<span class="arithmatex">\(K = W_K\tau_\theta(y)\)</span>，<span class="arithmatex">\(V = W_V\tau_\theta(y)\)</span></td>
+<td>交叉注意力</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(X_t = tX_1 + (1-t)X_0\)</span></td>
+<td>噪声到图的直线</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\min_v \mathbb{E}\lVert (X_1 - X_0) - v(X_t, t)\rVert^2\)</span></td>
+<td>RF 训练目标（式 1）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(Z_{t+1/N} = Z_t + \frac{1}{N}v(Z_t, t)\)</span></td>
+<td>Euler 生成</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch49_latent_diffusion_flow.py</code>，配套测试 <code>tests/test_ch49.py</code>，notebook 在 <code>notebooks/ch49_latent_diffusion_flow.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch49_latent_diffusion_flow.py  
+uv run pytest tests/test_ch49.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 压缩多少</td>
+<td><span class="arithmatex">\((H/f)(W/f)c\)</span></td>
+<td><code>latent_size(512, 8, 4)</code></td>
+<td>64 × 64 × 4 = 16384，小 48 倍</td>
+</tr>
+<tr>
+<td>第二步 交叉注意力</td>
+<td>softmax(QKᵀ/√d)V</td>
+<td><code>cross_attention(Q, K, V)</code></td>
+<td>A：[0.164, 0.673, 0.164] → [0.673, 0.164]；B：[0.164, 0.673]</td>
+</tr>
+<tr>
+<td>第三步 RF 训练</td>
+<td>式 1</td>
+<td><code>rf_example(-1, 0.8, 0.25, 1.5)</code></td>
+<td><span class="arithmatex">\(X_t\)</span> = −0.55，目标 1.8，loss 0.09</td>
+</tr>
+<tr>
+<td>第四步 Euler</td>
+<td><span class="arithmatex">\(Z + v/N\)</span></td>
+<td><code>euler(z, v, dt)</code></td>
+<td>−0.55 + 0.75 × 1.8 = 0.8</td>
+</tr>
+<tr>
+<td>第四步 完美速度场</td>
+<td><span class="arithmatex">\(\mathbb{E}[X_1 - X_0 \mid X_t]\)</span></td>
+<td><code>perfect_velocity(z, t, data)</code></td>
+<td>两个数据点 ±1 时，z = 0、t = 0.5 处速度为 0（交叉点取平均）</td>
+</tr>
+<tr>
+<td>第四步 步数</td>
+<td>Euler N 步</td>
+<td><code>generate(0.3, [-1, 1], N)</code></td>
+<td>1 步落在 0（两个数据点正中间，哪个都不是）；2 步 0.291；10 步到 1.0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">scores = Q @ K.T / np.sqrt(K.shape[1])            # 图像位置 × 文字 token
+out = softmax(scores) @ V                        # 每个位置从文字里取信息
+
+x_t = t * x1 + (1 - t) * x0                      # 噪声和图之间的直线
+target = x1 - x0                                 # 目标速度：终点减起点
+z = z + dt * v(z, t)                             # Euler：按当前速度走一小步
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li>RF 的约定是 t = 0 噪声、t = 1 图；DDPM 是 t = 0 图、t = T 噪声；SD3 论文又用了"t = 0 是图"的写法。读代码时先看清楚哪头是噪声。</li>
+<li>完美速度场里有 <span class="arithmatex">\(1/(1-t)\)</span>，t = 1 时除以 0；Euler 最后一步只在 t = 1 − 1/N 取速度，不会碰到 t = 1。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>cross_attention</code> 里位置 A 的 Q 放大成 [4, 0]，看它对"红色"的权重是不是更接近 1。</li>
+<li>用 <code>perfect_velocity</code> 和 <code>euler</code> 从 z = −1 出发，分别走 1 步、10 步，看终点差多少。</li>
+</ul><nav class="pager"><a href="48-ddpm.html">← 第 48 章 · DDPM：一步步加噪声，再学着一步步去噪</a><a href="50-dit-mmdit.html">第 50 章 · DiT 与 MM-DiT：用 Transformer 当扩散的主干 →</a></nav>
+</main>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">AI 算法图解讲义（合集）</a></footer>
+</body></html>

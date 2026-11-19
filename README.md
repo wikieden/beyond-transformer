@@ -3,7 +3,7 @@
 **在线阅读：<https://wikieden.github.io/beyond-transformer/>** · [讲义目录](https://wikieden.github.io/beyond-transformer/lessons/index.html) · [全部动画](https://wikieden.github.io/beyond-transformer/animations/index.html) · [复习卡片](https://wikieden.github.io/beyond-transformer/review.html) · [全部讲义书](https://wikieden.github.io/ai-books/)
 
 > 在线阅读：<https://wikieden.github.io/beyond-transformer/> · 前作：《[从零读懂 Transformer](https://wikieden.github.io/transformer-visual/)》（24 章）
-> 计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 第 1 章正文完成（练习进行中）
+> 计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1 章、第 44–51 章（视觉段整段，练习待做）· 19 张复习卡片
 
 ## 这本书讲什么
 
@@ -22,22 +22,23 @@
 - **对照原文**：每章对应具体论文的章节和本地文本行号，引用原句；章节号没把握的先标"待核对"，写正文时核对。
 - **讲清"为什么换"**：每个新零件都和它替换掉的旧零件对比（Post-LN → Pre-LN、正弦位置编码 → RoPE、dense FFN → MoE、softmax attention → 线性注意力），说明换来了什么、付出了什么。
 - **学完就动手**：每段结尾对应一个里程碑（T-M0 到 T-M8），都在自己写的模型上改，用实验验证讲过的结论。
-- **保留真实的学习过程**：练习与作答记录、复习卡片（编号 B01 起）、口诀、延伸阅读，格式和前作一致。
+- **每章都有代码对照**：章末的"代码对照"用 NumPy 把讲义里的数字算一遍，代码在仓库 `beyond-transformer/solutions/chapter-code/`，配测试核对和讲义一致，还有一格一格跑的 notebook；只算讲过的例子，不提前给练习答案。
+- **保留真实的学习过程**：练习与作答记录、复习卡片（编号 B01 起）、口诀、延伸阅读，格式和前作一致。全部口诀汇总在本页末尾。
 
 ## 示例动画
 
-本书的动画还没开始做，下面是前作的动画，本书会沿用同样的风格（▶ 播放、→ 单步、↺ 从头开始，有滑块的可以拖动参数）。每个都标了和本书哪一章衔接。
+每章一个动画：▶ 播放、→ 单步、↺ 从头开始，有滑块的可以拖动参数。全部动画见 [animations/](https://wikieden.github.io/beyond-transformer/animations/index.html)；前作的 24 个动画见《[从零读懂 Transformer](https://wikieden.github.io/transformer-visual/)》。
 
 <table>
 <tr>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/09-qkv.gif" width="100%" alt="Q、K、V：图书馆找书"><br><b>Q、K、V：图书馆找书</b><br>原版第 9 章<br><a href="https://wikieden.github.io/transformer-visual/lessons/09-qkv.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/09-qkv.html">▶ 交互</a></td>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/16-multi-clock.gif" width="100%" alt="多档时钟：位置编码"><br><b>多档时钟：位置编码</b><br>原版第 16 章，本书 RoPE 一章会接着用<br><a href="https://wikieden.github.io/transformer-visual/lessons/16-multi-clock.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/16-multi-clock.html">▶ 交互</a></td>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/19-layernorm.gif" width="100%" alt="LayerNorm 与 RMSNorm"><br><b>LayerNorm 与 RMSNorm</b><br>原版第 19 章，本书第 13 章展开<br><a href="https://wikieden.github.io/transformer-visual/lessons/19-layernorm.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/19-layernorm.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="https://wikieden.github.io/beyond-transformer/animations/01-cross-entropy.gif" width="100%" alt="第 1 章 · 交叉熵 loss"><br><b>第 1 章 · 交叉熵 loss</b><br>正确词的概率越小，−log p 扣得越狠<br><a href="https://wikieden.github.io/beyond-transformer/lessons/01-cross-entropy.html">讲义</a> · <a href="https://wikieden.github.io/beyond-transformer/animations/01-cross-entropy.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="https://wikieden.github.io/beyond-transformer/animations/44-vit.gif" width="100%" alt="第 44 章 · ViT"><br><b>第 44 章 · ViT</b><br>一张图切成小块，排成一句话<br><a href="https://wikieden.github.io/beyond-transformer/lessons/44-vit.html">讲义</a> · <a href="https://wikieden.github.io/beyond-transformer/animations/44-vit.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="https://wikieden.github.io/beyond-transformer/animations/45-swin-vivit.gif" width="100%" alt="第 45 章 · Swin"><br><b>第 45 章 · Swin</b><br>只在窗口里看，窗口每层错开半格<br><a href="https://wikieden.github.io/beyond-transformer/lessons/45-swin-vivit.html">讲义</a> · <a href="https://wikieden.github.io/beyond-transformer/animations/45-swin-vivit.html">▶ 交互</a></td>
 </tr>
 <tr>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/20-ffn.gif" width="100%" alt="FFN 与 SwiGLU 闸门"><br><b>FFN 与 SwiGLU 闸门</b><br>原版第 20 章，本书第 14 章复盘<br><a href="https://wikieden.github.io/transformer-visual/lessons/20-ffn.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/20-ffn.html">▶ 交互</a></td>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/23-complexity.gif" width="100%" alt="为什么 attention 是 n²"><br><b>为什么 attention 是 n²</b><br>原版第 23 章，本书段 E、F 的出发点<br><a href="https://wikieden.github.io/transformer-visual/lessons/23-complexity.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/23-complexity.html">▶ 交互</a></td>
-<td width="33%" valign="top"><img src="https://wikieden.github.io/transformer-visual/animations/24-wrap-up.gif" width="100%" alt="数参数与 warmup 曲线"><br><b>数参数与 warmup 曲线</b><br>原版第 24 章，本书第 1–5 章接着讲训练<br><a href="https://wikieden.github.io/transformer-visual/lessons/24-wrap-up.html">讲义</a> · <a href="https://wikieden.github.io/transformer-visual/animations/24-wrap-up.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="https://wikieden.github.io/beyond-transformer/animations/46-clip-siglip.gif" width="100%" alt="第 46 章 · CLIP"><br><b>第 46 章 · CLIP</b><br>N × N 的图文分数表，对角线是正确配对<br><a href="https://wikieden.github.io/beyond-transformer/lessons/46-clip-siglip.html">讲义</a> · <a href="https://wikieden.github.io/beyond-transformer/animations/46-clip-siglip.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="https://wikieden.github.io/beyond-transformer/animations/48-ddpm.gif" width="100%" alt="第 48 章 · DDPM"><br><b>第 48 章 · DDPM</b><br>一团点逐步变成噪声，再逐步变回来<br><a href="https://wikieden.github.io/beyond-transformer/lessons/48-ddpm.html">讲义</a> · <a href="https://wikieden.github.io/beyond-transformer/animations/48-ddpm.html">▶ 交互</a></td>
+<td width="33%" valign="top"><img src="https://wikieden.github.io/beyond-transformer/animations/49-latent-diffusion-flow.gif" width="100%" alt="第 49 章 · Rectified Flow"><br><b>第 49 章 · Rectified Flow</b><br>噪声到数据：路径弯了要多走几步<br><a href="https://wikieden.github.io/beyond-transformer/lessons/49-latent-diffusion-flow.html">讲义</a> · <a href="https://wikieden.github.io/beyond-transformer/animations/49-latent-diffusion-flow.html">▶ 交互</a></td>
 </tr>
 </table>
 

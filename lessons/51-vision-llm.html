@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 51 章 · 视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列 · 超越 Transformer</title>
+<style>
+:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:28px;line-height:1.35;margin:8px 0 16px} h2{font-size:22px;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:18px;margin:28px 0 8px}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:17px;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+</div></header>
+<main>
+<h1 id="51">第 51 章 · 视觉接到大语言模型：图片变成"外语单词"，插进文字序列</h1><p><a class="btn" href="../animations/51-vision-llm.html">▶ 打开本章可交互动画</a></p>
+<blockquote>
+<p>本章回答：大语言模型只会读 token，怎么让它"看图说话"？LLaVA 的一个投影矩阵、BLIP-2 的 32 个查询向量，分别怎么把图片特征变成语言模型能读的 token？Qwen2-VL 为什么能吃任意分辨率的图，图片 token 的"位置"又怎么编号？<br />
+讲解日期：2026-11-18 · 上一章：<a href="../lessons/50-dit-mmdit.html">第 50 章 DiT 与 MM-DiT</a> · 下一章：无（本书最后一章；工业案例见 <code>nvidia-cosmos3/</code>）<br />
+对应原文：LLaVA <code>transformer-deep-dive/materials/text/papers/llava-2304.08485.txt</code> §4.1 L240–L252（式 1）、§4.2 两阶段训练 L291–L305；BLIP-2 <code>blip2-2301.12597.txt</code> 摘要 L28–L34、§3.1 Q-Former L150–L175、§3.3 接 LLM L224–L232；Qwen2-VL <code>qwen2-vl-2409.12191.txt</code> §2.1 L158–L192（Naive Dynamic Resolution、M-RoPE）、Table 1 L96–L102<br />
+本章缩写：LLM = Large Language Model（大 / 语言 / 模型）；VLM = Vision-Language Model（视觉–语言模型）；LLaVA = Large Language and Vision Assistant（大型语言与视觉助手）；BLIP-2 = Bootstrapping Language-Image Pre-training（自举式语言–图像预训练）第 2 版；Q-Former = Querying Transformer（查询 / Transformer）；query（查询向量：一组学出来的"提问者"）；FC = Fully-Connected（全连接层，就是线性层）；<span class="arithmatex">\(Z_v\)</span>：图片编码器输出的特征（v = vision）；<span class="arithmatex">\(H_v\)</span>：投影后的图片 token；W：投影矩阵；Qwen2-VL（通义千问 2 的视觉语言版）；RoPE = Rotary Position Embedding（旋转 / 位置 / 编码，第 15 章）；M-RoPE = Multimodal RoPE（多模态 RoPE）；ID = identifier（编号）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-18">第一步：总体结构：编码器 → 连接器 → 语言模型（2026-11-18）</h3>
+<p><strong>类比：给只懂中文的作家配一个翻译。</strong> 语言模型是一位很会写的作家，但只读得懂"中文"（它词表里的 token 向量）。图片是"外语"。办法是找一个翻译，把图片翻成作家读得懂的一串"词"，插在问题前面，作家就能看着这些"词"回答。</p>
+<p>三段：</p>
+<table>
+<thead>
+<tr>
+<th>部分</th>
+<th>用什么</th>
+<th>训练时动不动</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>图片编码器</td>
+<td>一个训好的 ViT，常用 CLIP / SigLIP 的那一个（第 44、46 章）</td>
+<td>通常冻住</td>
+</tr>
+<tr>
+<td>连接器</td>
+<td>线性层（LLaVA）、Q-Former（BLIP-2）、MLP（Qwen2-VL）</td>
+<td><strong>主要训它</strong></td>
+</tr>
+<tr>
+<td>语言模型</td>
+<td>训好的 LLM</td>
+<td>先冻住，后面微调</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键约束</strong>：连接器的输出必须和 LLM 词向量<strong>一样长</strong>（前作第 22 章的 <span class="arithmatex">\(d_{model}\)</span>），这样图片 token 和文字 token 才能排在同一条序列里。之后的事全交给 LLM：它对整条序列做 causal 自注意力（前作第 17 章），文字 token 自然能"看到"前面的图片 token。</p>
+<p><strong>一句话</strong>：视觉语言模型 = 冻住的图片编码器 + 一个连接器 + 语言模型；连接器把图片特征变成和词向量一样长的 token，插进文字序列。</p>
+<h3 id="llava2026-11-18">第二步：LLaVA：一个投影矩阵就够了（2026-11-18）</h3>
+<p><strong>做法</strong>（§4.1，L244–L250）：图片编码器用 CLIP 的 ViT-L/14，取网格特征 <span class="arithmatex">\(Z_v = g(X_v)\)</span>（每个小块一个向量）；用一个可训练的矩阵 W 把它们变成词向量那么长：</p>
+<div class="arithmatex">\[H_v = W \cdot Z_v,\qquad Z_v = g(X_v)\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(X_v\)</span></td>
+<td>输入图片</td>
+</tr>
+<tr>
+<td>g</td>
+<td>CLIP 的图片编码器（冻住）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(Z_v\)</span></td>
+<td>每个小块一个特征向量</td>
+</tr>
+<tr>
+<td>W</td>
+<td>投影矩阵：特征长度 → 词向量长度</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(H_v\)</span></td>
+<td>一串"图片 token"，和词向量同样长</td>
+</tr>
+</tbody>
+</table>
+<p>224 × 224 的图、ViT-L/14：(224 / 14)² = <strong>256</strong> 个小块，就是 256 个图片 token。原文说这个投影"很轻"，方便快速试数据（L251–L252）。</p>
+<p><strong>数字演示</strong>（编的：特征 3 维、词向量 2 维，两个小块，按行写）：</p>
+<div class="arithmatex">\[Z_v = \begin{bmatrix} 1 &amp; 0 &amp; 2 \\ 0 &amp; 1 &amp; 1 \end{bmatrix},\quad W = \begin{bmatrix} 1 &amp; 0 \\ 0 &amp; 1 \\ 0.5 &amp; 0.5 \end{bmatrix},\quad H_v = Z_v W = \begin{bmatrix} 2 &amp; 1 \\ 0.5 &amp; 1.5 \end{bmatrix}\]</div>
+<p>两行就是两个图片 token，接在"这张图里有什么？"的词向量前面，一起送进 LLM。</p>
+<p><strong>两阶段训练</strong>（§4.2，L291–L305）：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>训什么</th>
+<th>数据</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 特征对齐</td>
+<td><strong>只训 W</strong>，编码器和 LLM 都冻住</td>
+<td>59.5 万对图文（问"简单描述一下"，答原配文）</td>
+<td>让图片 token 落在 LLM 词向量的"地盘"里，原文比作给冻住的 LLM 训一个"视觉 tokenizer"</td>
+</tr>
+<tr>
+<td>2 端到端微调</td>
+<td>W 和 LLM 一起训，编码器仍冻住</td>
+<td>15.8 万条多轮对话、细节描述、推理（L183）</td>
+<td>学会按指令回答</td>
+</tr>
+</tbody>
+</table>
+<p>loss 就是第 1 章的交叉熵：只在"回答"那些 token 上算。</p>
+<p><strong>一句话</strong>：LLaVA 用一个投影矩阵把 CLIP 的 256 个小块特征变成 256 个"图片 token"；先只训矩阵对齐，再连 LLM 一起微调。</p>
+<h3 id="blip-232-2026-11-18">第三步：BLIP-2：32 个查询向量当瓶颈（2026-11-18）</h3>
+<p><strong>问题</strong>：每张图 256 个甚至更多 token，塞进 LLM 很占地方。能不能先压一压？</p>
+<p><strong>类比：派 32 个记者去采访。</strong> 不把整场发布会的录像都给作家，而是派 32 个记者（query）去现场，每人带回一段摘要。记者的问题是学出来的。</p>
+<p><strong>Q-Former</strong>（§3.1，L150–L173）：</p>
+<ol>
+<li>一组<strong>可学习的查询向量</strong>：32 个，每个 768 维，本身就是模型参数（L168–L170）；</li>
+<li>它们在一个小 Transformer 里：彼此做自注意力，并通过<strong>交叉注意力</strong>去看冻住的图片特征（Q 来自查询向量，K、V 来自图片特征，第 49 章的那种），每隔一层插一个（L152–L156）；</li>
+<li>输出 Z 是 32 × 768。</li>
+</ol>
+<p><strong>压了多少</strong>（L171–L173）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>尺寸</th>
+<th>个数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>冻住的图片特征（ViT-L/14）</td>
+<td>257 × 1024</td>
+<td>263168</td>
+</tr>
+<tr>
+<td>Q-Former 输出 Z</td>
+<td>32 × 768</td>
+<td>24576</td>
+</tr>
+</tbody>
+</table>
+<p>再用一个全连接层投影到 LLM 词向量的长度，放在文字前面，原文称为"soft visual prompts"（软的视觉提示，L226–L231）。Q-Former 一共 1.88 亿参数，用 BERT-base 初始化（L163–L165）。</p>
+<p><strong>两阶段</strong>（摘要 L28–L34）：第一阶段只接冻住的图片编码器，学"图文表示"；第二阶段再接冻住的 LLM，学"让 LLM 能根据这 32 个 token 生成文字"。图片编码器和 LLM 始终冻住，只训 Q-Former 和全连接层。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLaVA</th>
+<th>BLIP-2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>连接器</td>
+<td>一个线性层</td>
+<td>Q-Former（1.88 亿参数）+ 全连接</td>
+</tr>
+<tr>
+<td>每张图几个 token</td>
+<td>256（和小块一样多）</td>
+<td><strong>32</strong>（固定）</td>
+</tr>
+<tr>
+<td>优点</td>
+<td>简单，细节都在</td>
+<td>token 少，省 LLM 的算力</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话</strong>：BLIP-2 用 32 个可学习的查询向量，通过交叉注意力从 257 个图片特征里"采访"出 32 个摘要 token，再投影给冻住的 LLM。</p>
+<h3 id="qwen2-vl2-2-2026-11-18">第四步：Qwen2-VL：任意分辨率，2 × 2 合并（2026-11-18）</h3>
+<p><strong>问题</strong>：前两种都把图缩成 224 × 224。一张长截图、一页文档缩小以后，字就看不清了。</p>
+<p><strong>Naive Dynamic Resolution</strong>（朴素的动态分辨率，L158–L168）：</p>
+<ol>
+<li><strong>不缩放</strong>：图片多大，就切出多少个 14 × 14 的小块，token 个数随图片变；</li>
+<li>ViT 里去掉"绝对位置编码"（第 44 章那张学出来的表，只有固定个数的行），换成<strong>二维 RoPE</strong>（第 15 章），任意大小都能编位置；</li>
+<li>ViT 输出后，用一个 <strong>MLP 把相邻的 2 × 2 个 token 合并成 1 个</strong>（和第 45 章的 patch merging 一个思路），token 数变成 1/4；</li>
+<li>前后各加一个特殊 token <code>&lt;|vision_start|&gt;</code>、<code>&lt;|vision_end|&gt;</code>。</li>
+</ol>
+<p><strong>数字演示</strong>（patch 14）：</p>
+<table>
+<thead>
+<tr>
+<th>图片</th>
+<th>小块</th>
+<th>2 × 2 合并后</th>
+<th>加首尾两个特殊 token</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>224 × 224</td>
+<td>16 × 16 = 256</td>
+<td>64</td>
+<td><strong>66</strong>（原文的例子，L167–L168）</td>
+</tr>
+<tr>
+<td>448 × 448</td>
+<td>32 × 32 = 1024</td>
+<td>256</td>
+<td>258</td>
+</tr>
+<tr>
+<td>448 × 224（横图）</td>
+<td>32 × 16 = 512</td>
+<td>128</td>
+<td>130</td>
+</tr>
+<tr>
+<td>1344 × 896</td>
+<td>96 × 64 = 6144</td>
+<td>1536</td>
+<td>1538</td>
+</tr>
+</tbody>
+</table>
+<p>图越大 token 越多，细节保留得越好，代价是 LLM 要处理的序列更长（前作第 23 章的 <span class="arithmatex">\(n^2\)</span>）。Qwen2-VL 的 2B、7B、72B 三个版本用的是同一个 6.75 亿参数的 ViT（Table 1，L96–L102）。</p>
+<p><strong>一句话</strong>：Qwen2-VL 不缩放图片，按原分辨率切小块，ViT 用二维 RoPE，再用 MLP 把 2 × 2 个 token 合成一个，224 × 224 的图变成 66 个 token。</p>
+<h3 id="m-rope-token-2026-11-18">第五步：M-RoPE：图片 token 的位置用三个编号（2026-11-18）</h3>
+<p><strong>问题</strong>：文字是一维的，第 1、2、3 个词；图片是二维的，视频还多一个时间轴。把图片 token 排成一行、按 1、2、3 编号，"上下相邻"的信息就丢了。</p>
+<p><strong>M-RoPE</strong>（L171–L192）：把旋转位置编码拆成三份，每个 token 的位置是三个编号：<strong>(时间, 高, 宽)</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>token 类型</th>
+<th>时间编号</th>
+<th>高编号</th>
+<th>宽编号</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>文字</td>
+<td>和普通位置一样</td>
+<td>和时间相同</td>
+<td>和时间相同（三个一样，就等于普通的一维 RoPE，L185–L186）</td>
+</tr>
+<tr>
+<td>图片</td>
+<td>整张图同一个</td>
+<td>按所在行</td>
+<td>按所在列</td>
+</tr>
+<tr>
+<td>视频</td>
+<td>每一帧加 1</td>
+<td>按行</td>
+<td>按列</td>
+</tr>
+</tbody>
+</table>
+<p><strong>换模态时接着编</strong>：下一段的起始编号 = 前面所有编号里的最大值 + 1（L189–L191）。</p>
+<p><strong>数字演示</strong>（编的）：文字"描述 这张 图"，接一张合并后只有 2 × 2 个 token 的小图，再接一个文字"。"：</p>
+<table>
+<thead>
+<tr>
+<th>token</th>
+<th>(时间, 高, 宽)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>描述</td>
+<td>(0, 0, 0)</td>
+</tr>
+<tr>
+<td>这张</td>
+<td>(1, 1, 1)</td>
+</tr>
+<tr>
+<td>图</td>
+<td>(2, 2, 2)</td>
+</tr>
+<tr>
+<td>图片 左上</td>
+<td>(3, 3, 3)</td>
+</tr>
+<tr>
+<td>图片 右上</td>
+<td>(3, 3, 4)</td>
+</tr>
+<tr>
+<td>图片 左下</td>
+<td>(3, 4, 3)</td>
+</tr>
+<tr>
+<td>图片 右下</td>
+<td>(3, 4, 4)</td>
+</tr>
+<tr>
+<td>。</td>
+<td>(5, 5, 5)：前面最大是 4，所以从 5 开始</td>
+</tr>
+</tbody>
+</table>
+<p>左上和左下的"宽"编号相同、"高"差 1，模型就知道它们上下相邻。</p>
+<p><strong>一句话</strong>：M-RoPE 给每个 token 三个位置编号（时间、高、宽），文字三个相同，图片按行列编，视频按帧加时间；换模态时从最大编号 + 1 接着编。</p>
+<h3 id="_2">动画演示：图片小块 → 投影 → 插进文字序列</h3>
+<p><img alt="视觉接 LLM" src="../animations/51-vision-llm.gif" /></p>
+<p>可交互版：<a href="../animations/51-vision-llm.html">animations/51-vision-llm.html</a>（需要用本地服务打开，见 <a href="../animations/index.html">animations/README.md</a>"跑起来看"；滑块：图片边长从 224 拖到 1344，看 Qwen2-VL 的 token 数怎么涨）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>图片 → ViT → 连接器 → 一串图片 token，和文字 token 排成一条序列进 LLM（第一步）；</li>
+<li>LLaVA：256 个小块逐个投影，256 个 token（第二步）；</li>
+<li>BLIP-2：32 个查询向量去"采访"257 个特征，只留 32 个 token（第三步）；</li>
+<li>Qwen2-VL：按原尺寸切块，2 × 2 合并，再加首尾两个特殊 token（第四步）；</li>
+<li>M-RoPE：每个 token 标上（时间, 高, 宽）（第五步）。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一、二步）：（a）LLaVA 的投影矩阵 W 为什么输出长度必须等于 LLM 词向量的长度？（b）第一阶段为什么只训 W？</p>
+<p><strong>题 2</strong>（第三步）：BLIP-2 的查询向量是 32 个。（a）不管图片多大，送进 LLM 的图片 token 都是几个？（b）它和 LLaVA 相比，省了什么、可能丢了什么？</p>
+<p><strong>题 3</strong>（第四步）：一张 672 × 448 的图，Qwen2-VL（patch 14，2 × 2 合并，加首尾两个特殊 token）一共多少个图片 token？</p>
+<p><strong>题 4</strong>（第五步）：文字"看 图"（编号从 0 开始），接一张合并后 1 行 3 列的图，再接文字"好"。写出每个 token 的（时间, 高, 宽）。</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>作家只读自家词，图片先请翻译来：编码器冻住，连接器来训，长度对齐插队前。<br />
+LLaVA 一个矩阵投，先对齐、再微调。<br />
+BLIP-2 派记者，三十二个去采访，交叉注意力带摘要。<br />
+Qwen 不缩原图切，二乘二合一，首尾加标记。<br />
+位置拆成三个号：时间高宽，文字三同；换段从最大加一接着编。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B18–B19</a>（B18 三种连接器：LLaVA、BLIP-2、Qwen2-VL；B19 动态分辨率的 token 数与 M-RoPE 编号）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Visual Instruction Tuning（LLaVA，Liu 等 2023）</td>
+<td>§3 指令数据 L160–L190；§4.1 L240–L252；§4.2 L291–L310</td>
+<td>本章原文：投影、两阶段训练、用 GPT-4 造指令数据</td>
+</tr>
+<tr>
+<td>★ BLIP-2（Li 等 2023）</td>
+<td>§3.1 Q-Former L150–L175；§3.2 三个预训练目标；§3.3 L224–L232</td>
+<td>查询向量瓶颈、冻住两头只训中间</td>
+</tr>
+<tr>
+<td>★ Qwen2-VL（Wang 等 2024）</td>
+<td>§2.1 L158–L192；消融 L719 起</td>
+<td>动态分辨率、2 × 2 合并、M-RoPE</td>
+</tr>
+<tr>
+<td>Flamingo（Alayrac 等 2022）</td>
+<td>全文（本地没有文本版）</td>
+<td>另一条路：在 LLM 层之间插交叉注意力，图片不进序列</td>
+</tr>
+<tr>
+<td>LLaVA-1.5（Liu 等 2023）</td>
+<td>全文（本地没有文本版）</td>
+<td>线性层换成两层 MLP、分辨率提到 336</td>
+</tr>
+<tr>
+<td>本书第 15 章（RoPE，待写）</td>
+<td></td>
+<td>旋转位置编码本身</td>
+</tr>
+<tr>
+<td><code>nvidia-cosmos3/</code> 专题</td>
+<td>study-plan</td>
+<td>本书视觉部分（第 44–51 章）在一个工业系统里怎么组合</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>投影对齐维度</strong>：<span class="arithmatex">\(H_v = Z_v W\)</span>，W 是 <span class="arithmatex">\(d_{vision} \times d_{LLM}\)</span>。</li>
+<li><strong>查询向量瓶颈</strong>：交叉注意力输出的行数 = 查询个数（Q 的行数），和图片特征多少无关，所以总是 32 个。</li>
+<li><strong>token 数</strong>：<span class="arithmatex">\(\frac{H}{14} \cdot \frac{W}{14} \cdot \frac{1}{4} + 2\)</span>（Qwen2-VL）。</li>
+<li><strong>M-RoPE</strong>：三组旋转角分别由时间、高、宽编号决定；三者相同时退化为一维 RoPE。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(H_v = W \cdot Z_v\)</span>，<span class="arithmatex">\(Z_v = g(X_v)\)</span></td>
+<td>LLaVA 投影（式 1）</td>
+</tr>
+<tr>
+<td>Z：32 × 768 ← 交叉注意力(查询, 257 × 1024 特征)</td>
+<td>BLIP-2 Q-Former</td>
+</tr>
+<tr>
+<td>token 数 = (H/14)(W/14)/4 + 2</td>
+<td>Qwen2-VL 动态分辨率</td>
+</tr>
+<tr>
+<td>位置 = (时间, 高, 宽)；下一段从 max + 1 开始</td>
+<td>M-RoPE</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch51_vision_llm.py</code>，配套测试 <code>tests/test_ch51.py</code>，notebook 在 <code>notebooks/ch51_vision_llm.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch51_vision_llm.py  
+uv run pytest tests/test_ch51.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第二步 LLaVA 投影</td>
+<td><span class="arithmatex">\(H_v = Z_v W\)</span></td>
+<td><code>Z @ W</code></td>
+<td>[[2, 1], [0.5, 1.5]]</td>
+</tr>
+<tr>
+<td>第二步 拼进序列</td>
+<td>拼接</td>
+<td><code>build_sequence(H_v, text_emb)</code></td>
+<td>图片 token 在前、文字 token 在后</td>
+</tr>
+<tr>
+<td>第三步 BLIP-2 压缩</td>
+<td>个数</td>
+<td><code>257 * 1024</code>、<code>32 * 768</code></td>
+<td>263168 → 24576</td>
+</tr>
+<tr>
+<td>第四步 Qwen2-VL token 数</td>
+<td>(H/14)(W/14)/4 + 2</td>
+<td><code>qwen2vl_tokens(H, W)</code></td>
+<td>224² → 66；448² → 258；448 × 224 → 130</td>
+</tr>
+<tr>
+<td>第五步 M-RoPE</td>
+<td>三个编号</td>
+<td><code>mrope_ids([...])</code></td>
+<td>文字 (0,0,0)…；图 (3,3,3)–(3,4,4)；"。" (5,5,5)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">H_v = Z @ W                                         # LLaVA：每个小块特征投影成词向量长度
+seq = np.concatenate([H_v, text_emb])              # 图片 token 排在文字前面，一起进 LLM
+n = (H // 14) * (W // 14) // 4 + 2                  # Qwen2-VL：切 14 × 14、2 × 2 合并、加首尾标记
+ids.append((start, start + r, start + c))          # M-RoPE：图片 token 的 (时间, 高, 宽)
+start = max(max(i) for i in ids) + 1                # 下一段从最大编号 + 1 开始
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li>原文写 <span class="arithmatex">\(W \cdot Z_v\)</span>（列向量），代码按行存特征，写成 <code>Z @ W</code>；W 的形状要跟着转置，这和前作第 12 章"存的是转置"是同一个坑。</li>
+<li>Qwen2-VL 要求宽高都能被 28（= 14 × 2）整除，实际实现会先把图片缩放到最接近的 28 的倍数；讲义里的例子都挑了能整除的尺寸。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li><code>qwen2vl_tokens(896, 896)</code>、<code>qwen2vl_tokens(1792, 1792)</code>：看边长翻倍 token 涨几倍。</li>
+<li><code>mrope_ids</code> 里把图片换成 3 帧的视频（时间编号每帧加 1），看编号怎么排。</li>
+</ul><nav class="pager"><a href="50-dit-mmdit.html">← 第 50 章 · DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><span></span></nav>
+</main>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">AI 算法图解讲义（合集）</a></footer>
+</body></html>

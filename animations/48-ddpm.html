@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DDPM 加噪去噪</title><link rel="stylesheet" href="anim.css">
+<style>svg text.big{font-size:15px}svg text.cap{font-size:15px;font-weight:500}svg text.v{font-size:12px}</style></head>
+<body><main>
+<h1>第 48 章 · DDPM：一团点逐步变成噪声，再逐步变回来</h1>
+<p class="sub">配套讲义：<a href="../lessons/48-ddpm.html">第 48 章 · DDPM：一步步加噪声，再学着一步步去噪</a>。"数据"是两个弯月形上的点（编的，二维）；β 从 0.0001 线性涨到 0.02，T = 1000。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 400"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="t">自己拖：前向第 t 步</label><input type="range" id="t" min="0" max="1000" step="10" value="250"><span id="tv">250</span></div>
+<p class="note">看点：① 按式 4 一步跳到第 t 步：t 越大越散，t = 1000 时是一团圆形噪声；② 从新的纯噪声出发，按 Algorithm 2 倒着走 1000 步，点又聚回两个弯月。去噪用的是对这组点精确算出的"完美网络"，代替训练好的 U-Net。滑块：看原图系数 √ā 和噪声系数 √(1−ā) 此消彼长。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');const T=1000;
+const B=[...Array(T)].map((_,i)=>1e-4+(0.02-1e-4)*i/(T-1)),A=B.map(b=>1-b),AB=[];A.reduce((p,a,i)=>(AB[i]=p*a),1);
+const ab=t=>t<=0?1:AB[t-1];
+seed(3);
+const N=260,DATA=[],ANCH=[];
+for(let i=0;i<N;i++){const up=i%2===0,th=Math.PI*rnd();const x=up?Math.cos(th)-0.5:1-Math.cos(th)-0.5,y=up?Math.sin(th)-0.25:0.25-Math.sin(th);DATA.push([x*1.2+0.04*gauss(),y*1.2+0.04*gauss()])}
+for(let i=0;i<80;i++)ANCH.push(DATA[i]);
+const EPS=DATA.map(()=>[gauss(),gauss()]);
+const fwd=t=>DATA.map((p,i)=>[Math.sqrt(ab(t))*p[0]+Math.sqrt(1-ab(t))*EPS[i][0],Math.sqrt(ab(t))*p[1]+Math.sqrt(1-ab(t))*EPS[i][1]]);
+function x0hat(x,t){const a=Math.sqrt(ab(t)),v=1-ab(t);let ws=0,mx=0,my=0,best=-1e18;const lw=ANCH.map(m=>{const dx=x[0]-a*m[0],dy=x[1]-a*m[1];return-(dx*dx+dy*dy)/(2*v)});
+  lw.forEach(l=>{if(l>best)best=l});lw.forEach((l,k)=>{const w=Math.exp(l-best);ws+=w;mx+=w*ANCH[k][0];my+=w*ANCH[k][1]});return[mx/ws,my/ws]}
+const SNAP={};
+(function(){seed(11);let X=DATA.map(()=>[gauss(),gauss()]);SNAP[1000]=X.map(p=>p.slice());
+  for(let t=T;t>=1;t--){const i=t-1,a=Math.sqrt(ab(t)),s=Math.sqrt(1-ab(t)),c=B[i]/s,ra=Math.sqrt(A[i]),sg=Math.sqrt(B[i]);
+    X=X.map(x=>{const h=x0hat(x,t),e=[(x[0]-a*h[0])/s,(x[1]-a*h[1])/s];const z=t>1?[gauss(),gauss()]:[0,0];return[(x[0]-c*e[0])/ra+sg*z[0],(x[1]-c*e[1])/ra+sg*z[1]]});
+    if([750,500,250,100,1].includes(t))SNAP[t-1]=X.map(p=>p.slice())}})();
+const ST=[{t:0,f:1,cap:'t = 0：原始数据（两个弯月）'},{t:100,f:1,cap:'前向 t = 100：原图系数 0.947，噪声系数 0.321'},{t:250,f:1,cap:'t = 250：0.724 / 0.690，形状开始糊'},{t:500,f:1,cap:'t = 500：0.280 / 0.960，几乎看不出弯月'},{t:1000,f:1,cap:'t = 1000：0.006 / 1.000，就是一团高斯噪声'},
+ {t:1000,f:0,cap:'生成：从一团新的纯噪声出发（Algorithm 2）'},{t:749,f:0,cap:'倒着走到 t = 750：每步减一点猜出的噪声，再撒一点新噪声'},{t:499,f:0,cap:'t = 500：还看不出形状，但已在往中间收'},{t:249,f:0,cap:'t = 250：两个弯月出来了'},{t:99,f:0,cap:'t = 100'},{t:0,f:0,cap:'t = 0：一共跑了 1000 次"网络"，点回到弯月上'}];
+const FR=[];ST.forEach((_,i)=>{FR.push(i);FR.push(i)});
+let k=0,custom=null;
+const CX=230,CY=210,SC=70;
+function cloud(P,c){el('rect',{x:CX-170,y:CY-160,width:340,height:320,rx:8,fill:'none',stroke:'var(--line)'},sv);
+  P.forEach(p=>{const x=CX+p[0]*SC,y=CY-p[1]*SC;if(Math.abs(p[0])<2.4&&Math.abs(p[1])<2.25)el('circle',{cx:x,cy:y,r:2.6,fill:c,opacity:.75},sv)})}
+function bars(t){const a=Math.sqrt(ab(t)),s=Math.sqrt(1-ab(t)),x=440,w=200;
+  txt(`t = ${t}`,{x,y:110,class:'big'},sv);
+  txt('原图系数 √ā',{x,y:145,class:'m'},sv);el('rect',{x,y:152,width:w,height:18,rx:4,fill:'none',stroke:'var(--line)'},sv);el('rect',{x,y:152,width:w*a,height:18,rx:4,fill:'var(--teal)'},sv);txt(a.toFixed(3),{x:x+w+8,y:166,class:'v'},sv);
+  txt('噪声系数 √(1−ā)',{x,y:195,class:'m'},sv);el('rect',{x,y:202,width:w,height:18,rx:4,fill:'none',stroke:'var(--line)'},sv);el('rect',{x,y:202,width:w*s,height:18,rx:4,fill:'var(--warm)'},sv);txt(s.toFixed(3),{x:x+w+8,y:216,class:'v'},sv);
+  txt('x_t = √ā · x₀ + √(1−ā) · ε',{x,y:260,class:'big'},sv)}
+function draw(){
+  clear(sv);
+  if(custom!==null){txt(`前向：一步跳到第 ${custom} 步（式 4）`,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);cloud(fwd(custom),'var(--purple)');bars(custom);return}
+  const f=ST[FR[k]];txt(f.cap,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+  if(f.f){cloud(fwd(f.t),'var(--purple)');bars(f.t);txt('前向：自己定的，不用学',{x:440,y:300,class:'m'},sv)}
+  else{cloud(SNAP[f.t],'var(--teal)');bars(f.t);
+    txt('x_{t−1} = (x_t − β/√(1−ā)·ε_θ) / √α + σz',{x:440,y:300,class:'v'},sv);txt('ε_θ 来自"完美网络"（对这组点精确算）',{x:440,y:325,class:'m'},sv)}
+}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=FR.length-1)return false;k++;draw();return true}
+$('t').oninput=e=>{ANIM.stop();custom=+e.target.value;$('tv').textContent=custom;draw()};
+setupPlayer({captureSeed:1,reset,next},1500);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

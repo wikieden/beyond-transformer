@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLIP 分数表</title><link rel="stylesheet" href="anim.css">
+<style>svg text.big{font-size:15px}svg text.cap{font-size:15px;font-weight:500}svg text.v{font-size:13px}</style></head>
+<body><main>
+<h1>第 46 章 · CLIP 与 SigLIP：一批图文的配对分数表</h1>
+<p class="sub">配套讲义：<a href="../lessons/46-clip-siglip.html">第 46 章 · CLIP 与 SigLIP：图和文字配不配，用点积打分</a>。3 张图（狗、猫、鸟）和 3 段文字，向量都是编的、长度为 1；对角线是真正的配对。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 400"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="s">自己拖：放大倍数（1/τ）</label><input type="range" id="s" min="1" max="30" step="1" value="10"><span id="svv">10</span></div>
+<p class="note">看点：① 图和文字都是单位向量，点积就是余弦；② 3 × 3 分数表，对角线是正确配对；③ 按行、按列 softmax，对角线取 −log 再平均，总 loss ≈ 0.272；④ SigLIP：每格单独 sigmoid，b = −10 让模型一开始先说"不配"。滑块：放大倍数小，每行概率差不多；放大后对角线突出。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+const I=[[1,0],[0,1],[0.6,0.8]],T=[[0.96,0.28],[0.28,0.96],[0.6,0.8]];
+const IN=['狗图','猫图','鸟图'],TN=['一只狗','一只猫','一只鸟'],CO=['var(--teal)','var(--purple)','var(--warm)'];
+const S=I.map(a=>T.map(b=>a[0]*b[0]+a[1]*b[1]));
+const f3=v=>(Math.round(v*1000)/1000).toFixed(3),f2=v=>String(Math.round(v*100)/100);
+function smRow(M){return M.map(r=>{const m=Math.max(...r),e=r.map(x=>Math.exp(x-m)),s=e.reduce((a,b)=>a+b);return e.map(x=>x/s)})}
+function smCol(M){const t=M[0].map((_,j)=>M.map(r=>r[j]));const r=smRow(t);return M.map((_,i)=>M[0].map((_,j)=>r[j][i]))}
+const sig=x=>1/(1+Math.exp(-x));
+const ST=[
+ {cap:'第一步：图和文字都变成长度 1 的向量（编的，2 维）',v:'vec'},
+ {cap:'第二步：两两点积 = 余弦，得到 3 × 3 分数表，对角线是正确配对',v:'tab',M:()=>S,fmt:f3},
+ {cap:'乘放大倍数 10（温度 τ = 0.1），softmax 才分得开',v:'tab',M:()=>S.map(r=>r.map(x=>10*x)),fmt:f2},
+ {cap:'第三步：按行 softmax（图找文），对角线取 −log，平均 ≈ 0.240',v:'row'},
+ {cap:'按列 softmax（文找图）平均 ≈ 0.303；总 loss = (0.240 + 0.303) / 2 ≈ 0.272',v:'col'},
+ {cap:'第五步 SigLIP：每格 10 × 余弦 − 10，单独 sigmoid；对角线标 +1，其余 −1',v:'sig'}];
+const FR=[];ST.forEach((_,i)=>{FR.push(i);FR.push(i)});
+let k=0,custom=null;
+function table(M,fmt,x0,y0,heat,diagNote){const w=96,h=52;
+  TN.forEach((t,j)=>txt(t,{x:x0+j*w+w/2,y:y0-10,'text-anchor':'middle',class:'v'},sv).style.fill=CO[j]);
+  IN.forEach((t,i)=>{txt(t,{x:x0-10,y:y0+i*h+31,'text-anchor':'end',class:'v'},sv).style.fill=CO[i];
+    M[i].forEach((v,j)=>{const d=i===j,op=heat?Math.max(.06,Math.min(1,heat(v))):(d?.35:.1);
+      el('rect',{x:x0+j*w,y:y0+i*h,width:w-4,height:h-4,rx:6,fill:d?'var(--teal)':'var(--muted)',opacity:op},sv);
+      if(d)el('rect',{x:x0+j*w,y:y0+i*h,width:w-4,height:h-4,rx:6,fill:'none',stroke:'var(--teal)','stroke-width':2.5},sv);
+      txt(fmt(v),{x:x0+j*w+w/2-2,y:y0+i*h+31,'text-anchor':'middle',class:'big'},sv)})})}
+function draw(){
+  clear(sv);
+  if(custom!==null){const sc=custom,P=smRow(S.map(r=>r.map(x=>sc*x)));const L=P.map((r,i)=>-Math.log(r[i]));const m=L.reduce((a,b)=>a+b)/3;
+    txt(`放大 ${sc} 倍后按行 softmax：对角线 ${P.map((r,i)=>f3(r[i])).join('、')}`,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+    table(P,f3,150,70,v=>v,true);
+    txt(`按行平均 loss = ${f3(m)}`,{x:340,y:260,'text-anchor':'middle',class:'big'},sv).style.fill='var(--warm)';
+    txt(sc<4?'倍数太小：每行概率差不多，分不开谁是正确配对':sc>20?'倍数很大：对角线很尖；CLIP 把它限制在 100 以内防止不稳':'对角线突出，但鸟图 × "一只猫" 还在抢概率',{x:340,y:290,'text-anchor':'middle',class:'m'},sv);return}
+  const f=ST[FR[k]];txt(f.cap,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+  if(f.v==='vec'){const cx=200,cy=230,R=150;el('circle',{cx,cy,r:R,fill:'none',stroke:'var(--line)','stroke-dasharray':'4 4'},sv);
+    el('line',{x1:cx-20,y1:cy,x2:cx+R+20,y2:cy,stroke:'var(--line)'},sv);el('line',{x1:cx,y1:cy+20,x2:cx,y2:cy-R-20,stroke:'var(--line)'},sv);
+    I.forEach((v,i)=>{el('line',{x1:cx,y1:cy,x2:cx+v[0]*R,y2:cy-v[1]*R,stroke:CO[i],'stroke-width':4},sv);txt(IN[i],{x:cx+v[0]*R+(i===1?10:6),y:cy-v[1]*R-(i===0?8:4),class:'v'},sv).style.fill=CO[i]});
+    T.forEach((v,i)=>{el('line',{x1:cx,y1:cy,x2:cx+v[0]*R,y2:cy-v[1]*R,stroke:CO[i],'stroke-width':2,'stroke-dasharray':'6 4'},sv);if(i<2)txt(`"${TN[i]}"`,{x:cx+v[0]*R+8,y:cy-v[1]*R+(i===0?-4:14),class:'v'},sv).style.fill=CO[i]});
+    txt('实线：图片向量',{x:420,y:120,class:'big'},sv);txt('虚线：文字向量',{x:420,y:150,class:'big'},sv);
+    txt('鸟图和"一只鸟"重合',{x:420,y:190,class:'m'},sv);txt('长度都是 1 → 点积 = 余弦',{x:420,y:220,class:'m'},sv);txt('方向越近，点积越接近 1',{x:420,y:245,class:'m'},sv);return}
+  if(f.v==='tab'){table(f.M(),f.fmt,150,80,null);txt('鸟图 × "一只猫" = 0.6 × 0.28 + 0.8 × 0.96 = 0.936：也挺像，会被罚',{x:340,y:270,'text-anchor':'middle',class:'m'},sv);return}
+  if(f.v==='row'||f.v==='col'){const L=S.map(r=>r.map(x=>10*x));const P=f.v==='row'?smRow(L):smCol(L);table(P,f3,120,70,v=>v);
+    const d=P.map((r,i)=>-Math.log(r[i]));
+    if(f.v==='row')d.forEach((v,i)=>txt(`−log = ${f3(v)}`,{x:420,y:70+i*52+31,class:'v'},sv));
+    else d.forEach((v,j)=>txt(`−log ${f3(v)}`,{x:120+j*96+46,y:240,'text-anchor':'middle',class:'v'},sv));
+    txt(f.v==='row'?'每行加起来 = 1：一张图在 3 段文字里选':'每列加起来 = 1：一段文字在 3 张图里选',{x:340,y:290,'text-anchor':'middle',class:'m'},sv);return}
+  const G=S.map(r=>r.map(x=>10*x-10));const C=G.map((r,i)=>r.map((x,j)=>-Math.log(sig((i===j?1:-1)*x))));
+  txt('logit = 10 × 余弦 − 10',{x:170,y:62,'text-anchor':'middle',class:'m'},sv);
+  table(G,f2,40,90,v=>.25);txt('每格 −log σ(±logit)',{x:510,y:62,'text-anchor':'middle',class:'m'},sv);table(C,f3,370,90,v=>v);
+  txt('loss = 各格加起来 ÷ 3 ≈ 1.07；对角线扣分最多：先说"都不配"，训练再把配对的往上推',{x:340,y:290,'text-anchor':'middle',class:'m'},sv);
+  txt('不用整行、整列的 softmax 分母：分数表可以一块一块地算',{x:340,y:315,'text-anchor':'middle',class:'m'},sv);
+}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=FR.length-1)return false;k++;draw();return true}
+$('s').oninput=e=>{ANIM.stop();custom=+e.target.value;$('svv').textContent=custom;draw()};
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

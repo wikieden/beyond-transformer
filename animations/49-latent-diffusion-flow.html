@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rectified Flow 路径</title><link rel="stylesheet" href="anim.css">
+<style>svg text.big{font-size:15px}svg text.cap{font-size:15px;font-weight:500}svg text.v{font-size:12px}</style></head>
+<body><main>
+<h1>第 49 章 · Rectified Flow：噪声到数据，弯路径和直路径</h1>
+<p class="sub">配套讲义：<a href="../lessons/49-latent-diffusion-flow.html">第 49 章 · Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a>。紫点是噪声（t = 0），灰点是数据（t = 1，两个弯月，编的）。速度用对这组点精确算出的"完美速度场" v(z, t) = E[X₁ − X₀ | X_t = z]。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 400"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="n">自己拖：Euler 步数 N</label><input type="range" id="n" min="1" max="30" step="1" value="2"><span id="nv">2</span></div>
+<p class="note">看点：① 噪声和数据随机配对，连直线：很多线互相交叉；② 按完美速度场走，路径在交叉处改道，变成弯的；③ Euler 只走 1 步时，点落在弯月之间；步数多了才落准。滑块：N 从 1 拖到 30。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+seed(5);const ANCH=[];for(let i=0;i<90;i++){const up=i%2===0,th=Math.PI*rnd();const x=up?Math.cos(th)-0.5:1-Math.cos(th)-0.5,y=up?Math.sin(th)-0.25:0.25-Math.sin(th);ANCH.push([x*1.3,y*1.3])}
+seed(9);const Z0=[...Array(70)].map(()=>[gauss(),gauss()]);const PAIR=Z0.map(()=>ANCH[Math.floor(rnd()*ANCH.length)]);
+function vel(z,t){let best=-1e18;const lw=ANCH.map(m=>{const dx=z[0]-t*m[0],dy=z[1]-t*m[1];return-(dx*dx+dy*dy)/(2*(1-t)*(1-t))});lw.forEach(l=>{if(l>best)best=l});
+  let ws=0,vx=0,vy=0;lw.forEach((l,k)=>{const w=Math.exp(l-best);ws+=w;vx+=w*(ANCH[k][0]-z[0]);vy+=w*(ANCH[k][1]-z[1])});return[vx/ws/(1-t),vy/ws/(1-t)]}
+function run(z,N){const path=[z.slice()];let p=z.slice();for(let i=0;i<N;i++){const v=vel(p,i/N);p=[p[0]+v[0]/N,p[1]+v[1]/N];path.push(p.slice())}return path}
+const CX=340,CY=215,SC=72;const X=p=>CX+p[0]*SC,Y=p=>CY-p[1]*SC;
+function base(showData=true){el('rect',{x:CX-300,y:CY-170,width:600,height:340,rx:8,fill:'none',stroke:'var(--line)'},sv);
+  if(showData)ANCH.forEach(p=>el('circle',{cx:X(p),cy:Y(p),r:3,fill:'var(--muted)',opacity:.45},sv))}
+function noise(){Z0.forEach(p=>el('circle',{cx:X(p),cy:Y(p),r:3,fill:'var(--purple)',opacity:.8},sv))}
+function paths(N,col,showEnd){Z0.forEach(z=>{const P=run(z,N);el('path',{d:P.map((p,i)=>(i?'L':'M')+X(p).toFixed(1)+','+Y(p).toFixed(1)).join(''),fill:'none',stroke:col,'stroke-width':1,opacity:.55},sv);
+  if(showEnd)el('circle',{cx:X(P[P.length-1]),cy:Y(P[P.length-1]),r:3.4,fill:'var(--teal)'},sv)})}
+const ST=[
+ {cap:'起点：紫点是噪声 X₀，灰点是数据 X₁',v:'start'},
+ {cap:'第三步：随机配对，连直线 X_t = tX₁ + (1−t)X₀；很多线交叉',v:'pairs'},
+ {cap:'第四步：按完美速度场走（30 步）：交叉处取平均、改道，路径变弯',v:'flow',N:30},
+ {cap:'Euler 只走 1 步：t = 0 时速度是"去所有数据的平均"，全挤到中间',v:'flow',N:1},
+ {cap:'Euler 走 3 步：好一些',v:'flow',N:3},
+ {cap:'Euler 走 30 步：落在弯月上。路径越直，需要的步数越少；reflow 就是把路径拉直',v:'flow',N:30}];
+const FR=[];ST.forEach((_,i)=>{FR.push(i);FR.push(i)});
+let k=0,custom=null;
+function draw(){
+  clear(sv);
+  if(custom!==null){txt(`Euler 走 ${custom} 步：Z ← Z + v(Z, t) / ${custom}`,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);base();paths(custom,'var(--teal)',true);noise();
+    txt(custom<3?'步数太少：t = 0 的速度指向数据的平均，点挤在中间':custom<8?'差不多了，还有些偏':'落在弯月上',{x:340,y:375,'text-anchor':'middle',class:'big'},sv);return}
+  const f=ST[FR[k]];txt(f.cap,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);base();
+  if(f.v==='pairs')Z0.forEach((z,i)=>el('line',{x1:X(z),y1:Y(z),x2:X(PAIR[i]),y2:Y(PAIR[i]),stroke:'var(--warm)','stroke-width':1,opacity:.5},sv));
+  if(f.v==='flow')paths(f.N,'var(--teal)',true);
+  noise();
+  if(f.v==='pairs')txt('目标速度 = X₁ − X₀（每条线上处处一样）',{x:340,y:375,'text-anchor':'middle',class:'m'},sv);
+  if(f.v==='start')txt('DDPM 要走 1000 步；RF 想让路径变直，几步就到',{x:340,y:375,'text-anchor':'middle',class:'m'},sv);
+}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=FR.length-1)return false;k++;draw();return true}
+$('n').oninput=e=>{ANIM.stop();custom=+e.target.value;$('nv').textContent=custom;draw()};
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

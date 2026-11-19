@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DiT 块</title><link rel="stylesheet" href="anim.css">
+<style>svg text.big{font-size:15px}svg text.cap{font-size:15px;font-weight:500}svg text.v{font-size:12px}</style></head>
+<body><main>
+<h1>第 50 章 · DiT：条件怎么调 LayerNorm，门 α 怎么开</h1>
+<p class="sub">配套讲义：<a href="../lessons/50-dit-mmdit.html">第 50 章 · DiT 与 MM-DiT：用 Transformer 当扩散的主干</a>。一行 x = [1, 2, 3]，注意力子层输出编成 [0.5, −0.5, 1]；γ、β、α 由"步数 t + 类别 c"经 MLP 算出（数字是编的）。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 400"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="a">自己拖：门 α</label><input type="range" id="a" min="0" max="100" step="5" value="20"><span id="av">0.20</span></div>
+<p class="note">看点：① 潜空间 32 × 32 × 4 按 p = 2 切成 256 个 token；② t 和 c 经 MLP 算出六组数 γ₁ β₁ α₁ γ₂ β₂ α₂；③ LN 后乘 γ 加 β，换个条件结果就不同；④ 子层输出乘 α 再加回 x：α = 0 时整块原样输出；⑤ MM-DiT 把图像和文字 token 拼起来做一次注意力。滑块：α 从 0 到 1。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');const X=[1,2,3],LN=[-1.22474,0,1.22474],F=[0.5,-0.5,1];
+const f3=v=>String(Math.round(v*1000)/1000);
+function row(x,y,vals,c,lab,w=60){if(lab)txt(lab,{x:x-10,y:y+19,'text-anchor':'end',class:'v'},sv);vals.forEach((v,i)=>{el('rect',{x:x+i*w,y,width:w-5,height:28,rx:5,fill:c,opacity:.2},sv);txt(f3(v),{x:x+i*w+(w-5)/2,y:y+19,'text-anchor':'middle',class:'big'},sv)})}
+function box(x,y,w,h,t,c){el('rect',{x,y,width:w,height:h,rx:8,fill:c||'var(--accent-bg)',stroke:'var(--accent)'},sv);txt(t,{x:x+w/2,y:y+h/2+5,'text-anchor':'middle',class:'big'},sv)}
+function arrow(x1,y1,x2,y2){el('line',{x1,y1,x2,y2,stroke:'var(--muted)','stroke-width':2},sv);const a=Math.atan2(y2-y1,x2-x1);el('path',{d:`M${x2},${y2}L${x2-8*Math.cos(a-.4)},${y2-8*Math.sin(a-.4)}L${x2-8*Math.cos(a+.4)},${y2-8*Math.sin(a+.4)}Z`,fill:'var(--muted)'},sv)}
+function gate(alpha){row(150,90,X,'var(--muted)','x');row(150,140,F,'var(--purple)','注意力输出 f');
+  txt(`× α = ${alpha.toFixed(2)}`,{x:360,y:173,class:'big'},sv);row(150,190,F.map(v=>v*alpha),'var(--amber)','α ⊙ f');
+  row(150,250,X.map((v,i)=>v+alpha*F[i]),'var(--teal)','x + α ⊙ f');
+  txt(alpha===0?'α = 0：整块原样输出（恒等函数），新层先"旁听"':alpha<0.5?'α 小：子层只轻轻改一点':'α 大：子层的结果被大量采纳',{x:340,y:320,'text-anchor':'middle',class:'big'},sv).style.fill=alpha===0?'var(--teal)':'var(--text)'}
+const ST=[
+ {cap:'第一步：潜空间 32 × 32 × 4，按 p = 2 切块 → (32/2)² = 256 个 token',v:'patch'},
+ {cap:'第二步：步数 t 和类别 c 的向量相加，经 MLP 算出 6 组数',v:'mlp'},
+ {cap:'adaLN：LN(x) 乘 γ 加 β；t 很大（很脏）时 γ = 0.5，β = [0, 0, 0.1]',v:'ada',g:[.5,.5,.5],b:[0,0,.1]},
+ {cap:'换个条件：t 很小时 γ = 1.5，β = [0.2, 0, 0]，同一个 x 结果不同',v:'ada',g:[1.5,1.5,1.5],b:[.2,0,0]},
+ {cap:'第三步 adaLN-Zero：α 一开始是 0，整块原样输出',v:'gate',a:0},
+ {cap:'训练一段后 α = 0.2：子层开始参与',v:'gate',a:.2},
+ {cap:'第五步 MM-DiT：4 个图像 token + 2 个文字 token 拼起来，6 × 6 联合注意力',v:'mm'}];
+const FR=[];ST.forEach((_,i)=>{FR.push(i);FR.push(i)});
+let k=0,custom=null;
+function draw(){
+  clear(sv);
+  if(custom!==null){txt(`adaLN-Zero：x ← x + α ⊙ 注意力输出，α = ${custom.toFixed(2)}`,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);gate(custom);return}
+  const f=ST[FR[k]];txt(f.cap,{x:340,y:30,'text-anchor':'middle',class:'cap'},sv);
+  if(f.v==='patch'){const s=14,x0=60,y0=80;for(let r=0;r<16;r++)for(let c=0;c<16;c++){const g=((r>>1)+(c>>1))%2;el('rect',{x:x0+c*s,y:y0+r*s,width:s-1,height:s-1,fill:g?'var(--purple)':'var(--teal)',opacity:.35},sv)}
+    for(let i=0;i<=16;i+=2){el('line',{x1:x0+i*s,y1:y0,x2:x0+i*s,y2:y0+16*s,stroke:'var(--text)','stroke-width':.6},sv);el('line',{x1:x0,y1:y0+i*s,x2:x0+16*s,y2:y0+i*s,stroke:'var(--text)','stroke-width':.6},sv)}
+    txt('（画了左上 16 × 16 的一角）',{x:x0+112,y:y0+240,'text-anchor':'middle',class:'m'},sv);
+    arrow(300,190,340,190);txt('每块 2 × 2 × 4 = 16 个数 → 投影成 d 维',{x:350,y:150,class:'big'},sv);txt('加 sin / cos 位置编码',{x:350,y:180,class:'big'},sv);
+    txt('p = 8 → 16 个；p = 4 → 64 个；p = 2 → 256 个',{x:350,y:220,class:'m'},sv);txt('p 减半，token × 4，计算量至少 × 4',{x:350,y:245,class:'m'},sv);return}
+  if(f.v==='mlp'){box(60,150,90,44,'步数 t');box(60,220,90,44,'类别 c');arrow(152,172,200,195);arrow(152,242,200,215);
+    txt('e_t + e_c',{x:225,y:209,'text-anchor':'middle',class:'big'},sv);arrow(255,205,290,205);box(295,180,90,50,'MLP','var(--card)');arrow(388,205,420,205);
+    const L=[['γ₁','LN 的缩放（注意力前）'],['β₁','LN 的平移'],['α₁','注意力输出的门'],['γ₂','LN 的缩放（MLP 前）'],['β₂','LN 的平移'],['α₂','MLP 输出的门']];
+    L.forEach((l,i)=>{el('rect',{x:428,y:100+i*36,width:40,height:28,rx:5,fill:i%3===2?'var(--warm)':'var(--teal)',opacity:.3},sv);txt(l[0],{x:448,y:119+i*36,'text-anchor':'middle',class:'big'},sv);txt(l[1],{x:476,y:119+i*36,class:'v'},sv)});
+    txt('对所有 token 用同一组：整张图的调音旋钮',{x:340,y:350,'text-anchor':'middle',class:'m'},sv);return}
+  if(f.v==='ada'){row(150,80,X,'var(--muted)','x');row(150,130,LN,'var(--accent)','LN(x)');
+    txt(`γ = [${f.g.join(', ')}]`,{x:360,y:150,class:'v'},sv);txt(`β = [${f.b.join(', ')}]`,{x:360,y:170,class:'v'},sv);
+    row(150,200,LN.map((v,i)=>f.g[i]*v+f.b[i]),'var(--teal)','γ ⊙ LN + β');
+    txt('普通 LayerNorm：γ、β 是固定参数，所有输入一样',{x:340,y:280,'text-anchor':'middle',class:'m'},sv);
+    txt('adaLN：γ、β 由条件算出，每一步、每一类都不一样',{x:340,y:305,'text-anchor':'middle',class:'big'},sv).style.fill='var(--teal)';return}
+  if(f.v==='gate'){gate(f.a);return}
+  const n=6,s=40,x0=220,y0=80,lab=['图1','图2','图3','图4','文1','文2'];
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const a=i<4,b=j<4;const c=a&&b?'var(--teal)':!a&&!b?'var(--purple)':'var(--warm)';el('rect',{x:x0+j*s,y:y0+i*s,width:s-3,height:s-3,rx:4,fill:c,opacity:a===b?.3:.45},sv)}
+  lab.forEach((l,i)=>{txt(l,{x:x0-8,y:y0+i*s+24,'text-anchor':'end',class:'v'},sv);txt(l,{x:x0+i*s+18,y:y0-8,'text-anchor':'middle',class:'v'},sv)});
+  txt('图看图 4 × 4',{x:x0+80,y:y0+86,'text-anchor':'middle',class:'v'},sv);txt('图看文',{x:x0+198,y:y0+86,'text-anchor':'middle',class:'v'},sv);txt('文看图',{x:x0+80,y:y0+206,'text-anchor':'middle',class:'v'},sv);txt('文看文',{x:x0+198,y:y0+206,'text-anchor':'middle',class:'v'},sv);
+  txt('LDM 的交叉注意力只有"图看文"那一块（4 × 2）',{x:340,y:345,'text-anchor':'middle',class:'m'},sv);
+  txt('图、文 token 各用各的 W_Q W_K W_V 和 MLP，只在注意力这一步合起来',{x:340,y:370,'text-anchor':'middle',class:'m'},sv);
+}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=FR.length-1)return false;k++;draw();return true}
+$('a').oninput=e=>{ANIM.stop();custom=+e.target.value/100;$('av').textContent=custom.toFixed(2);draw()};
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>
