@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 19 章 · 巨大激活与 attention sink：为什么大家都盯着第一个词 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html" class="cur"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="19-attention-sink">第 19 章 · 巨大激活与 attention sink：为什么大家都盯着第一个词</h1><div class="run"><a class="btn" href="../animations/19-attention-sink.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch19_attention_sink.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch19_attention_sink.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch19_attention_sink.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：把大模型的注意力图画出来，常常看到第一列特别亮：不管当前是哪个词，都把一大半权重给了句首的那个 token，可它明明没什么意义。这是为什么？少数几个维度上大到离谱的激活值（巨大激活）和它有什么关系？推理时用滑动窗口把开头的词丢掉，模型为什么会直接崩？StreamingLLM 只留住开头 4 个词就修好了，原理是什么？<br />
+讲解日期：2026-11-26 · 上一章：<a href="../lessons/18-stability.html">第 18 章 训练稳定性</a> · 下一章：<a href="../lessons/20-mup-deepnorm.html">第 20 章 μP 与 DeepNorm</a><br />
+对应原文：Massive Activations in Large Language Models <code>transformer-deep-dive/materials/text/papers/massive-activations-2402.17762.txt</code> Figure 1 与摘要 L33–L47（LLaMA2-7B 的第 1415、2533 维；巨大激活比其余大上万倍，像固定的偏置项，导致注意力集中到对应 token）、L79–L90（“隐式的偏置项”）；StreamingLLM <code>llm-full-stack/materials/text/papers/streamingllm-2309.17453.txt</code> L108–L130（滑窗注意力为什么失败；softmax 必须加到 1；初始 token 几乎被所有后续 token 看见；保留 4 个初始 token）<br />
+本章缩写：massive activation（巨大激活：少数维度上比其余大几千到几万倍的激活值）；attention sink（注意力汇点：吸收“多余”注意力权重的 token）；StreamingLLM（流式 LLM：只保留开头几个 token + 最近窗口的推理方法）；KV cache（键值缓存，第 22 章）；W = 窗口大小。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-26">第一步：巨大激活：少数维度大得离谱（2026-11-26）</h3>
+<p>Sun 等人（Figure 1，L33–L38）在 LLaMA2-7B 里发现：残差流里有<strong>两个固定的维度</strong>（第 1415 和 2533 维），在<strong>两类 token</strong>（句首 token，和第一个句号或换行）上的值比其余激活大上万倍（摘要说“比如 100,000 倍”，L42）。</p>
+<p><strong>数字演示</strong>（玩具：6 个 token × 64 维，给第 0 个 token 的两维放上巨大值）：最大的 |值| 900，中位数 0.681，相差 1,322 倍，而且只出现在一个 token 的两个维度上。</p>
+<p>几个特点（L42–L47、L79–L90）：</p>
+<ul>
+<li><strong>和输入几乎无关</strong>：换什么句子，这几个值都差不多；</li>
+<li><strong>像偏置项</strong>：它们的作用相当于网络里一个固定的 bias；把它们置零，模型效果大幅下降，置成平均值则几乎没影响；</li>
+<li><strong>引起注意力集中</strong>：带巨大激活的 token，经过 LayerNorm 后几乎只剩那一两个方向，和各种 query 都能对上，于是吸走大量注意力。</li>
+</ul>
+<p><strong>一句话</strong>：大模型的残差流里，少数固定维度在句首等少数 token 上大得离谱，作用像一个固定的偏置，并把注意力吸到这些 token 上。</p>
+<h3 id="attention-sinksoftmax-12026-11-26">第二步：attention sink：softmax 必须加起来是 1（2026-11-26）</h3>
+<p><strong>类比：会议上必须把 100 分的票全部投出去。</strong> 有时候这一轮根本没有值得投的人，可规则规定票必须投完，大家就约定都投给一个“弃权箱”。句首 token 就是这个弃权箱。</p>
+<p>StreamingLLM（L116–L127）给出的解释：</p>
+<ul>
+<li>softmax 的权重必须加起来是 1，即使当前 query 和前面哪个 token 都不太相关，权重也必须分出去；</li>
+<li>句首 token 对后面<strong>所有</strong>位置都可见（因果 mask），训练时最容易被学成“放多余权重的地方”；</li>
+<li>它的 value 学成很小（接近 0），所以权重放在它身上等于“什么都不加”：这就是一个“空操作”的头。</li>
+</ul>
+<p><strong>数字演示</strong>（24 个 token，最后一个位置的注意力；句首分数高、value 接近 0，其余分数小、value 随机）：句首拿到 <strong>0.9447</strong> 的权重，注意力的输出范数只有 0.0243：这个头这一步几乎什么都没做，正是它想要的。</p>
+<p><img alt="attention sink" src="../figures/19-attention-sink-weights.png" />
+<em>图 19-1 · 最后一个位置对 24 个 token 的注意力权重。句首（橙）拿走 94%，其余 23 个分剩下的 6%</em></p>
+<p><strong>一句话</strong>：softmax 的权重必须分完，没东西可看的头就把权重停在句首 token 上（它的 value 近似 0），句首 token 成了 attention sink。</p>
+<h3 id="streamingllm-2026-11-26">第三步：滑窗推理为什么崩，StreamingLLM 怎么修（2026-11-26）</h3>
+<p><strong>滑动窗口推理</strong>（L108–L115）：生成很长的文本时，KV cache 只保留最近 W 个 token，最早的丢掉，显存就不会一直涨。直觉上只是“看不到很远的东西”，可实际上文本一超过窗口、句首被丢掉，困惑度就暴涨。</p>
+<p>原因：句首被丢掉后，原来停在它身上的 94% 权重没地方去，softmax 被迫把它们分给窗口里的其他 token。这些 token 的 value 是真实内容，于是“空操作”的头突然往残差流里加了一大堆东西，后面的层全乱了。</p>
+<p><strong>StreamingLLM</strong>（L127–L130）：保留<strong>开头 4 个 token</strong>的 KV，再加最近的 W 个，就够了。</p>
+<p><strong>数字演示</strong>（窗口 W = 8，比较最后一个位置的注意力输出和“全都看”的差别）：</p>
+<table>
+<thead>
+<tr>
+<th>做法</th>
+<th>和全看的输出差</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>只看最近 8 个（句首被踢掉）</td>
+<td>0.3857</td>
+</tr>
+<tr>
+<td>开头 4 个 + 最近 8 个</td>
+<td>0.0153</td>
+</tr>
+</tbody>
+</table>
+<p>留住句首，差别缩小到原来的 1/25。StreamingLLM 用这个办法让模型流式处理上百万 token 而不崩；它还建议预训练时专门放一个“占位 token”当 sink（摘要 L38）。后来的模型也有直接在注意力里加可学的“sink 偏置”或“softmax 分母加 1”的做法，让模型不用借句首 token 也能“弃权”。</p>
+<p><img alt="滑窗与 sink" src="../figures/19-attention-sink-window.png" />
+<em>图 19-2 · 三种做法下，最后一个位置的注意力输出和“全都看”的差（范数）。只保留最近 8 个时差得最多；加上开头 4 个 token 后几乎回到原样</em></p>
+<p><strong>场景代码</strong>：用 Hugging Face 的 <code>SinkCache</code> 做流式生成（真实库调用，transformers 4.x 提供的缓存类；本书 chapter-code 只用 NumPy，这段没跑过）：</p>
+<pre><code class="language-python">from transformers import SinkCache
+cache = SinkCache(window_length=1024, num_sink_tokens=4)     # 留住开头 4 个 + 最近 1020 个
+out = model.generate(**inputs, past_key_values=cache, max_new_tokens=100_000)
+</code></pre>
+<p>在自己训练的小模型里画注意力图、看第一列是不是特别亮，是里程碑 T-M2 的一部分。</p>
+<p><strong>一句话</strong>：滑窗推理丢掉句首，原来停在 sink 上的权重被迫分给真实内容，输出就乱了；StreamingLLM 永远留住开头 4 个 token 的 KV。</p>
+<h3 id="_2">动画演示：窗口往右滑，句首留不留</h3>
+<p><img alt="attention sink" src="../animations/19-attention-sink.gif" /></p>
+<p>可交互版：<a href="../animations/19-attention-sink.html">animations/19-attention-sink.html</a>（滑块：当前生成到第几个 token；勾选框：保留开头 4 个 token）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>一排是已经生成的 token，亮的是还在 KV cache 里的（窗口 8 个）；</li>
+<li>柱子是当前位置的注意力权重；不保留开头时，句首一滑出窗口，权重就摊到别的 token 上（第三步）；</li>
+<li>勾上“保留开头 4 个”：句首一直在，大部分权重一直停在它身上，右上角的输出差保持很小。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第二步）：句首分数 6、其余 3 个 token 分数都是 0。句首拿到多少权重？（提示：e⁶ ≈ 403.4）</p>
+<p><strong>题 2</strong>（第三步）：有人把 softmax 的分母改成 1 + Σe^{s_j}（相当于多了一个分数为 0、value 为 0 的隐形 token）。用自己的话说，为什么这样模型就不需要借句首 token 当 sink 了？</p>
+<p><strong>题 3</strong>（第三步）：KV cache 窗口 1024、保留 4 个 sink、生成到第 100,000 个 token 时，cache 里一共存了多少个 token 的 K、V？和不做任何截断相比省了多少倍？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>两个维度大上万倍，像固定偏置，句首、句号最常见。<br />
+票必须投完，没人可投就投弃权箱：句首 value 近零，权重停那里就是空操作。<br />
+滑窗踢掉句首，多余的票摊给真内容，输出全乱；留住开头四个，就稳了。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B50</a>（巨大激活、attention sink 的成因、滑窗为什么崩、StreamingLLM）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Efficient Streaming Language Models with Attention Sinks（Xiao 等 2024）</td>
+<td>L98–L130；§3</td>
+<td>attention sink 的发现和 StreamingLLM</td>
+</tr>
+<tr>
+<td>★ Massive Activations in Large Language Models（Sun 等 2024）</td>
+<td>Figure 1、摘要 L33–L47；L79–L90</td>
+<td>巨大激活与“隐式偏置”</td>
+</tr>
+<tr>
+<td>本书 第 34 章（滑窗推理与 sink）</td>
+<td>全部</td>
+<td>长序列推理的工程做法</td>
+</tr>
+<tr>
+<td>Evan Miller，“Attention Is Off By One”（在线博客）</td>
+<td>全文</td>
+<td>softmax 分母加 1 的想法</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>softmax 必须加到 1</strong>：Σ_j α_j = 1，没有“全部不看”的选项；要做空操作只能把权重放在 value ≈ 0 的位置上。</li>
+<li><strong>因果可见性</strong>：位置 0 被所有 n 个 query 看见，位置 j 只被 n − j 个 query 看见，所以位置 0 的“被训练次数”最多。</li>
+<li><strong>滑窗的重归一化</strong>：踢掉权重为 w₀ 的 token，其余权重都除以 1 − w₀；w₀ 接近 1 时，其余权重被放大几十倍。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\sum_j\alpha_j = 1\)</span></td>
+<td>softmax 的约束</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\alpha_j' = \alpha_j/(1 - \alpha_0)\)</span></td>
+<td>踢掉位置 0 后的权重</td>
+</tr>
+<tr>
+<td>保留集合 = 开头 4 个 ∪ 最近 W 个</td>
+<td>StreamingLLM</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch19_attention_sink.py</code>，配套测试 <code>tests/test_ch19.py</code>，notebook 在 <code>notebooks/ch19_attention_sink.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch19_attention_sink.py  
+uv run pytest tests/test_ch19.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 巨大激活</td>
+<td>最大 / 中位数</td>
+<td><code>massive()</code></td>
+<td>相差 1,322 倍</td>
+</tr>
+<tr>
+<td>第二步 sink</td>
+<td>句首的权重</td>
+<td><code>compare()["sink 拿到的权重"]</code></td>
+<td>0.9447</td>
+</tr>
+<tr>
+<td>第三步 滑窗 vs StreamingLLM</td>
+<td>输出差</td>
+<td><code>compare()</code></td>
+<td>0.3857 vs 0.0153</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">scores[0] = 6.0; values[0] = 0.02 * values[0]        # 句首：分数高、value 近零
+_, win = attend(s, v, np.arange(N - W, N))           # 只看最近 W 个
+keep = np.r_[np.arange(n_sink), np.arange(N - W, N)] # 开头 n_sink 个 + 最近 W 个
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>sink 的分数和 value 都是手写的</strong>：真实模型里它们是训练出来的，靠的就是第一步那种巨大激活。</li>
+<li><strong>位置编号要保持一致</strong>：StreamingLLM 实际实现里，cache 里 token 的位置是按“在 cache 里的位置”重新编号的，而不是原文里的绝对位置，否则 RoPE 的相对距离会超出训练范围（第 17 章）；这里的玩具没有位置编码，看不到这一点。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>n_sink</code> 改成 1 和 8，输出差怎么变？</li>
+<li>把句首的分数从 6 降到 2，滑窗踢掉句首时还会差那么多吗？</li>
+</ul><nav class="pager"><a href="18-stability.html">← 第 18 章 · 训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="20-mup-deepnorm.html">第 20 章 · μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

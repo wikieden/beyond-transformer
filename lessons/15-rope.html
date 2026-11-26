@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 15 章 · RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html" class="cur"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="15-rope-qk">第 15 章 · RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</h1><div class="run"><a class="btn" href="../animations/15-rope.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch15_rope.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch15_rope.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch15_rope.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：前作的正弦位置编码是“加”在词向量上的，分数里绝对位置和相对位置搅在一起。如果想让 q_m·k_n 只依赖 m − n，应该怎么改？为什么答案是“把 q、k 各转 mθ、nθ”？d 维向量怎么转，为什么要用一串从快到慢的频率？实际代码为什么不乘旋转矩阵？RoPE 为什么会让远处的词分数变小？<br />
+讲解日期：2026-11-26 · 上一章：<a href="../lessons/14-swiglu.html">第 14 章 SwiGLU</a> · 下一章：<a href="../lessons/16-alibi-nope.html">第 16 章 ALiBi 与 NoPE</a><br />
+对应原文：RoFormer <code>transformer-deep-dive/materials/text/papers/rope-roformer-2104.09864.txt</code> §3.1 式 (11) L225（目标：⟨f_q(x_m, m), f_k(x_n, n)⟩ = g(x_m, x_n, m − n)）、§3.2.1 二维的解 式 (12)–(13) L229–L260、§3.2.2 一般形式 式 (15)–(16) L261–L293、θ_i = 10000^{−2i/d} L329–L330、§3.4.2 高效实现 式 (34) L447–L461、§3.4.3 远距离衰减 L504–L522；CS336 a1 handout §3.5.3 rope L1076–L1114<br />
+本章缩写：RoPE = Rotary Position Embedding（旋转 / 位置 / 编码）；θ（读作“西塔”：每一步转的角度）；θ_i = 第 i 个平面的频率；m、n = q、k 所在的位置；R_m = 把向量转 mθ 的旋转矩阵；Re = 复数的实部；rotate_half（把相邻两维交换并给一个取负的操作）；λ_i = 2π/θ_i（第 i 个平面转一圈要几个位置，波长）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-26">第一步：目标：分数只依赖相对距离（2026-11-26）</h3>
+<p><strong>类比：两个人在操场上转圈跑步，速度一样。</strong> 无论跑了多久，他俩之间的夹角只取决于谁先出发了多久（出发时间差），而不是现在几点。把 q 和 k 都按“自己的位置 × θ”转一个角度，它们之间的夹角就只取决于位置差。</p>
+<p>RoFormer §3.1 式 (11)（L225）写出目标：找一种编码 f，使得</p>
+<div class="arithmatex">\[\langle f_q(x_m, m),\ f_k(x_n, n)\rangle = g(x_m, x_n, m - n)\]</div>
+<p>注意力分数只能是内容和<strong>相对位置</strong> m − n 的函数。前作<a href="https://wikieden.github.io/transformer-visual/lessons/14-positional-encoding.html">第 14–16 章</a>的正弦编码是加在 x 上的，展开 (x_m + p_m)ᵀW_Qᵀ W_K(x_n + p_n) 会出现 x_mᵀ…p_n 这样绝对位置和内容混在一起的项。</p>
+<p><strong>一句话</strong>：RoPE 的出发点是让 q_m·k_n 只依赖内容和 m − n，不依赖绝对位置。</p>
+<h3 id="m2026-11-26">第二步：二维的解：转 mθ（2026-11-26）</h3>
+<p>二维时（§3.2.1，式 12–13，L229–L260），解就是把 q 转 mθ、k 转 nθ：</p>
+<div class="arithmatex">\[f_q(x_m, m) = R_{m\theta}\,W_q x_m,\qquad R_{m\theta} = \begin{pmatrix}\cos m\theta &amp; -\sin m\theta\\ \sin m\theta &amp; \cos m\theta\end{pmatrix}\]</div>
+<p>因为旋转矩阵满足 <span class="arithmatex">\(R_a^\top R_b = R_{b-a}\)</span>：</p>
+<div class="arithmatex">\[(R_{m\theta}q)^\top(R_{n\theta}k) = q^\top R_{(n-m)\theta}\,k\]</div>
+<p>只剩 m − n。</p>
+<p><strong>数字演示</strong>（q = [1, 0.5]，k = [0.8, −0.3]，θ = 0.3）：</p>
+<table>
+<thead>
+<tr>
+<th>m</th>
+<th>n</th>
+<th>m − n</th>
+<th>q_m·k_n</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0.414105</td>
+</tr>
+<tr>
+<td>5</td>
+<td>4</td>
+<td>1</td>
+<td>0.414105</td>
+</tr>
+<tr>
+<td>10</td>
+<td>9</td>
+<td>1</td>
+<td>0.414105</td>
+</tr>
+<tr>
+<td>3</td>
+<td>0</td>
+<td>3</td>
+<td>−0.144282</td>
+</tr>
+<tr>
+<td>7</td>
+<td>4</td>
+<td>3</td>
+<td>−0.144282</td>
+</tr>
+</tbody>
+</table>
+<p>相对距离一样，分数就一模一样，不管绝对位置是多少。</p>
+<p><img alt="二维 RoPE" src="../figures/15-rope-rotate.png" />
+<em>图 15-1 · 左：位置 1 的 q（蓝）和位置 0 的 k（橙）；右：位置 5 的 q 和位置 4 的 k。两个都转了，但夹角一样，所以点积一样</em></p>
+<p><strong>一句话</strong>：二维时把 q 转 mθ、k 转 nθ，点积只剩 (m − n)θ 这个夹角。</p>
+<h3 id="d-d2-2026-11-26">第三步：d 维：拆成 d/2 个平面，频率从快到慢（2026-11-26）</h3>
+<p>d 维向量两两一组，拆成 d/2 个平面，每个平面用自己的频率转（§3.2.2，式 15，L261 起；θ_i 的取法 L329）：</p>
+<div class="arithmatex">\[\theta_i = 10000^{-2i/d},\qquad i = 0, 1, \dots, d/2 - 1\]</div>
+<table>
+<thead>
+<tr>
+<th>d = 8</th>
+<th>平面 0</th>
+<th>平面 1</th>
+<th>平面 2</th>
+<th>平面 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>θ_i</td>
+<td>1</td>
+<td>0.1</td>
+<td>0.01</td>
+<td>0.001</td>
+</tr>
+</tbody>
+</table>
+<p>这和前作<a href="https://wikieden.github.io/transformer-visual/lessons/16-multi-clock.html">第 16 章“多档时钟”</a>是同一组频率：快的平面区分相邻的几个位置，慢的平面区分远处的位置。d = 128 时，最快的平面转一圈只要 6.28 个位置，最慢的要 54,410 个位置。</p>
+<p><strong>和加法式编码的区别</strong>：RoPE 是<strong>乘</strong>在 q、k 上的，不碰 v，也不加在词向量上；每一层的注意力都重新转一次。</p>
+<p><strong>一句话</strong>：d 维拆成 d/2 个平面，第 i 个平面以 θ_i = 10000^{−2i/d} 转动，快的分辨近处、慢的分辨远处。</p>
+<h3 id="cossin2026-11-26">第四步：高效实现：不乘矩阵，逐元素乘 cos、sin（2026-11-26）</h3>
+<p>完整的旋转矩阵是分块对角的 d × d 矩阵，绝大部分是 0（式 15–16，L293 说“这样算不高效”）。§3.4.2 式 (34)（L447–L461）：</p>
+<div class="arithmatex">\[R_m x = x\odot\cos(m\Theta) + \text{rotate\_half}(x)\odot\sin(m\Theta)\]</div>
+<p>rotate_half 把每一对 (x₀, x₁) 变成 (−x₁, x₀)。cos、sin 按位置预先算好存成表，每次只做两次逐元素乘法和一次加法。</p>
+<p><strong>数字演示</strong>：x = [1, 2, …, 8]，位置 3：</p>
+<table>
+<thead>
+<tr>
+<th>写法</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>逐元素 cos / sin</td>
+<td>[−1.2722, −1.8389, 1.6839, 4.7079, 4.8178, 6.1473, 6.976, 8.021]</td>
+</tr>
+<tr>
+<td>分块旋转矩阵</td>
+<td>完全一样（差 0）</td>
+</tr>
+</tbody>
+</table>
+<p>位置 3 时，最快的平面（θ = 1）转了 3 弧度，前两个数被转得面目全非；最慢的平面（θ = 0.001）只转了 0.003 弧度，最后两个数几乎没变。</p>
+<p><strong>注意配对方式</strong>：RoFormer 原文和 a1 是相邻两维配一对（x₀ 和 x₁）；Hugging Face 的 LLaMA 实现是前一半和后一半配对（x_i 和 x_{i+d/2}），<code>rotate_half</code> 的写法也跟着不同。两种都对，但<strong>权重和写法必须配套</strong>，混用会让预训练模型输出乱码。</p>
+<p><strong>场景代码</strong>：Hugging Face 式的 RoPE（真实写法；本书 chapter-code 只用 NumPy，这段没跑过）：</p>
+<pre><code class="language-python">inv_freq = 1.0 / (10000 ** (torch.arange(0, d, 2).float() / d))   # θ_i
+freqs = torch.outer(torch.arange(seq_len), inv_freq)              # (ℓ, d/2)：每个位置每个平面的角度
+emb = torch.cat([freqs, freqs], -1); cos, sin = emb.cos(), emb.sin()
+def rotate_half(x):
+    x1, x2 = x[..., : d // 2], x[..., d // 2 :]                    # 前一半和后一半配对
+    return torch.cat([-x2, x1], -1)
+q_rot, k_rot = q * cos + rotate_half(q) * sin, k * cos + rotate_half(k) * sin
+</code></pre>
+<p>a1 要你实现 RoPE 模块（§3.5.3），用相邻两维配对。</p>
+<p><strong>一句话</strong>：实际代码把旋转写成 x⊙cos + rotate_half(x)⊙sin，cos、sin 预先算表；配对方式（相邻或前后一半）要和权重配套。</p>
+<h3 id="2026-11-26_1">第五步：远距离衰减（2026-11-26）</h3>
+<p>§3.4.3（L504–L522）证明：q、k 的点积写成 d/2 个复数项的和 Σ q_i k_i^* e^{i(m−n)θ_i}，相对距离 r 越大，这些项的相位越“乱”，和的上界越小。</p>
+<p><strong>数字演示</strong>（d = 128，q、k 全是 1 时，(1/(d/2))·|Σ_i e^{i r θ_i}|）：</p>
+<table>
+<thead>
+<tr>
+<th>相对距离 r</th>
+<th>0</th>
+<th>1</th>
+<th>10</th>
+<th>100</th>
+<th>1000</th>
+<th>10000</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>平均相干程度</td>
+<td>1.0000</td>
+<td>0.9764</td>
+<td>0.6913</td>
+<td>0.4900</td>
+<td>0.2266</td>
+<td>0.1125</td>
+</tr>
+</tbody>
+</table>
+<p>距离越远，各个平面转到的角度越分散，同样内容的 q、k 能拿到的分数越小：一种“近的词默认更重要”的倾向。这不是硬规定，模型可以学出很大的 q、k 去看远处。</p>
+<p><img alt="远距离衰减" src="../figures/15-rope-decay.png" />
+<em>图 15-2 · 横轴是相对距离（对数），纵轴是 q、k 全为 1 时 RoPE 点积的相对大小。距离从 1 到 10000，从 0.98 降到 0.11，中间有起伏</em></p>
+<p><strong>一句话</strong>：相对距离越大，各平面的相位越分散，点积的上界越小，RoPE 自带“远处的词分数偏低”的倾向。</p>
+<h3 id="qk">动画演示：q、k 跟着位置转，夹角只看距离</h3>
+<p><img alt="RoPE" src="../animations/15-rope.gif" /></p>
+<p>可交互版：<a href="../animations/15-rope.html">animations/15-rope.html</a>（滑块：q 的位置 m、k 的位置 n；勾选框“同时平移”）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>圆上的蓝箭头是转过 mθ 的 q，橙箭头是转过 nθ 的 k（第二步）；</li>
+<li>拖 m 或 n：夹角变，右上角的点积跟着变；</li>
+<li>勾上“同时平移”：m、n 一起加，两个箭头一起转，夹角和点积都不变。</li>
+</ol>
+<h2 id="_2">练习与作答记录</h2>
+<p><strong>题 1</strong>（第二步）：q = [1, 0]、k = [1, 0]、θ = π/2。位置 m = 2、n = 1 时，转过之后的 q、k 和点积各是多少？m = 5、n = 4 呢？</p>
+<p><strong>题 2</strong>（第三步）：d = 64、底数 10000，θ₀ 和 θ₃₁ 各是多少？最慢的平面转一圈大约要多少个位置？</p>
+<p><strong>题 3</strong>（第四步）：x = [1, 0, 0, 1]，位置 m 时用相邻配对的 rotate_half，写出 R_m x 的四个分量（用 cos、sin 表示，两个平面的频率是 θ₀、θ₁）。</p>
+<h2 id="_3">口诀</h2>
+<blockquote>
+<p>两人同速转圈跑，夹角只看谁先出发；q 转 mθ、k 转 nθ，点积只剩 m 减 n。<br />
+两两一组成平面，频率从快到慢，一万的负 2i/d 次方。<br />
+不乘大矩阵：x 乘 cos，加转半个乘 sin；配对方式要和权重配套。<br />
+距离越远相位越乱，分数天生偏低。</p>
+</blockquote>
+<h2 id="_4">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B43–B44</a>（B43 RoPE 的目标、二维解与 d 维频率；B44 高效实现、配对方式与远距离衰减）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_5">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_6">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ RoFormer（Su 等 2021）</td>
+<td>§3.1–§3.2 L213–L293；§3.4.2 L447–L461；§3.4.3 L504–L522</td>
+<td>推导、高效实现、远距离衰减</td>
+</tr>
+<tr>
+<td>★ CS336 a1 handout</td>
+<td>§3.5.3 L1076–L1114</td>
+<td>作业里的 RoPE</td>
+</tr>
+<tr>
+<td>前作 <a href="https://wikieden.github.io/transformer-visual/lessons/14-positional-encoding.html">第 14–16 章 位置编码</a></td>
+<td>全部</td>
+<td>正弦编码和多档时钟</td>
+</tr>
+<tr>
+<td>《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/38-position-encoding.html">第 38 章 位置编码</a></td>
+<td>RoPE 一节</td>
+<td>同一推导的另一种写法</td>
+</tr>
+<tr>
+<td>EleutherAI 博客“Rotary Embeddings: A Relative Revolution”（在线）</td>
+<td>全文</td>
+<td>直观解释和实现对比</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">数学原理</h3>
+<ul>
+<li><strong>旋转矩阵的性质</strong>：R_aᵀR_b = R_{b−a}，旋转不改变长度。</li>
+<li><strong>复数视角</strong>：二维向量看成复数 z，旋转 = 乘 e^{imθ}；Re[(q e^{imθ})(k e^{inθ})^<em>] = Re[q k^</em> e^{i(m−n)θ}]。</li>
+<li><strong>远距离衰减</strong>：用 Abel 变换（分部求和）把 Σ h_i e^{irθ_i} 的模上界写成 (max|h_{i+1} − h_i|)·Σ|S_j|，后者随 r 变小。</li>
+<li><strong>RoPE 只作用在 q、k</strong>：v 不转，所以加权求和的内容不受位置影响。</li>
+</ul>
+<h3 id="_8">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\langle f_q(x_m, m), f_k(x_n, n)\rangle = g(x_m, x_n, m - n)\)</span></td>
+<td>目标（式 11）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(f(x, m) = R_{m\theta}Wx\)</span></td>
+<td>二维的解（式 13）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\theta_i = 10000^{-2i/d}\)</span></td>
+<td>各平面的频率</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(R_m x = x\odot\cos m\Theta + \text{rotate\_half}(x)\odot\sin m\Theta\)</span></td>
+<td>高效实现（式 34）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\lambda_i = 2\pi/\theta_i\)</span></td>
+<td>波长</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch15_rope.py</code>，配套测试 <code>tests/test_ch15.py</code>，notebook 在 <code>notebooks/ch15_rope.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch15_rope.py  
+uv run pytest tests/test_ch15.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第二步 二维</td>
+<td>R_mθ q · R_nθ k</td>
+<td><code>score_2d(m, n)</code></td>
+<td>差 1 都是 0.414105</td>
+</tr>
+<tr>
+<td>第三步 频率</td>
+<td>10000^{−2i/d}</td>
+<td><code>freqs(8)</code>、<code>wavelengths()</code></td>
+<td>[1, 0.1, 0.01, 0.001]；6.28 … 54,410</td>
+</tr>
+<tr>
+<td>第四步 高效实现</td>
+<td>式 (34)</td>
+<td><code>rope(x, 3)</code> vs <code>rope_matrix(x, 3)</code></td>
+<td>完全一样</td>
+</tr>
+<tr>
+<td>第五步 衰减</td>
+<td></td>
+<td>Σe^{irθ}</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">th = np.repeat(freqs(d, base), 2) * pos               # 每个平面的角度，相邻两维共用
+xr[0::2], xr[1::2] = -x[1::2], x[0::2]                # rotate_half：相邻两维配对
+return x * np.cos(th) + xr * np.sin(th)               # 式 (34)
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong><code>np.repeat</code> 决定了配对方式</strong>：重复成 [θ₀, θ₀, θ₁, θ₁, …] 就是相邻配对；Hugging Face 用 <code>cat([freqs, freqs])</code> 得到 [θ₀, θ₁, …, θ₀, θ₁, …]，是前后一半配对。</li>
+<li><strong>测试里还核对了一般的 d 维</strong>：随机的 q、k，位置 (7, 4) 和 (13, 10) 的点积一样；这是“只依赖 m − n”的 d 维版本。在真实模型上比较各种位置编码的长度外推是里程碑 T-M3。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>decay_curve</code> 的底数从 10000 改成 500000（LLaMA 3 用的值），衰减变慢还是变快？</li>
+<li>把 <code>score_2d</code> 的 θ 改成 2π，会发生什么？为什么频率不能太大？</li>
+</ul><nav class="pager"><a href="14-swiglu.html">← 第 14 章 · SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="16-alibi-nope.html">第 16 章 · ALiBi 与 NoPE：不加位置编码行不行 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

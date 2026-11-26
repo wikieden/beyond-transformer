@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 18 章 · 训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html" class="cur"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="18-logit-logit-qk-norm-z-loss">第 18 章 · 训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</h1><div class="run"><a class="btn" href="../animations/18-stability.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch18_stability.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch18_stability.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch18_stability.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：大模型训练常常跑着跑着 loss 突然飙上去。两种最常见的病因是什么？为什么注意力的 logit 会随着权重“平方地”长大，长大了为什么致命？QK-norm 做了什么让它长不大？输出层的 log Z 为什么会漂走，z-loss 怎么把它拉回来？OLMo 2 这些工业模型又是怎么组合这几招的？<br />
+讲解日期：2026-11-26 · 上一章：<a href="../lessons/17-long-context.html">第 17 章 长文本外推</a> · 下一章：<a href="../lessons/19-attention-sink.html">第 19 章 巨大激活与 attention sink</a><br />
+对应原文：Small-scale proxies for large-scale Transformer training instabilities <code>transformer-deep-dive/materials/text/papers/small-scale-proxies-instability-2309.14322.txt</code> 引言 L74–L125（两种不稳定、qk-layernorm、z-loss、LR 敏感度）、§3.1.1 Attention logit growth 与 Figure 2 L212–L258、§3.1.2 Output logit divergence L324–L352（log Z 漂成很负，z-loss = 1e-4·log²Z）；OLMo 2 <code>olmo2-2501.00656.txt</code> §3.3 L270–L285（RMSNorm、reordered norm、QK-norm、z-loss、RoPE θ = 5e5）<br />
+本章缩写：logit（进 softmax 之前的分数）；QK-norm（对 q、k 先做一次 norm 再点积；论文里叫 qk-layernorm）；Z = partition function（配分函数：softmax 的分母 Σe^{y_i}）；z-loss（把 log Z 拉向 0 的辅助损失）；LR sensitivity（学习率敏感度：学习率偏离最优时 loss 变差多少）；entropy（熵：分布有多“分散”，均匀时最大）；nats（以 e 为底的信息量单位）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="logit-2026-11-26">第一步：注意力 logit 随权重平方增长（2026-11-26）</h3>
+<p><strong>类比：两个人的嗓门都变大一倍，吵架的音量变大四倍。</strong> q = W_Q x、k = W_K x，两者都和权重成正比；分数 q·k 是两者相乘，所以 W_Q、W_K 各变大 c 倍，分数变大 c² 倍。</p>
+<p>训练中权重会慢慢长大（尤其学习率大、没有足够的权重衰减时）。x 已经被 LayerNorm 过，量级固定，所以 logit 的增长全来自 W_Q、W_K。</p>
+<p><strong>数字演示</strong>（16 个 token、d = 64，x 已经过 LayerNorm，W 按 1/√d 初始化后整体乘 c）：</p>
+<table>
+<thead>
+<tr>
+<th>W_Q、W_K 乘</th>
+<th>最大 |logit|</th>
+<th>每行 softmax 的平均熵（均匀是 2.773）</th>
+<th>平均最大权重</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2.84</td>
+<td>2.419</td>
+<td>0.213</td>
+</tr>
+<tr>
+<td>2</td>
+<td>11.36</td>
+<td>1.008</td>
+<td>0.648</td>
+</tr>
+<tr>
+<td>4</td>
+<td>45.44</td>
+<td>0.259</td>
+<td>0.903</td>
+</tr>
+<tr>
+<td>8</td>
+<td>181.76</td>
+<td>0.024</td>
+<td>0.995</td>
+</tr>
+</tbody>
+</table>
+<p>权重 ×2，logit ×4，严格的平方关系。到 ×8 时每一行的 softmax 几乎都是 one-hot：每个 query 只看一个 key，熵几乎为 0。这叫<strong>注意力熵坍缩</strong>：softmax 饱和，梯度几乎为 0（前作<a href="https://wikieden.github.io/transformer-visual/lessons/07-saturation.html">第 7 章</a>），而唯一被选中的那个位置梯度又很大，训练就不稳定了。论文 Figure 2（L212–L258）在小模型上用大学习率复现了这个现象：最大注意力 logit 一路涨到上千，loss 发散。</p>
+<p><img alt="注意力 logit 与熵" src="../figures/18-stability-logit.png" />
+<em>图 18-1 · 横轴是 W_Q、W_K 被放大的倍数。蓝：最大 |logit|（对数纵轴，左），斜率是 2（平方增长）；橙：平均注意力熵（右轴），从接近均匀掉到接近 0。灰虚线：加了 QK-norm，logit 不随权重变</em></p>
+<p><strong>一句话</strong>：注意力 logit 和 W_Q、W_K 的乘积成正比，权重变大 c 倍、logit 变大 c² 倍，softmax 塌成 one-hot，训练失稳。</p>
+<h3 id="qk-norm-qk-2026-11-26">第二步：QK-norm：先把 q、k 归一化（2026-11-26）</h3>
+<p>既然问题出在 q、k 的大小，就在点积前把它们各自 norm 一下（论文的 qk-layernorm，L110；OLMo 2 用 RMSNorm，L279–L281）：</p>
+<div class="arithmatex">\[\text{score} = \frac{\text{Norm}(q)\cdot\text{Norm}(k)}{\sqrt d}\]</div>
+<p>q、k 的均方根都是 1，长度都是 √d，点积最多 d，除以 √d 后 |logit| ≤ √d。权重怎么长，logit 都不会超过这个上界。</p>
+<p><strong>数字演示</strong>（同上，加 QK-norm）：</p>
+<table>
+<thead>
+<tr>
+<th>W_Q、W_K 乘</th>
+<th>最大 |logit|</th>
+<th>平均熵</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2.78</td>
+<td>2.381</td>
+</tr>
+<tr>
+<td>8</td>
+<td>2.78</td>
+<td>2.381</td>
+</tr>
+</tbody>
+</table>
+<p>权重放大 8 倍，结果一模一样。实际的 QK-norm 带一个可学的缩放 g，模型需要尖的注意力时可以自己学大，但不会因为权重“无意中”变大而失控。</p>
+<p>论文的主要结论（L95–L125）：加了 QK-norm 之后，<strong>学习率敏感度</strong>大幅下降：学习率开得比最优值大很多，loss 也只变差一点点。Qwen3 就用 QK-norm 换掉了 QKV 的 bias（第 24 章）。</p>
+<p><strong>一句话</strong>：QK-norm 在点积前把 q、k 归一化，logit 有了 √d 的上界，不再随权重平方增长。</p>
+<h3 id="logit-z-loss2026-11-26">第三步：输出 logit 发散和 z-loss（2026-11-26）</h3>
+<p>第二种病发生在<strong>输出层</strong>，而且多在训练后期（L324–L345）。</p>
+<p>softmax 对整体平移不敏感：所有 logits 加同一个数，概率不变。所以 log Z（softmax 分母的对数）没有任何力量把它固定住，可以慢慢漂到很负的值（论文 Figure 4：一个 2.4M 参数的模型、学习率 0.1 时出现）。漂得太远，数值精度出问题，loss 就发散了。</p>
+<p><strong>z-loss</strong>（L345–L347）：加一项辅助损失</p>
+<div class="arithmatex">\[\mathcal L_z = \lambda\,(\log Z)^2,\qquad \lambda = 10^{-4}\]</div>
+<p>把 log Z 拉向 0。它不改变概率分布，只是选定了“平移到哪里”。</p>
+<p><strong>数字演示</strong>（同一个概率分布 [0.9933, 0.0067, 0.0]，三种平移）：</p>
+<table>
+<thead>
+<tr>
+<th>logits</th>
+<th>log Z</th>
+<th>z-loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[30, 25, 20]</td>
+<td>30.0068</td>
+<td>0.090041</td>
+</tr>
+<tr>
+<td>[0, −5, −10]</td>
+<td>0.0068</td>
+<td>0.000000</td>
+</tr>
+<tr>
+<td>[−40, −45, −50]</td>
+<td>−39.9932</td>
+<td>0.159946</td>
+</tr>
+</tbody>
+</table>
+<p>三种 logits 的交叉熵完全一样，只有 z-loss 能区分它们，并且偏爱 log Z ≈ 0 的那一种。论文还发现，权重衰减对大一点的模型也能缓解这个问题（L349–L352）。</p>
+<p><img alt="z-loss" src="../figures/18-stability-zloss.png" />
+<em>图 18-2 · 横轴是 log Z，纵轴是 z-loss = 10⁻⁴·(log Z)²。三个点是表里的三种平移；交叉熵对这三种完全一样，只有 z-loss 把 log Z 往 0 拉</em></p>
+<p><strong>一句话</strong>：softmax 对整体平移不敏感，log Z 会在训练后期漂走；z-loss = 1e-4·log²Z 把它拉回 0，不改变预测的概率。</p>
+<h3 id="2026-11-26">第四步：工业上怎么组合（2026-11-26）</h3>
+<p>OLMo 2 §3.3（L270–L285）把一套稳定性改动放在一起：</p>
+<table>
+<thead>
+<tr>
+<th>改动</th>
+<th>治什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RMSNorm（第 13 章）</td>
+<td>更快，效果不变</td>
+</tr>
+<tr>
+<td>reordered norm：h = x + RMSNorm(Attn(x))</td>
+<td>把 norm 放到子层<strong>输出</strong>，控制每层往主干上加多少（第 12 章的变体）</td>
+</tr>
+<tr>
+<td>QK-norm</td>
+<td>注意力 logit 增长</td>
+</tr>
+<tr>
+<td>z-loss</td>
+<td>输出 logit 发散</td>
+</tr>
+<tr>
+<td>RoPE θ = 5 × 10⁵</td>
+<td>位置编码的分辨率（第 15、17 章）</td>
+</tr>
+</tbody>
+</table>
+<p>还有几样“软”的手段也有用：warmup（第 4 章）、梯度裁剪、权重衰减、更小的 Adam ε（论文 §3.2）。研究稳定性的一个好办法是论文提出的<strong>小模型代理</strong>：在小模型上用很大的学习率，就能复现大模型的失稳，从而便宜地比较各种对策。</p>
+<p><strong>场景代码</strong>：注意力里加 QK-norm、输出层加 z-loss（真实写法；本书 chapter-code 只用 NumPy，这段没跑过）：</p>
+<pre><code class="language-python">q, k = self.q_norm(q), self.k_norm(k)                   # nn.RMSNorm(head_dim)，在 RoPE 之前
+out = F.scaled_dot_product_attention(q, k, v, is_causal=True)
+...
+logits = self.lm_head(h)
+log_z = torch.logsumexp(logits.float(), dim=-1)
+loss = F.cross_entropy(logits.view(-1, V), y.view(-1)) + 1e-4 * (log_z ** 2).mean()
+</code></pre>
+<p>复现“3 个宽度 × 6 个学习率”的 LR 敏感度曲线、记录最大注意力 logit 随步数的增长、比较加不加 QK-norm 和 z-loss，是里程碑 T-M4。</p>
+<p><strong>一句话</strong>：工业模型同时用 RMSNorm、子层输出的 norm、QK-norm、z-loss 和更大的 RoPE 底数；小模型加大学习率就能便宜地复现大模型的失稳。</p>
+<h3 id="one-hot">动画演示：权重变大，注意力塌成 one-hot</h3>
+<p><img alt="训练稳定性" src="../animations/18-stability.gif" /></p>
+<p>可交互版：<a href="../animations/18-stability.html">animations/18-stability.html</a>（滑块：W_Q、W_K 放大的倍数；勾选框：QK-norm）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>左边是 8 × 8 的注意力权重图，越深越大（第一步）；</li>
+<li>把倍数从 1 拖到 8：每一行慢慢只剩一个深色格子，右上角的熵掉到接近 0；</li>
+<li>勾上 QK-norm：不管倍数多大，图都不变（第二步）。</li>
+</ol>
+<h2 id="_2">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：某层的最大注意力 logit 是 3。训练中 W_Q 变大 1.5 倍、W_K 变大 2 倍，最大 logit 大约变成多少？</p>
+<p><strong>题 2</strong>（第二步）：head_dim = 128，加了不带可学缩放的 QK-norm 之后，注意力 logit 的绝对值最多是多少？</p>
+<p><strong>题 3</strong>（第三步）：logits = [10, 8, 6]，log Z 大约是多少？z-loss（λ = 1e-4）是多少？把 logits 整体减 10 之后呢？交叉熵变不变？</p>
+<h2 id="_3">口诀</h2>
+<blockquote>
+<p>两人嗓门各翻倍，吵架变四倍：W 大 c 倍，logit 大 c 方；softmax 塌成独热，熵坍缩。<br />
+QK 先 norm 再点积，logit 有上界根号 d。<br />
+softmax 不管平移，log Z 后期漂走；z-loss 万分之一乘 log Z 平方，拉回零、不改概率。<br />
+工业组合：RMSNorm、输出 norm、QK-norm、z-loss、大底数 RoPE；小模型大学习率当代理。</p>
+</blockquote>
+<h2 id="_4">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B48–B49</a>（B48 注意力 logit 增长、熵坍缩与 QK-norm；B49 输出 logit 发散与 z-loss、OLMo 2 的组合）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_5">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_6">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Small-scale proxies for large-scale Transformer training instabilities（Wortsman 等 2023）</td>
+<td>引言 L74–L125；§3.1.1 L212–L258；§3.1.2 L324–L352</td>
+<td>两种不稳定和两种对策</td>
+</tr>
+<tr>
+<td>★ OLMo 2（2025）</td>
+<td>§3.3 L270–L285</td>
+<td>工业模型的稳定性配方</td>
+</tr>
+<tr>
+<td>Scaling Vision Transformers to 22B（Dehghani 等 2023）</td>
+<td>QK-norm 一节（本地没有文本版）</td>
+<td>QK-norm 的出处</td>
+</tr>
+<tr>
+<td>PaLM（Chowdhery 等 2022）</td>
+<td>z-loss 一段（本地没有文本版）</td>
+<td>z-loss 的出处</td>
+</tr>
+<tr>
+<td>《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/44-training-stability.html">第 44 章 训练稳定性</a></td>
+<td>全部</td>
+<td>z-loss、QK-norm、fp8 的数学</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">数学原理</h3>
+<ul>
+<li><strong>logit 的平方增长</strong>：s = xᵀW_Qᵀ W_K y / √d，W_Q、W_K 各乘 c，s 乘 c²。</li>
+<li><strong>熵与饱和</strong>：softmax 越尖熵越小；接近 one-hot 时 ∂p/∂s 接近 0（被选中的位置除外）。</li>
+<li><strong>QK-norm 的上界</strong>：‖Norm(q)‖ = ‖Norm(k)‖ = √d（RMS 为 1），|q·k|/√d ≤ √d。</li>
+<li><strong>softmax 的平移不变</strong>：softmax(y + c) = softmax(y)，log Z(y + c) = log Z(y) + c；z-loss 打破这个自由度。</li>
+</ul>
+<h3 id="_8">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(s = q^\top k/\sqrt d \propto \lVert W_Q\rVert\lVert W_K\rVert\)</span></td>
+<td>注意力 logit 的量级</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(s = \text{Norm}(q)^\top\text{Norm}(k)/\sqrt d\)</span>，<span class="arithmatex">\(\lvert s\rvert \le \sqrt d\)</span></td>
+<td>QK-norm</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(Z = \sum_j e^{y_j}\)</span></td>
+<td>配分函数</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathcal L_z = 10^{-4}(\log Z)^2\)</span></td>
+<td>z-loss</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch18_stability.py</code>，配套测试 <code>tests/test_ch18.py</code>，notebook 在 <code>notebooks/ch18_stability.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch18_stability.py  
+uv run pytest tests/test_ch18.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 logit 增长</td>
+<td>∝ c²</td>
+<td><code>attn_stats(c)</code></td>
+<td>2.84 → 181.76，熵 2.42 → 0.02</td>
+</tr>
+<tr>
+<td>第二步 QK-norm</td>
+<td>Norm(q)·Norm(k)</td>
+<td><code>attn_stats(c, qk_norm=True)</code></td>
+<td>不随 c 变</td>
+</tr>
+<tr>
+<td>第三步 z-loss</td>
+<td>λ log²Z</td>
+<td><code>z_loss(logits)</code></td>
+<td>0.090、0、0.160</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">q, k = x @ (scale * wq).T, x @ (scale * wk).T          # 权重放大 scale 倍
+if qk_norm: q, k = rms(q), rms(k)                      # QK-norm：点积前归一化
+s = q @ k.T / np.sqrt(D)
+return float(z), float(lam * z * z)                    # z-loss = λ·(log Z)²
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>QK-norm 的位置</strong>：这里在点积之前 norm；真实模型里还有 RoPE，一般是先 norm 再转（norm 改长度，旋转不改长度，顺序反过来结果也差不多）。</li>
+<li><strong>只模拟了“权重已经变大”的结果</strong>：训练过程中 logit 怎么一步步长大、加了 QK-norm 后高学习率端不再发散，是里程碑 T-M4。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>attn_stats</code> 的 D 改成 256，同样放大 4 倍，熵掉得更快还是更慢？</li>
+<li>给 <code>rms</code> 乘一个可学缩放 g = 3（不再是 1），QK-norm 后的最大 logit 上界变成多少？</li>
+</ul><nav class="pager"><a href="17-long-context.html">← 第 17 章 · 长文本外推：PI → NTK-aware → YaRN</a><a href="19-attention-sink.html">第 19 章 · 巨大激活与 attention sink：为什么大家都盯着第一个词 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 13 章 · RMSNorm：不减平均值行不行，省在哪 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html" class="cur"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="13-rmsnorm">第 13 章 · RMSNorm：不减平均值行不行，省在哪</h1><div class="run"><a class="btn" href="../animations/13-rmsnorm.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch13_rmsnorm.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch13_rmsnorm.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch13_rmsnorm.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：LayerNorm 做两件事：减去平均值（re-centering）、除以标准差（re-scaling）。RMSNorm 只做第二件，把“除以标准差”换成“除以均方根”。少做一件事，模型还好不好用？它对什么不变、对什么不再不变？norm 只占不到 1% 的 FLOPs，为什么大家还在乎它快不快？<br />
+讲解日期：2026-11-26 · 上一章：<a href="../lessons/12-pre-ln.html">第 12 章 Pre-LN</a> · 下一章：<a href="../lessons/14-swiglu.html">第 14 章 SwiGLU</a><br />
+对应原文：RMSNorm <code>transformer-deep-dive/materials/text/papers/rmsnorm-1910.07467.txt</code> 摘要 L18–L24、§3 L170–L180（“re-scaling invariance 才是关键”，式 4）；LayerNorm <code>layernorm-1607.06450.txt</code> §3；CS336 a1 handout §3.5.1 L956–L960（a1 用的 RMSNorm，式 4）；CS336 <code>2025 Lecture 3 - architecture.txt</code> L138–L175（“FLOPs 不等于运行时间”、数据搬运）<br />
+本章缩写：RMS = Root Mean Square（均方根：先平方、再平均、再开根号）；re-centering（重新居中：减去平均值）；re-scaling（重新缩放：除以一个尺度）；γ、β（LayerNorm 可学习的缩放和平移，a1 里 RMSNorm 的缩放记作 g）；ε（防除零的小数）；bf16 = bfloat16（16 位的“脑浮点”格式）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="layernorm-2026-11-26">第一步：LayerNorm 去掉一半（2026-11-26）</h3>
+<p><strong>类比：给一组考试成绩做标准化。</strong> LayerNorm 是“先减平均分、再除以标准差”：结果平均 0 分、方差 1。RMSNorm 只做后一半，而且除的是“各分数平方的平均再开根号”（均方根），不管平均分是多少。</p>
+<div class="arithmatex">\[\text{LayerNorm}(x) = \gamma\odot\frac{x - \mu}{\sqrt{\sigma^2 + \varepsilon}} + \beta,\qquad \text{RMSNorm}(x) = g\odot\frac{x}{\text{RMS}(x)},\quad \text{RMS}(x) = \sqrt{\tfrac1d\textstyle\sum_i x_i^2 + \varepsilon}\]</div>
+<p>（RMSNorm 式 4，L180；a1 §3.5.1 式 4，L956–L960。）</p>
+<p><strong>数字演示</strong>（x = [1, 2, 3, 6]，γ = g = 1、β = 0）：</p>
+<table>
+<thead>
+<tr>
+<th>量</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>平均值 μ</td>
+<td>3</td>
+</tr>
+<tr>
+<td>标准差 σ</td>
+<td>1.8708</td>
+</tr>
+<tr>
+<td>均方根 RMS</td>
+<td>√(50/4) = 3.5355</td>
+</tr>
+<tr>
+<td>LayerNorm</td>
+<td>[−1.069, −0.5345, 0, 1.6036]（均值 0、方差 1）</td>
+</tr>
+<tr>
+<td>RMSNorm</td>
+<td>[0.2828, 0.5657, 0.8485, 1.6971]（均方根 1，均值不是 0）</td>
+</tr>
+</tbody>
+</table>
+<p>均值为 0 时 RMS 就等于标准差，两者结果一样；均值离 0 越远差别越大。</p>
+<p><strong>一句话</strong>：RMSNorm 不减平均值，只除以均方根，再乘可学习的 g；没有 β。</p>
+<h3 id="2026-11-26">第二步：对什么不变：只剩“缩放不变”（2026-11-26）</h3>
+<p><strong>re-centering 不变</strong>：每个分量都加同一个数，LayerNorm 的输出不变（减平均值把它减掉了）。<strong>re-scaling 不变</strong>：整体乘一个正数，两种 norm 的输出都不变（除以尺度把它除掉了）。</p>
+<p><strong>数字演示</strong>（x = [1, 2, 3, 6]）：</p>
+<table>
+<thead>
+<tr>
+<th>变换</th>
+<th>LayerNorm 输出变化</th>
+<th>RMSNorm 输出变化</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每个分量 +5</td>
+<td>0</td>
+<td>0.4475</td>
+</tr>
+<tr>
+<td>整体 ×3</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>RMSNorm 论文的假设（§3，L170–L175）：LayerNorm 好用主要靠 re-scaling 不变（不管上一层输出多大，送进下一层的量级都被拉回来），re-centering 不太重要。实验上 RMSNorm 和 LayerNorm 效果差不多，于是 LLaMA、Qwen、Mistral、DeepSeek 都用 RMSNorm（Lecture 3 L138–L146）。</p>
+<p><img alt="LayerNorm 与 RMSNorm 的输出" src="../figures/13-rmsnorm-compare.png" />
+<em>图 13-1 · 同一个 x = [1, 2, 3, 6]。左：LayerNorm（蓝）和 RMSNorm（橙）的输出；右：给每个分量加 5 之后再做，LayerNorm 的柱子完全不动，RMSNorm 的柱子变了（整体往一边挤）</em></p>
+<p><strong>一句话</strong>：LayerNorm 对平移和缩放都不变，RMSNorm 只对缩放不变；论文认为缩放不变才是关键，实验上两者效果相当。</p>
+<h3 id="flops-2026-11-26">第三步：省在哪：FLOPs 不等于运行时间（2026-11-26）</h3>
+<p>Lecture 3（L166–L175）的说法：矩阵乘法占了绝大部分 FLOPs，norm 不到 1%；但 norm 是<strong>逐元素</strong>的操作，每个数读一次、写一次，算得少、搬得多，运行时间里它占的比例比 FLOPs 大得多。少做一步就少读写一遍。</p>
+<p><strong>数字演示</strong>（d = 4096 的一个向量，粗略数逐元素运算）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>要做的事</th>
+<th>运算次数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LayerNorm</td>
+<td>求均值、减均值、平方求和、除以标准差、乘 γ、加 β</td>
+<td>约 28,672</td>
+</tr>
+<tr>
+<td>RMSNorm</td>
+<td>平方求和、除以 RMS、乘 g</td>
+<td>约 16,384（少 43%）</td>
+</tr>
+</tbody>
+</table>
+<p>参数也少一半（没有 β）：32 层、每层 2 个 norm 加最后 1 个、d = 4096、bf16 存，LayerNorm 1040 KB，RMSNorm 520 KB。这点参数对模型大小无所谓，但每次前向都要从显存读一遍。</p>
+<p>很多模型还顺手去掉了线性层的偏置（bias），理由一样：省参数、省搬运，效果不受影响，还更稳（Lecture 3 的“no bias terms”）。</p>
+<p><strong>场景代码</strong>：PyTorch 的 RMSNorm（真实库调用，<code>nn.RMSNorm</code> 从 2.4 起自带；本书 chapter-code 只用 NumPy，这段没跑过）：</p>
+<pre><code class="language-python">norm = nn.RMSNorm(4096, eps=1e-5)                  # 只有一个权重 g，没有 bias
+y = norm(x)                                        # x / sqrt(mean(x²) + eps) * g
+# 手写版：x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + eps) * g
+</code></pre>
+<p>a1 要你自己实现 RMSNorm 模块（§3.5.1），并做“去掉所有 RMSNorm 再训”的消融（layer_norm_ablation）。</p>
+<p><strong>一句话</strong>：norm 的 FLOPs 很少，但它是逐元素操作、主要花在读写上；RMSNorm 少一步运算、少一份参数，读写就少，于是更快。</p>
+<h3 id="norm">动画演示：给输入加一个偏移，两种 norm 怎么反应</h3>
+<p><img alt="RMSNorm" src="../animations/13-rmsnorm.gif" /></p>
+<p>可交互版：<a href="../animations/13-rmsnorm.html">animations/13-rmsnorm.html</a>（滑块：给每个分量加的偏移、整体缩放倍数）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>左边是输入 x 的 4 根柱子，中间是 LayerNorm 的输出，右边是 RMSNorm 的输出（第一步）；</li>
+<li>拖“偏移”：输入整体上移，LayerNorm 的输出纹丝不动，RMSNorm 的输出越来越接近“全都一样”（第二步）；</li>
+<li>拖“缩放”：输入变大变小，两种输出都不动。</li>
+</ol>
+<h2 id="_2">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：x = [−2, 0, 2, 4]，算 LayerNorm 和 RMSNorm 的输出（γ = g = 1、β = 0、ε 忽略）。</p>
+<p><strong>题 2</strong>（第二步）：x = [3, 3, 3, 3]（所有分量相同），LayerNorm 和 RMSNorm 分别输出什么？哪个更“有信息”？</p>
+<p><strong>题 3</strong>（第三步）：一个 d = 8192 的模型，每个 token 每层两次 norm。用自己的话说，为什么 norm 占的 FLOPs 很少，换成 RMSNorm 却能看到可测的提速？</p>
+<h2 id="_3">口诀</h2>
+<blockquote>
+<p>LayerNorm 减均值再除标准差；RMSNorm 不减均值，只除均方根。<br />
+平移、缩放都不变是 LN；只剩缩放不变是 RMS，缩放才是关键。<br />
+FLOPs 不是运行时间：逐元素操作搬得多、算得少，少一步就少读写一遍。</p>
+</blockquote>
+<h2 id="_4">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B41</a>（RMSNorm 的公式、对平移不再不变、为什么更快）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_5">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_6">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Root Mean Square Layer Normalization（Zhang &amp; Sennrich 2019）</td>
+<td>§3 L170–L180（式 4）</td>
+<td>RMSNorm 的定义和“缩放不变才是关键”</td>
+</tr>
+<tr>
+<td>★ CS336 <code>2025 Lecture 3 - architecture.txt</code></td>
+<td>L138–L175</td>
+<td>各家用哪种 norm、FLOPs 不是运行时间</td>
+</tr>
+<tr>
+<td>CS336 a1 handout</td>
+<td>§3.5.1 L956–L960；§7.3 layer_norm_ablation L2059</td>
+<td>作业里的 RMSNorm 和消融</td>
+</tr>
+<tr>
+<td>前作 <a href="https://wikieden.github.io/transformer-visual/lessons/19-layernorm.html">第 19 章 LayerNorm</a></td>
+<td>全部</td>
+<td>LayerNorm 的基础</td>
+</tr>
+<tr>
+<td>《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/39-normalization.html">第 39 章</a>、<a href="https://wikieden.github.io/math-and-eval-stats/lessons/47-inference-cost.html">第 47 章</a></td>
+<td>归一化；roofline</td>
+<td>不变性的数学；“搬运瓶颈”怎么算</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">数学原理</h3>
+<ul>
+<li><strong>方差分解</strong>：RMS² = σ² + μ²，所以 μ = 0 时 RMS = σ。</li>
+<li><strong>不变性</strong>：LN(x + c·1) = LN(x)，LN(a·x) = LN(x)（a &gt; 0）；RMS 只有后者。</li>
+<li><strong>算术强度</strong>：逐元素操作每读写一个数只做几次运算，远低于 GPU 的“算力 / 带宽”比，受带宽限制（memory-bound）。</li>
+</ul>
+<h3 id="_8">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\gamma\odot(x - \mu)/\sqrt{\sigma^2 + \varepsilon} + \beta\)</span></td>
+<td>LayerNorm</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(g\odot x/\text{RMS}(x)\)</span></td>
+<td>RMSNorm</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\text{RMS}(x) = \sqrt{\frac1d\sum x_i^2 + \varepsilon}\)</span></td>
+<td>均方根</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\text{RMS}^2 = \sigma^2 + \mu^2\)</span></td>
+<td>两者的关系</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch13_rmsnorm.py</code>，配套测试 <code>tests/test_ch13.py</code>，notebook 在 <code>notebooks/ch13_rmsnorm.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch13_rmsnorm.py  
+uv run pytest tests/test_ch13.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 两种 norm</td>
+<td>式 4</td>
+<td><code>layer_norm(X)</code>、<code>rms_norm(X)</code></td>
+<td>[−1.069, …]、[0.2828, …]</td>
+</tr>
+<tr>
+<td>第二步 不变性</td>
+<td>平移、缩放</td>
+<td><code>invariances()</code></td>
+<td>RMS 平移后变 0.4475</td>
+</tr>
+<tr>
+<td>第三步 运算与参数</td>
+<td>粗略计数</td>
+<td><code>op_count(4096)</code>、<code>param_bytes(4096, 65)</code></td>
+<td>少 43%；1040 vs 520 KB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">return g * (x - x.mean()) / np.sqrt(x.var() + eps) + b       # LayerNorm：减均值、除标准差、乘 γ 加 β
+return x / np.sqrt((x * x).mean() + eps) * g                 # RMSNorm：只除均方根、乘 g
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>ε 加在根号里面</strong>：RMS 很小时防止除零；a1 规定 ε = 1e-5，和这里一样。</li>
+<li><strong>实际实现要先升精度</strong>：bf16 下直接平方求和容易溢出或丢精度，a1 提示先把 x 转成 float32 算 RMS，再转回原来的类型；这一步 NumPy 版本里看不到。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 x 改成 [−3, −1, 1, 3]（均值 0），两种 norm 的输出是不是一样？</li>
+<li>把 <code>op_count</code> 换成你自己数的版本（比如把“除以”算成乘以倒数），比例变多少？</li>
+</ul><nav class="pager"><a href="12-pre-ln.html">← 第 12 章 · Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="14-swiglu.html">第 14 章 · SwiGLU：门控为什么有用，8/3 怎么保住参数量 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

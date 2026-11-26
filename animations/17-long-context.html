@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>长文本外推</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 17 章 · 拖扩展倍数，看每个平面的频率被压多少</h1>
+<p class="sub">配套讲义：<a href="../lessons/17-long-context.html">第 17 章 · 长文本外推：PI → NTK-aware → YaRN</a>。d = 128、底数 10000、训练长度 4096。64 根柱子是 64 个平面（左快右慢）的 θ 被乘的倍数（对数刻度，顶端是 1、底部是 1/32）。红线右边的平面在训练长度里连一圈都没转完。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="md">方法</label><select id="md"><option value="0">PI</option><option value="1">NTK-aware</option><option value="2">YaRN（by-parts）</option></select><label for="s">扩展倍数 s</label><input type="range" id="s" min="2" max="32" step="2" value="8"><span id="sv">8</span></div>
+<p class="note">看点：① PI：所有平面一刀切，都 ÷ s，快的平面也被压了（分辨率掉）；② NTK-aware：最快的不动，最慢的正好 ÷ s，中间平滑；③ YaRN：转满 32 圈的平面完全不动，不到 1 圈的完全插值，中间线性过渡；右上角是 YaRN 的温度 0.1 ln s + 1。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['md','s'],F=[[0,8],[1,8],[2,8],[2,2],[2,32],[1,32]];
+function render(md,s){const d=128,b=1e4,Lt=4096,n=64,th=Array.from({length:n},(_,i)=>b**(-2*i/d));let f;
+ if(md==0)f=th.map(()=>1/s);else if(md==1){const b2=b*s**(d/(d-2));f=th.map((t,i)=>b2**(-2*i/d)/t)}else f=th.map(t=>{const r=Lt*t/(2*Math.PI),g=Math.min(1,Math.max(0,(r-1)/31));return (1-g)/s+g});
+ frame(40,50,600,270);const yl=v=>50+270*(-Math.log2(v))/5;f.forEach((v,i)=>{const y=yl(v);R(42+i*9.35,50,7.6,y-50,['var(--muted)','var(--accent)','var(--warm)'][md],.8)});
+ [1,0.5,0.25,0.125,1/16,1/32].forEach(v=>T(v>=1?'1':'1/'+Math.round(1/v),36,yl(v)+4,'end','s'));const cut=th.findIndex(t=>2*Math.PI/t>Lt);L(42+cut*9.35,50,42+cut*9.35,320,'var(--bad)',1.5,'5 4');
+ T('快 ←  平面编号  → 慢',340,340,'middle','s');cap(`${['PI','NTK-aware','YaRN'][md]}、s = ${s}：最快 ×${f[0].toFixed(3)}、最慢 ×${f[n-1].toFixed(3)}${md==2?'；温度 '+(0.1*Math.log(s)+1).toFixed(3):''}`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

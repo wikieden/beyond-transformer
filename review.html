@@ -347,6 +347,164 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <p>口诀：平滑目标零点九，自信过了九成反而罚；Noam 线性升到 warmup，之后一除根号步</p>
 </details>
 <hr />
+<h2 id="b">B 零件升级</h2>
+<h3 id="b40-post-ln-pre-ln-post-ln-warmup">B40 · Post-LN 和 Pre-LN 各怎么写？为什么 Post-LN 离不开 warmup？</h3>
+<p>来源：<a href="lessons/12-pre-ln.html">第 12 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>Post-LN：z = Norm(x + f(x))，主干每层都被 norm；Pre-LN：z = x + f(Norm(x))，主干不过 norm，最后补一个 norm。</li>
+<li>Xiong 等 Theorem 1：初始化时最后一层的梯度，Post-LN O(d√ln d)（与层数 L 无关），Pre-LN O(d√(ln d / L))（随 1/√L 变小）。玩具验证：Post-LN 6–48 层都约 250，Pre-LN × √L 约 350。</li>
+<li>Post-LN 靠近输出的层梯度大，正常学习率一上来就走太远，必须先用小学习率 warmup；Pre-LN 梯度均匀，可以去掉或缩短 warmup。</li>
+<li>Pre-LN 的代价：主干越加越大、最后要补 norm；变体（sandwich、OLMo 2 的 x + Norm(f(x))、DeepNorm）都是“norm 放子层两头、不打断主干”。</li>
+</ul>
+<p>口诀：Post-LN 输出附近梯度大、和层数无关，不 warmup 就炸；Pre-LN 按根号 L 变小</p>
+</details>
+<hr />
+<h3 id="b41-rmsnorm-layernorm">B41 · RMSNorm 和 LayerNorm 差在哪？为什么更快？</h3>
+<p>来源：<a href="lessons/13-rmsnorm.html">第 13 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>LayerNorm：γ(x − μ)/√(σ² + ε) + β；RMSNorm：g·x/RMS(x)，RMS = √(mean(x²) + ε)，不减均值、没有 β。RMS² = σ² + μ²，均值为 0 时两者一样。</li>
+<li>不变性：LayerNorm 对平移和缩放都不变；RMSNorm 只对缩放不变。论文认为缩放不变才是关键，效果相当，LLaMA、Qwen 等都用 RMSNorm。</li>
+<li>快在哪：norm 不到 1% 的 FLOPs，但它是逐元素操作，受显存带宽限制（FLOPs 不等于运行时间）；RMSNorm 少一步运算、少一份参数，读写就少。实现时先升到 float32 再算。</li>
+</ul>
+<p>口诀：不减均值只除均方根；缩放不变才是关键；搬得多算得少，少一步就快</p>
+</details>
+<hr />
+<h3 id="b42-swiglu-d_ff-83d">B42 · SwiGLU 的公式是什么？为什么 d_ff 取 8/3·d？</h3>
+<p>来源：<a href="lessons/14-swiglu.html">第 14 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>SiLU(x) = x·σ(x)：平滑的 ReLU，负半轴略低于 0（最低约 −0.278）。</li>
+<li>FFN_SwiGLU(x) = (SiLU(xW) ⊙ xV)W₂：一路当门、一路当内容，逐元素相乘；门接近 0 的维度把内容关掉，是一种乘法交互。论文只说“归功于神的恩典”。</li>
+<li>三个矩阵：3·d·d_ff = 8d² ⇒ d_ff = 8d/3，参数和计算量与 d_ff = 4d 的普通 FFN 一样；实际取整到 64（a1）或 256（LLaMA-7B 的 11008）的倍数。通常不带 bias。</li>
+</ul>
+<p>口诀：一路门一路内容，逐元素一乘；三个矩阵乘三分之八</p>
+</details>
+<hr />
+<h3 id="b43-rope-d">B43 · RoPE 想解决什么？二维和 d 维各怎么转？</h3>
+<p>来源：<a href="lessons/15-rope.html">第 15 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>目标（RoFormer 式 11）：⟨f_q(x_m, m), f_k(x_n, n)⟩ 只依赖内容和 m − n。</li>
+<li>二维：q 转 mθ、k 转 nθ；R_aᵀR_b = R_{b−a}，点积只剩 (m − n)θ。例：θ = 0.3 时 (1, 0)、(5, 4)、(10, 9) 的点积都是 0.4141。</li>
+<li>d 维：两两一组拆成 d/2 个平面，θ_i = 10000^{−2i/d}，从快到慢；d = 128 时波长 6.28 到 54,410 个位置。只转 q、k，不碰 v；每层都转。</li>
+</ul>
+<p>口诀：q 转 mθ、k 转 nθ，点积只剩 m 减 n；两两成平面，频率从快到慢</p>
+</details>
+<hr />
+<h3 id="b44-rope">B44 · RoPE 实际怎么实现？配对方式有什么坑？为什么远处分数偏低？</h3>
+<p>来源：<a href="lessons/15-rope.html">第 15 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>不乘分块旋转矩阵，用式 (34)：R_m x = x ⊙ cos(mΘ) + rotate_half(x) ⊙ sin(mΘ)，cos、sin 预先算表。</li>
+<li>配对：RoFormer 和 a1 是相邻两维 (x₀, x₁) 一对；Hugging Face 的 LLaMA 是前一半和后一半配对。两种都对，但必须和权重配套，混用就乱码。</li>
+<li>远距离衰减（§3.4.3）：点积是 d/2 个 e^{i(m−n)θ_i} 项的和，距离越大相位越分散，上界越小（q、k 全 1 时 1 → 0.11）；这是倾向，不是硬规定。</li>
+</ul>
+<p>口诀：x 乘 cos 加转半个乘 sin；配对方式要和权重配套；距离越远相位越乱</p>
+</details>
+<hr />
+<h3 id="b45-alibi-nope">B45 · ALiBi 怎么加位置？为什么能外推？NoPE 为什么不加位置也行？</h3>
+<p>来源：<a href="lessons/16-alibi-nope.html">第 16 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>ALiBi：softmax(q_iKᵀ + m·[−(i−1), …, −1, 0])，按距离线性扣分；不改 q、k，不加在词向量上；m 不学，8 个头是 1/2 … 1/256（一般 2^{−8k/H}）。</li>
+<li>外推：偏置只依赖距离，没有“没见过的位置编号”，更远只是扣得更多；在 1024 上训练能读更长。</li>
+<li>NoPE：decoder-only 的因果 mask 本身带位置：第一层均匀注意力 + 句首 value 为 1，位置 i 的输出 1/(i + 1)，各不相同（Theorem 1）。双向注意力每个位置都看全部，算不出位置，所以 encoder 必须加位置编码。</li>
+</ul>
+<p>口诀：分数减斜率乘距离，斜率几何数列不学；均匀看前面，一除以 i 加一</p>
+</details>
+<hr />
+<h3 id="b46-rope-pi-ntk-aware">B46 · RoPE 直接外推为什么会崩？PI 和 NTK-aware 各怎么改？</h3>
+<p>来源：<a href="lessons/17-long-context.html">第 17 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>慢的平面（波长 &gt; 训练长度）在训练里连一圈都没转完；读更长时转到没见过的角度（d = 128、训练 4096 → 32768：最慢平面 0.473 → 3.784 弧度）。快的平面所有角度早都见过。</li>
+<li>PI：位置 m → m/s，所有平面都慢 s 倍；慢平面回到见过的角度，但快平面分辨率也掉了 s 倍。少量微调即可。</li>
+<li>NTK-aware：底数 b′ = b·s^{d/(d−2)}，最快平面不变，最慢平面正好慢 s 倍，中间平滑过渡（s = 8 时 10000 → 82,685）。缺点是最佳底数难定。</li>
+</ul>
+<p>口诀：只见过半圈的慢钟会转到没见过的角度；PI 全压，NTK 改底数</p>
+</details>
+<hr />
+<h3 id="b47-yarn">B47 · YaRN 做了哪两件事？</h3>
+<p>来源：<a href="lessons/17-long-context.html">第 17 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>NTK-by-parts：看每个平面在训练长度里转了几圈 r = L/λ。r &gt; β（32）不动；r &lt; α（1）完全插值 θ/s；中间按 γ = (r − α)/(β − α) 线性过渡：θ′ = (1 − γ)θ/s + γθ。快平面保住近处分辨率，慢平面回到见过的角度。</li>
+<li>注意力温度：logits 乘 √(1/t) = 0.1 ln s + 1（s = 8 时 1.208），直接乘进 cos、sin 表。</li>
+<li>只改频率表和温度，不动权重；Hugging Face 里用 rope_scaling = {"rope_type": "yarn", "factor": s, ...}。</li>
+</ul>
+<p>口诀：转满三十二圈不动，不到一圈全插值，中间线性过渡；再乘零点一 ln s 加一</p>
+</details>
+<hr />
+<h3 id="b48-logit-qk-norm">B48 · 注意力 logit 为什么会越涨越大？QK-norm 怎么治？</h3>
+<p>来源：<a href="lessons/18-stability.html">第 18 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>logit = q·k/√d，q、k 都和 W_Q、W_K 成正比；权重各变大 c 倍，logit 变大 c² 倍（例：×2 → 2.84 到 11.36）。</li>
+<li>后果：softmax 塌成 one-hot（熵坍缩，×8 时平均熵 0.024），饱和处梯度几乎为 0、被选中处又很大，训练发散。小模型用大学习率就能复现。</li>
+<li>QK-norm：点积前把 q、k 各自 RMSNorm（可带可学缩放），|logit| ≤ √d，不随权重变；大幅降低学习率敏感度。Qwen3、OLMo 2 都用。</li>
+</ul>
+<p>口诀：W 大 c 倍，logit 大 c 方，softmax 塌成独热；QK 先 norm 再点积，上界根号 d</p>
+</details>
+<hr />
+<h3 id="b49-logit-z-loss">B49 · 输出 logit 发散是什么？z-loss 怎么写？工业上怎么组合这些稳定性手段？</h3>
+<p>来源：<a href="lessons/18-stability.html">第 18 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>softmax 对整体平移不敏感，log Z（Z = Σe^{y}）没有力量固定，训练后期会漂到很负，数值出问题。</li>
+<li>z-loss = 10⁻⁴·(log Z)²，把 log Z 拉回 0，不改变概率（[30, 25, 20]、[0, −5, −10]、[−40, −45, −50] 交叉熵一样，z-loss 0.09、0、0.16）。权重衰减也能缓解。</li>
+<li>OLMo 2：RMSNorm、子层输出的 norm（h = x + Norm(f(x))）、QK-norm、z-loss、RoPE θ = 5e5；再加 warmup、梯度裁剪、权重衰减。</li>
+</ul>
+<p>口诀：softmax 不管平移，log Z 漂走；z-loss 万分之一乘 log Z 平方</p>
+</details>
+<hr />
+<h3 id="b50-attention-sinkstreamingllm">B50 · 什么是巨大激活和 attention sink？滑窗推理为什么崩，StreamingLLM 怎么修？</h3>
+<p>来源：<a href="lessons/19-attention-sink.html">第 19 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>巨大激活：少数固定维度（LLaMA2-7B 的 1415、2533）在句首、第一个句号等 token 上比其余大上万倍，和输入无关，像固定偏置；把注意力吸到这些 token 上。</li>
+<li>attention sink：softmax 权重必须加到 1，没东西可看的头把权重停在句首（value ≈ 0，等于空操作）；句首对所有位置可见，最容易被学成 sink。例：句首拿 94%。</li>
+<li>滑窗推理丢掉句首，权重被迫摊给真实内容，输出乱掉（差 0.386）；StreamingLLM 永远保留开头 4 个 token 的 KV + 最近 W 个（差 0.015）。也可以预训练时放专门的 sink token，或 softmax 分母加 1。</li>
+</ul>
+<p>口诀：票必须投完，投给句首弃权箱；滑窗踢掉句首就乱，留住开头四个就稳</p>
+</details>
+<hr />
+<h3 id="b51-p">B51 · 为什么换宽度要换学习率？μP 怎么做？</h3>
+<p>来源：<a href="lessons/20-mup-deepnorm.html">第 20 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>标准初始化 W ~ N(0, 1/fan_in) 让前向和宽度无关；但 Adam 一步每个权重挪约 ±lr，方向和 x 对齐，Δy = Σ_j ΔW_ij x_j 是 n 个同号相加，∝ lr·n（宽 256 → 4096：0.21 → 3.28）。所以大模型的最优学习率往小处漂。</li>
+<li>μP：隐藏层的 Adam 学习率 ∝ 1/宽度（再配套改输入、输出层和注意力缩放 1/d），各宽度下更新效果一样（都约 0.2）。</li>
+<li>μTransfer：在小模型上调好超参，直接搬到大模型。</li>
+</ul>
+<p>口诀：初始化管住前向，Adam 一步按宽度涨；隐藏层学习率除以宽度</p>
+</details>
+<hr />
+<h3 id="b52-deepnorm">B52 · DeepNorm 怎么写？α、β 怎么取？</h3>
+<p>来源：<a href="lessons/20-mup-deepnorm.html">第 20 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>x_{l+1} = LN(α·x_l + f(x_l))，子层部分权重（FFN、V、输出投影）初始化再乘 β；普通 Post-LN 是 α = β = 1 的特例。</li>
+<li>decoder-only / encoder-only：α = (2N)^{1/4}，β = (8N)^{−1/4}（N = 层数；100 层 3.761、0.188）。</li>
+<li>作用：主干占更大比重、子层一开始改动很小，每步更新对输出的影响有与 N 无关的上界，1000 层 Post-LN 也能训。现在主流仍是 Pre-LN + 稳定性手段。</li>
+</ul>
+<p>口诀：残差乘 α、初始化乘 β：二 N 的四分之一次方，八 N 的负四分之一次方</p>
+</details>
+<hr />
 <h2 id="v-transformer">V 视觉 Transformer</h2>
 <h3 id="b04-vit-tokenn-1">B04 · ViT 怎么把一张图变成一串 token？N 和每块的数怎么算？式 1 里加了哪两样东西？</h3>
 <p>来源：<a href="lessons/44-vit.html">第 44 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>

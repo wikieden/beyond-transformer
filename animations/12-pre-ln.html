@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pre-LN</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 12 章 · 梯度从输出往回传：Post-LN 和 Pre-LN 差在哪</h1>
+<p class="sub">配套讲义：<a href="../lessons/12-pre-ln.html">第 12 章 · Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a>。一个 L 层的残差网络（子层是线性层，d = 32），初始化时手写反向传播，算每一层权重的梯度范数。Post-LN：x ← LN(x + f(x))；Pre-LN：x ← x + f(LN(x))，最后补一个 LN。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="md">放法</label><select id="md"><option value="0">Post-LN</option><option value="1">Pre-LN</option></select><label for="L">层数 L</label><input type="range" id="L" min="4" max="48" step="4" value="12"><span id="Lv">12</span></div>
+<p class="note">看点：① Post-LN：各层的梯度大体一样高（靠近输出略大），层数加深也不变小（最后一层和 L 无关）；② Pre-LN：越靠近输出越矮；③ 把 L 从 4 拉到 48：Pre-LN 的柱子整体按 1/√L 变矮，右上角是最后一层的数值和它乘 √L 的结果。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['md','L'],F=[[0,4],[0,12],[0,48],[1,4],[1,12],[1,24],[1,48]];
+function lnf(x){const d=x.length,m=x.reduce((a,b)=>a+b,0)/d;let v=0;x.forEach(t=>v+=(t-m)**2);const sd=Math.sqrt(v/d+1e-6);return[x.map(t=>(t-m)/sd),sd]}
+function lnb(dy,y,sd){const d=dy.length,m1=dy.reduce((a,b)=>a+b,0)/d;let m2=0;dy.forEach((g,i)=>m2+=g*y[i]/d);return dy.map((g,i)=>(g-m1-y[i]*m2)/sd)}
+const mv=(W,x)=>W.map(r=>r.reduce((s,w,j)=>s+w*x[j],0)),mtv=(W,g)=>W[0].map((_,j)=>W.reduce((s,r,i)=>s+r[j]*g[i],0));
+function grads(md,L){return memo('g'+md+'_'+L,()=>{const d=32,B=6;seed(3);const W=[];for(let l=0;l<L;l++){const M=[];for(let i=0;i<d;i++){const r=[];for(let j=0;j<d;j++)r.push(gauss()/Math.sqrt(d));M.push(r)}W.push(M)}
+ const G=new Array(L).fill(0);for(let b=0;b<B;b++){let x=[];for(let i=0;i<d;i++)x.push(gauss());const t=x.map(()=>gauss());const cache=[];
+  for(let l=0;l<L;l++){if(md==0){const fx=mv(W[l],x),z=x.map((v,i)=>v+fx[i]),[y,sd]=lnf(z);cache.push([x,y,sd]);x=y}else{const [u,sd]=lnf(x);cache.push([x,u,sd]);const fu=mv(W[l],u);x=x.map((v,i)=>v+fu[i])}}
+  let g;if(md==1){const [o,sd]=lnf(x);g=lnb(o.map((v,i)=>v-t[i]),o,sd)}else g=x.map((v,i)=>v-t[i]);
+  for(let l=L-1;l>=0;l--){if(md==0){const [xin,y,sd]=cache[l],dz=lnb(g,y,sd);let s=0;dz.forEach(a=>xin.forEach(c=>s+=(a*c)**2));G[l]+=s;const back=mtv(W[l],dz);g=dz.map((v,i)=>v+back[i])}
+   else{const [xin,u,sd]=cache[l];let s=0;g.forEach(a=>u.forEach(c=>s+=(a*c)**2));G[l]+=s;const back=lnb(mtv(W[l],g),u,sd);g=g.map((v,i)=>v+back[i])}}}
+ return G.map(v=>Math.sqrt(v))})}
+function render(md,L){const G=grads(+md,+L),mx=memo('mx',()=>Math.max(...grads(0,4),...grads(1,4),...grads(0,48)))*1.05;frame(40,50,600,270);const w=600/L;
+ G.forEach((v,l)=>{const h=270*v/mx;R(40+l*w+w*0.12,320-h,w*0.76,h,md==0?'var(--warm)':'var(--accent)',.8)});T('输入端',44,340,'start','s');T('输出端',636,340,'end','s');
+ const last=G[L-1];cap(`${md==0?'Post-LN':'Pre-LN'}、${L} 层：最后一层梯度 ${last.toFixed(1)}，乘 √L = ${(last*Math.sqrt(L)).toFixed(1)}`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

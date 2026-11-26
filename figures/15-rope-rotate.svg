@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="320" viewBox="0 0 860 320">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="17" fill="#1f2937" text-anchor="start" font-weight="bold">二维 RoPE：都转了，夹角不变</text>
+<text x="16.0" y="310.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal">左：位置 1 的 q（蓝）和位置 0 的 k（橙）；右：位置 5 的 q 和位置 4 的 k。两个向量都转了更多，但夹角一样，所以点积一样（0.4141）。</text>
+<circle cx="230.0" cy="165.0" r="105" fill="none" stroke="#e5e7eb" stroke-width="1.4"/>
+<line x1="230.0" y1="165.0" x2="303.7" y2="94.4" stroke="#2563eb" stroke-width="3"/>
+<polygon points="303.7,94.4 300.9,103.0 295.1,96.8" fill="#2563eb" stroke="#2563eb" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="230.0" y1="165.0" x2="303.0" y2="192.4" stroke="#ea580c" stroke-width="3"/>
+<polygon points="303.0,192.4 294.1,193.6 297.1,185.6" fill="#ea580c" stroke="#ea580c" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<text x="230.0" y="40.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">q 在位置 1，k 在位置 0</text>
+<text x="230.0" y="295.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal">点积 0.4141</text>
+<circle cx="630.0" cy="165.0" r="105" fill="none" stroke="#e5e7eb" stroke-width="1.4"/>
+<line x1="630.0" y1="165.0" x2="590.9" y2="70.7" stroke="#2563eb" stroke-width="3"/>
+<polygon points="590.9,70.7 597.9,76.4 590.1,79.7" fill="#2563eb" stroke="#2563eb" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="630.0" y1="165.0" x2="682.0" y2="106.8" stroke="#ea580c" stroke-width="3"/>
+<polygon points="682.0,106.8 679.9,115.6 673.6,110.0" fill="#ea580c" stroke="#ea580c" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<text x="630.0" y="40.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">q 在位置 5，k 在位置 4</text>
+<text x="630.0" y="295.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal">点积 0.4141</text>
+</svg>

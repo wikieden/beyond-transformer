@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALiBi 与 NoPE</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 16 章 · 拖斜率，看注意力往近处缩；不加位置也能数出第几个</h1>
+<p class="sub">配套讲义：<a href="../lessons/16-alibi-nope.html">第 16 章 · ALiBi 与 NoPE：不加位置编码行不行</a>。ALiBi：12 个位置，上面是偏置矩阵（越深扣得越多），下面是最后一个位置的注意力权重（原始分数都一样，只剩偏置的影响）。NoPE：均匀注意力 + 句首 value 为 1，每个位置的输出 1/(i+1)。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="md">方法</label><select id="md"><option value="0">ALiBi</option><option value="1">NoPE</option></select><label for="ls">log₂(1/斜率)</label><input type="range" id="ls" min="0" max="8" step="1" value="4"><span id="lsv">4</span></div>
+<p class="note">看点：① ALiBi 斜率 1/256（log₂ = 8）：权重几乎铺平，能看很远；② 斜率拖到 1/2、1：权重缩到最近两三个位置；③ 切到 NoPE：每个位置均匀地看前面所有词，输出 1/(i+1)，每个位置都不一样，后面的层就能读出“我是第几个”。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const SMX=a=>{const m=Math.max(...a),e=a.map(v=>Math.exp(v-m)),s=e.reduce((x,y)=>x+y,0);return e.map(v=>v/s)};
+const F2=v=>(Math.abs(v)<0.005?0:v).toFixed(2);
+const IDS=['md','ls'],F=[[0,8],[0,6],[0,4],[0,2],[0,1],[0,0],[1,4]];
+function render(md,ls){const n=12,m=2**(-ls);if(md==0){const c=16;for(let i=0;i<n;i++)for(let j=0;j<=i;j++)R(250+j*c,40+i*c,c-2,c-2,'var(--purple)',0.05+0.9*Math.min(1,m*(i-j)/3));
+  const w=SMX(Array.from({length:n},(_,j)=>-m*(n-1-j)));frame(40,250,600,90);w.forEach((v,j)=>{const h=80*v/Math.max(...w);R(48+j*49,340-h,38,h,'var(--accent)',.8);T(v.toFixed(2),67+j*49,336-h,'middle','s')});
+  cap(`斜率 1/${2**ls}：最后一个位置给自己 ${w[n-1].toFixed(3)}，给最远的 ${w[0].toFixed(4)}`)}
+ else{frame(40,60,600,260);const M=PM(40,60,600,260,[-0.5,n-0.5],[0,1.05]);const v=Array.from({length:n},(_,i)=>1/(i+1));P(v.map((t,i)=>M(i,t)),'var(--accent)',1.5);v.forEach((t,i)=>{const p=M(i,t);C(p[0],p[1],6,'var(--accent)',1);T(t.toFixed(3),p[0],p[1]-10,'middle','s');T(String(i),p[0],338,'middle','s')});
+  const q=M(0,1/n),q2=M(n-1,1/n);L(q[0],q[1],q2[0],q2[1],'var(--muted)',1.5,'5 4');T('虚线：双向注意力，每个位置都是 1/12',q2[0],q2[1]+16,'end','s');cap('NoPE：位置 i 的输出 = 1/(i + 1)，每个位置都不同')}}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

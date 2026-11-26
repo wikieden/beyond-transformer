@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="300" viewBox="0 0 860 300">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="17" fill="#1f2937" text-anchor="start" font-weight="bold">DeepNorm 的 α 和 β</text>
+<text x="16.0" y="290.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal">横轴：层数 N（对数）。蓝：α = (2N)^{1/4}，层数越多残差放得越大；橙：β = (8N)^{−1/4}，子层初始化缩得越小。</text>
+<line x1="80.0" y1="220.0" x2="780.0" y2="220.0" stroke="#e5e7eb" stroke-width="1"/>
+<text x="74.0" y="224.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#6b7280" text-anchor="end" font-weight="normal">0</text>
+<line x1="80.0" y1="171.4" x2="780.0" y2="171.4" stroke="#e5e7eb" stroke-width="1"/>
+<text x="74.0" y="175.4" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#6b7280" text-anchor="end" font-weight="normal">2</text>
+<line x1="80.0" y1="122.9" x2="780.0" y2="122.9" stroke="#e5e7eb" stroke-width="1"/>
+<text x="74.0" y="126.9" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#6b7280" text-anchor="end" font-weight="normal">4</text>
+<line x1="80.0" y1="74.3" x2="780.0" y2="74.3" stroke="#e5e7eb" stroke-width="1"/>
+<text x="74.0" y="78.3" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#6b7280" text-anchor="end" font-weight="normal">6</text>
+<line x1="80.0" y1="50.0" x2="80.0" y2="220.0" stroke="#f0f1f3" stroke-width="1"/>
+<text x="80.0" y="235.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#6b7280" text-anchor="middle" font-weight="normal">10</text>
+<line x1="430.0" y1="50.0" x2="430.0" y2="220.0" stroke="#f0f1f3" stroke-width="1"/>
+<text x="430.0" y="235.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#6b7280" text-anchor="middle" font-weight="normal">100</text>
+<line x1="780.0" y1="50.0" x2="780.0" y2="220.0" stroke="#f0f1f3" stroke-width="1"/>
+<text x="780.0" y="235.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#6b7280" text-anchor="middle" font-weight="normal">1000</text>
+<line x1="80.0" y1="220.0" x2="780.0" y2="220.0" stroke="#1f2937" stroke-width="1.3"/>
+<line x1="80.0" y1="50.0" x2="80.0" y2="220.0" stroke="#1f2937" stroke-width="1.3"/>
+<text x="430.0" y="252.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">层数 N</text>
+<polyline points="80.0,168.6 97.5,167.1 115.0,165.6 132.5,164.0 150.0,162.4 167.5,160.7 185.0,159.0 202.5,157.2 220.0,155.3 237.5,153.5 255.0,151.5 272.5,149.5 290.0,147.5 307.5,145.3 325.0,143.2 342.5,140.9 360.0,138.6 377.5,136.2 395.0,133.8 412.5,131.3 430.0,128.7 447.5,126.0 465.0,123.3 482.5,120.4 500.0,117.5 517.5,114.5 535.0,111.5 552.5,108.3 570.0,105.0 587.5,101.7 605.0,98.2 622.5,94.7 640.0,91.0 657.5,87.2 675.0,83.4 692.5,79.4 710.0,75.3 727.5,71.0 745.0,66.7 762.5,62.2 780.0,57.6" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<polyline points="80.0,138.8 97.5,141.1 115.0,143.3 132.5,145.5 150.0,147.6 167.5,149.7 185.0,151.7 202.5,153.6 220.0,155.5 237.5,157.3 255.0,159.1 272.5,160.8 290.0,162.5 307.5,164.1 325.0,165.7 342.5,167.3 360.0,168.8 377.5,170.2 395.0,171.6 412.5,173.0 430.0,174.3 447.5,175.6 465.0,176.9 482.5,178.1 500.0,179.3 517.5,180.5 535.0,181.6 552.5,182.7 570.0,183.7 587.5,184.8 605.0,185.8 622.5,186.7 640.0,187.7 657.5,188.6 675.0,189.5 692.5,190.3 710.0,191.2 727.5,192.0 745.0,192.8 762.5,193.6 780.0,194.3" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="110.0" y1="66.0" x2="132.0" y2="66.0" stroke="#2563eb" stroke-width="2.5"/>
+<text x="138.0" y="70.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="start" font-weight="normal">α</text>
+<line x1="110.0" y1="84.0" x2="132.0" y2="84.0" stroke="#ea580c" stroke-width="2.5"/>
+<text x="138.0" y="88.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="start" font-weight="normal">β × 10</text>
+</svg>

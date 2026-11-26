@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RMSNorm</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 13 章 · 给输入加偏移、乘倍数，两种 norm 怎么反应</h1>
+<p class="sub">配套讲义：<a href="../lessons/13-rmsnorm.html">第 13 章 · RMSNorm：不减平均值行不行，省在哪</a>。左：输入 x = ([1, 2, 3, 6] + 偏移) × 倍数；中：LayerNorm(x)（减均值、除标准差）；右：RMSNorm(x)（只除均方根）。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="sh">每个分量加的偏移</label><input type="range" id="sh" min="-6" max="12" step="1" value="0"><span id="shv">0</span><label for="sc">整体缩放倍数</label><input type="range" id="sc" min="0.25" max="4" step="0.25" value="1"><span id="scv">1</span></div>
+<p class="note">看点：① 拖“偏移”：输入整体上移，LayerNorm 的输出纹丝不动；RMSNorm 的输出越来越接近“四个都一样”（均值占了大头）；② 拖“缩放”：两种输出都不动：都是缩放不变的；③ 偏移为 −3 时输入均值为 0，两种 norm 结果一样。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['sh','sc'],F=[[0,1],[3,1],[8,1],[12,1],[-3,1],[0,3],[0,0.25]];
+const LNf=x=>{const m=x.reduce((a,b)=>a+b,0)/4,v=x.reduce((a,b)=>a+(b-m)**2,0)/4;return x.map(t=>(t-m)/Math.sqrt(v+1e-5))},RMf=x=>{const r=Math.sqrt(x.reduce((a,b)=>a+b*b,0)/4+1e-5);return x.map(t=>t/r)};
+function render(sh,sc){const x=[1,2,3,6].map(v=>(v+(+sh))*sc),a=LNf(x),b=RMf(x),cols=[[x,'输入 x','var(--muted)',Math.max(10,...x.map(Math.abs))],[a,'LayerNorm','var(--accent)',2],[b,'RMSNorm','var(--warm)',2]];
+ cols.forEach(([v,nm,c,mx],k)=>{const x0=40+k*210;frame(x0,50,190,270);const z=185;L(x0,z,x0+190,z,'var(--line)',1);v.forEach((t,i)=>{const h=t/mx*125;R(x0+12+i*44,h>0?z-h:z,34,Math.abs(h),c,.8);T(t.toFixed(2),x0+29+i*44,h>0?z-h-5:z-h+14,'middle','s')});T(nm,x0+95,340,'middle','s')});
+ cap(`偏移 ${sh}、缩放 ${(+sc).toFixed(2)}：输入均值 ${(x.reduce((p,q)=>p+q,0)/4).toFixed(2)}`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

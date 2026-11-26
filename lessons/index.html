@@ -68,11 +68,11 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
 <span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
 </div></header>
-<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html" class="cur">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html" class="cur">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
 <h1 id="transformer">超越 Transformer · 讲义目录</h1>
 <blockquote>
 <p>英文名：<strong>Beyond Transformer</strong> · 在线阅读：<a href="https://wikieden.github.io/beyond-transformer/">https://wikieden.github.io/beyond-transformer/</a> · 前作：《<a href="https://wikieden.github.io/transformer-visual/">从零读懂 Transformer</a>》（24 章）<br />
-计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1–11 章、第 44–51 章（练习待做）· 39 张复习卡片 · 19 张静态图</p>
+计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1–20 章、第 44–51 章（练习待做）· 52 张复习卡片 · 36 张静态图</p>
 </blockquote>
 <h2 id="_1">这本书讲什么</h2>
 <p>《从零读懂 Transformer》讲完了 2017 年的原版。可今天的大模型早就不是原版的样子了：训练要用 AdamW 和精心排过的学习率，LayerNorm 换成了 RMSNorm，位置编码换成了 RoPE，attention 加了 GQA、滑动窗口和 FlashAttention，FFN 变成了 MoE，有的模型干脆用 Mamba、线性注意力替掉一部分 attention，图片和视频也被切成小块送进同一套结构。这本书沿着这条路线，把 2017 年到现在每一处改动讲清楚：<strong>改了什么、为什么改、代价是什么</strong>。</p>
@@ -328,7 +328,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>CS336 <code>2025 Lecture 3 - architecture.txt</code>（B1，当目录读）；<code>preln-on-layer-normalization-2002.04745.txt</code> §3（B3）</td>
 <td>T19、T24、2</td>
 <td>两种放法下各层梯度大小的柱状图</td>
-<td>待写</td>
+<td><a href="../lessons/12-pre-ln.html">正文完成</a>，练习待做 · <a href="../animations/12-pre-ln.gif">GIF</a> · <a href="../animations/12-pre-ln.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>13</td>
@@ -336,7 +336,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>layernorm-1607.06450.txt</code> §3（B2）；<code>rmsnorm-1910.07467.txt</code> §3–§4（B4）</td>
 <td>T19</td>
 <td>LayerNorm 与 RMSNorm 一步步对比</td>
-<td>待写</td>
+<td><a href="../lessons/13-rmsnorm.html">正文完成</a>，练习待做 · <a href="../animations/13-rmsnorm.gif">GIF</a> · <a href="../animations/13-rmsnorm.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>14</td>
@@ -344,7 +344,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>glu-variants-2002.05202.txt</code> 全文（B5）</td>
 <td>T20</td>
 <td>闸门 × 内容；参数预算三分法</td>
-<td>待写</td>
+<td><a href="../lessons/14-swiglu.html">正文完成</a>，练习待做 · <a href="../animations/14-swiglu.gif">GIF</a> · <a href="../animations/14-swiglu.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>15</td>
@@ -352,7 +352,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>rope-roformer-2104.09864.txt</code> §3.2、§3.4.2、§3.4.3（B6）</td>
 <td>T14–T16、A2 自测题 2</td>
 <td>二维平面上 q、k 随位置转圈，点积只看角度差</td>
-<td>待写</td>
+<td><a href="../lessons/15-rope.html">正文完成</a>，练习待做 · <a href="../animations/15-rope.gif">GIF</a> · <a href="../animations/15-rope.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>16</td>
@@ -360,7 +360,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>alibi-2108.12409.txt</code> §3（B7）；<code>nope-length-generalization-2305.19466.txt</code> §1–§4（B8，待核对）</td>
 <td>T14、T17</td>
 <td>分数表上按距离减一个斜坡</td>
-<td>待写</td>
+<td><a href="../lessons/16-alibi-nope.html">正文完成</a>，练习待做 · <a href="../animations/16-alibi-nope.gif">GIF</a> · <a href="../animations/16-alibi-nope.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>17</td>
@@ -368,7 +368,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>position-interpolation-2306.15595.txt</code> §2；<code>yarn-2309.00071.txt</code> §2–§3（B9）</td>
 <td>T16、15</td>
 <td>多档时钟被"压慢"后的转角对比</td>
-<td>待写</td>
+<td><a href="../lessons/17-long-context.html">正文完成</a>，练习待做 · <a href="../animations/17-long-context.gif">GIF</a> · <a href="../animations/17-long-context.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>18</td>
@@ -376,7 +376,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>small-scale-proxies-instability-2309.14322.txt</code> §3.1–§3.2（B10）；<code>olmo2-2501.00656.txt</code> §3.3（B11）</td>
 <td>T7、T8、T19、1</td>
 <td>max logit 随步数增长；加 QK-norm 后被压住</td>
-<td>待写</td>
+<td><a href="../lessons/18-stability.html">正文完成</a>，练习待做 · <a href="../animations/18-stability.gif">GIF</a> · <a href="../animations/18-stability.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>19</td>
@@ -384,7 +384,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>massive-activations-2402.17762.txt</code> §2–§3（待核对）；<code>llm-full-stack/materials/text/papers/streamingllm-2309.17453.txt</code> §3（B12）</td>
 <td>T18、10</td>
 <td>注意力图里第一列特别亮</td>
-<td>待写</td>
+<td><a href="../lessons/19-attention-sink.html">正文完成</a>，练习待做 · <a href="../animations/19-attention-sink.gif">GIF</a> · <a href="../animations/19-attention-sink.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>20</td>
@@ -392,7 +392,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>mup-tensor-programs-v-2203.03466.txt</code> §1–§3（B13，待核对）；<code>deepnet-2203.00555.txt</code> §2–§3（B14，待核对）</td>
 <td>T24、4、12</td>
 <td>不同宽度下最佳学习率漂移 vs 不漂移</td>
-<td>待写</td>
+<td><a href="../lessons/20-mup-deepnorm.html">正文完成</a>，练习待做 · <a href="../animations/20-mup-deepnorm.gif">GIF</a> · <a href="../animations/20-mup-deepnorm.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>★</td>
@@ -856,6 +856,64 @@ A B 再见 A，就猜 B；学的是算法，不是词对。<br />
 源码 LayerNorm 无偏 std、ε 在根号外，宽了才和官方一样。<br />
 平滑目标零点九，其余均分；自信过了九成反而罚。<br />
 Noam 调度：线性升到 warmup，之后一除根号步。</p>
+</blockquote>
+<h3 id="12-pre-ln-post-ln-warmup-layernorm"><a href="../lessons/12-pre-ln.html">第 12 章 · Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a></h3>
+<blockquote>
+<p>质检站在工序后，Post-LN 每层都整理；站在工序前，Pre-LN 主干原样流。<br />
+Post-LN 输出附近梯度大，和层数无关，不 warmup 就炸；<br />
+Pre-LN 梯度按根号 L 变小，可以不 warmup。<br />
+主干越加越大，最后补一个 norm；后来的变体都把 norm 放子层两头。</p>
+</blockquote>
+<h3 id="13-rmsnorm"><a href="../lessons/13-rmsnorm.html">第 13 章 · RMSNorm：不减平均值行不行，省在哪</a></h3>
+<blockquote>
+<p>LayerNorm 减均值再除标准差；RMSNorm 不减均值，只除均方根。<br />
+平移、缩放都不变是 LN；只剩缩放不变是 RMS，缩放才是关键。<br />
+FLOPs 不是运行时间：逐元素操作搬得多、算得少，少一步就少读写一遍。</p>
+</blockquote>
+<h3 id="14-swiglu83"><a href="../lessons/14-swiglu.html">第 14 章 · SwiGLU：门控为什么有用，8/3 怎么保住参数量</a></h3>
+<blockquote>
+<p>SiLU 是 x 乘 sigmoid，平滑的 ReLU，负半边略低一点。<br />
+一路当门一路当内容，逐元素一乘，门关的维度就被压掉；为什么好用，归功于神的恩典。<br />
+三个矩阵比两个，中间层乘三分之八，参数不变；再取整到 64 的倍数。</p>
+</blockquote>
+<h3 id="15-rope-qk"><a href="../lessons/15-rope.html">第 15 章 · RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a></h3>
+<blockquote>
+<p>两人同速转圈跑，夹角只看谁先出发；q 转 mθ、k 转 nθ，点积只剩 m 减 n。<br />
+两两一组成平面，频率从快到慢，一万的负 2i/d 次方。<br />
+不乘大矩阵：x 乘 cos，加转半个乘 sin；配对方式要和权重配套。<br />
+距离越远相位越乱，分数天生偏低。</p>
+</blockquote>
+<h3 id="16-alibi-nope"><a href="../lessons/16-alibi-nope.html">第 16 章 · ALiBi 与 NoPE：不加位置编码行不行</a></h3>
+<blockquote>
+<p>离讲台越远听得越轻：分数减斜率乘距离，不改 q k，也不加在词上。<br />
+斜率不学，几何数列，从二分之一到二百五十六分之一；只看距离，长了也不怕。<br />
+不加位置靠 mask：均匀看前面，句首当一，输出一除以 i 加一，就知道排第几；双向就做不到。</p>
+</blockquote>
+<h3 id="17-pi-ntk-aware-yarn"><a href="../lessons/17-long-context.html">第 17 章 · 长文本外推：PI → NTK-aware → YaRN</a></h3>
+<blockquote>
+<p>只见过半圈的慢钟，读长了转到没见过的角度。<br />
+PI 位置除以 s，慢的回来、快的也糊了。<br />
+NTK 改底数，快的不动、慢的压慢。<br />
+YaRN 看转了几圈：转满三十二圈不动，不到一圈全插值，中间线性过渡；再乘零点一 ln s 加一的温度。</p>
+</blockquote>
+<h3 id="18-logit-logit-qk-norm-z-loss"><a href="../lessons/18-stability.html">第 18 章 · 训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a></h3>
+<blockquote>
+<p>两人嗓门各翻倍，吵架变四倍：W 大 c 倍，logit 大 c 方；softmax 塌成独热，熵坍缩。<br />
+QK 先 norm 再点积，logit 有上界根号 d。<br />
+softmax 不管平移，log Z 后期漂走；z-loss 万分之一乘 log Z 平方，拉回零、不改概率。<br />
+工业组合：RMSNorm、输出 norm、QK-norm、z-loss、大底数 RoPE；小模型大学习率当代理。</p>
+</blockquote>
+<h3 id="19-attention-sink"><a href="../lessons/19-attention-sink.html">第 19 章 · 巨大激活与 attention sink：为什么大家都盯着第一个词</a></h3>
+<blockquote>
+<p>两个维度大上万倍，像固定偏置，句首、句号最常见。<br />
+票必须投完，没人可投就投弃权箱：句首 value 近零，权重停那里就是空操作。<br />
+滑窗踢掉句首，多余的票摊给真内容，输出全乱；留住开头四个，就稳了。</p>
+</blockquote>
+<h3 id="20-p-deepnorm-post-ln"><a href="../lessons/20-mup-deepnorm.html">第 20 章 · μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a></h3>
+<blockquote>
+<p>一人一份力，人多车推得远：初始化管住前向，Adam 一步却按宽度涨。<br />
+μP 隐藏层学习率除以宽度，小模型调好直接搬。<br />
+DeepNorm 残差乘 α、初始化乘 β：α 是二 N 的四分之一次方，β 是八 N 的负四分之一次方，一千层也能训。</p>
 </blockquote>
 <h3 id="44-vit"><a href="../lessons/44-vit.html">第 44 章 · ViT：把图片切成小块，当成一句话</a></h3>
 <blockquote>

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="320" viewBox="0 0 880 320">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="17" fill="#1f2937" text-anchor="start" font-weight="bold">普通 FFN 与 SwiGLU</text>
+<text x="16.0" y="310.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal">左：普通 FFN，d → 4d → 激活 → d，两个矩阵（8d² 参数）；右：SwiGLU，d 分两路各到 8/3·d，门过 SiLU，逐元素相乘后 → d，三个矩阵（也是 8d²）。</text>
+<rect x="40.0" y="230.0" width="120.0" height="40.0" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4" opacity="1"/>
+<text x="100.0" y="253.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">x（d）</text>
+<rect x="40.0" y="150.0" width="120.0" height="40.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="100.0" y="173.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">W₁：d → 4d</text>
+<rect x="40.0" y="90.0" width="120.0" height="34.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="100.0" y="110.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">ReLU / GELU</text>
+<rect x="40.0" y="30.0" width="120.0" height="40.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="100.0" y="53.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">W₂：4d → d</text>
+<line x1="100.0" y1="230.0" x2="100.0" y2="190.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="100.0,190.0 104.2,197.9 95.8,197.9" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="100.0" y1="150.0" x2="100.0" y2="124.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="100.0,124.0 104.2,131.9 95.8,131.9" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="100.0" y1="90.0" x2="100.0" y2="70.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="100.0,70.0 104.2,77.9 95.8,77.9" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<rect x="560.0" y="250.0" width="120.0" height="40.0" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4" opacity="1"/>
+<text x="620.0" y="273.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">x（d）</text>
+<rect x="420.0" y="170.0" width="150.0" height="40.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="495.0" y="193.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">W：d → 8d/3</text>
+<rect x="670.0" y="170.0" width="150.0" height="40.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="745.0" y="193.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">V：d → 8d/3</text>
+<rect x="420.0" y="110.0" width="150.0" height="34.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="495.0" y="130.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">SiLU（门）</text>
+<rect x="560.0" y="60.0" width="120.0" height="34.0" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.4" opacity="1"/>
+<text x="620.0" y="80.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">门 ⊙ 内容</text>
+<rect x="560.0" y="4.0" width="120.0" height="40.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="620.0" y="27.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">W₂：8d/3 → d</text>
+<line x1="588.8" y1="250.0" x2="526.2" y2="210.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="526.2,210.0 535.2,210.7 530.7,217.8" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="651.2" y1="250.0" x2="713.8" y2="210.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="713.8,210.0 709.3,217.8 704.8,210.7" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="495.0" y1="170.0" x2="495.0" y2="144.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="495.0,144.0 499.2,151.9 490.8,151.9" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="537.5" y1="110.0" x2="577.5" y2="94.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="577.5,94.0 571.7,100.9 568.6,93.0" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="722.9" y1="170.0" x2="638.8" y2="94.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="638.8,94.0 647.5,96.2 641.9,102.5" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="620.0" y1="60.0" x2="620.0" y2="44.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="620.0,44.0 624.2,51.9 615.8,51.9" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<text x="745.0" y="100.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="middle" font-weight="normal">内容</text>
+</svg>
