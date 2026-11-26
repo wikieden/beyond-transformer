@@ -68,11 +68,11 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
 <span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
 </div></header>
-<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html" class="cur">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html" class="cur">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
 <h1 id="transformer">超越 Transformer · 讲义目录</h1>
 <blockquote>
 <p>英文名：<strong>Beyond Transformer</strong> · 在线阅读：<a href="https://wikieden.github.io/beyond-transformer/">https://wikieden.github.io/beyond-transformer/</a> · 前作：《<a href="https://wikieden.github.io/transformer-visual/">从零读懂 Transformer</a>》（24 章）<br />
-计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1 章、第 44–51 章（视觉段整段，练习待做）· 19 张复习卡片</p>
+计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1–11 章、第 44–51 章（练习待做）· 39 张复习卡片 · 19 张静态图</p>
 </blockquote>
 <h2 id="_1">这本书讲什么</h2>
 <p>《从零读懂 Transformer》讲完了 2017 年的原版。可今天的大模型早就不是原版的样子了：训练要用 AdamW 和精心排过的学习率，LayerNorm 换成了 RMSNorm，位置编码换成了 RoPE，attention 加了 GQA、滑动窗口和 FlashAttention，FFN 变成了 MoE，有的模型干脆用 Mamba、线性注意力替掉一部分 attention，图片和视频也被切成小块送进同一套结构。这本书沿着这条路线，把 2017 年到现在每一处改动讲清楚：<strong>改了什么、为什么改、代价是什么</strong>。</p>
@@ -210,7 +210,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>a1 §4 开头；PyTorch autograd（<code>pytorch-deep-dive</code>）</td>
 <td>T10、T20</td>
 <td>一个两层小网络：前向算 loss，反向一层层传梯度</td>
-<td>待写</td>
+<td><a href="../lessons/02-backprop.html">正文完成</a>，练习待做 · <a href="../animations/02-backprop.gif">GIF</a> · <a href="../animations/02-backprop.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>3</td>
@@ -218,7 +218,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>a1 §4.2.1 L1429 起、§4.3 L1520 起；AIAYN §5.3 L363–L376</td>
 <td>T24、2</td>
 <td>同一个碗形 loss 面上，四种优化器的走法对比</td>
-<td>待写</td>
+<td><a href="../lessons/03-optimizers.html">正文完成</a>，练习待做 · <a href="../animations/03-optimizers.gif">GIF</a> · <a href="../animations/03-optimizers.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>4</td>
@@ -226,7 +226,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>a1 §4.4 L1610 起、§4.5 L1648 起</td>
 <td>T24、3</td>
 <td>warmup + cosine 曲线；裁剪前后的梯度长度</td>
-<td>待写</td>
+<td><a href="../lessons/04-lr-schedule.html">正文完成</a>，练习待做 · <a href="../animations/04-lr-schedule.gif">GIF</a> · <a href="../animations/04-lr-schedule.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>5</td>
@@ -234,7 +234,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>a1 §5.1 L1671 起、§7.1–§7.2 L1870–L1891</td>
 <td>1–4</td>
 <td>训练循环一圈：取 batch → 前向 → loss → 反向 → 更新</td>
-<td>待写</td>
+<td><a href="../lessons/05-training-loop.html">正文完成</a>，练习待做 · <a href="../animations/05-training-loop.gif">GIF</a> · <a href="../animations/05-training-loop.html">▶ 交互</a></td>
 </tr>
 </tbody>
 </table>
@@ -257,7 +257,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>bahdanau-attention-1409.0473.txt</code> §3.1 L154–L173（A1）</td>
 <td>T2、T21</td>
 <td>RNN 翻译时每写一个词回头加权看原文；加性 vs 点积两种打分</td>
-<td>待写</td>
+<td><a href="../lessons/06-bahdanau.html">正文完成</a>，练习待做 · <a href="../animations/06-bahdanau.gif">GIF</a> · <a href="../animations/06-bahdanau.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>7</td>
@@ -265,7 +265,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>formal-algorithms-transformers-2207.09238.txt</code> Algorithm 1–10（A3）</td>
 <td>T1–T24</td>
 <td>伪代码行 ↔ 第几章 ↔ a1 哪个函数，三栏对照</td>
-<td>待写</td>
+<td><a href="../lessons/07-formal-algorithms.html">正文完成</a>，练习待做 · <a href="../animations/07-formal-algorithms.gif">GIF</a> · <a href="../animations/07-formal-algorithms.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>8</td>
@@ -273,7 +273,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>llm-full-stack/materials/code/scaling-book/transformers.md</code>；<code>materials/code/nanoGPT/repo/transformer_sizing.ipynb</code>（A4、A5）</td>
 <td>T23、T24</td>
 <td>拖序列长度，看 attention FLOPs 占比怎么涨</td>
-<td>待写</td>
+<td><a href="../lessons/08-flops.html">正文完成</a>，练习待做 · <a href="../animations/08-flops.gif">GIF</a> · <a href="../animations/08-flops.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>9</td>
@@ -281,7 +281,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>bert-1810.04805.txt</code> §3（A6）</td>
 <td>T17、T21</td>
 <td>双向看 vs 只看前面；遮 15% 的词让模型猜</td>
-<td>待写</td>
+<td><a href="../lessons/09-bert.html">正文完成</a>，练习待做 · <a href="../animations/09-bert.gif">GIF</a> · <a href="../animations/09-bert.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>10</td>
@@ -289,7 +289,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>induction-heads-2209.11895.txt</code> 前两节（A7）</td>
 <td>T13、T18</td>
 <td>两层 attention：上一个词 head + induction head 配合完成复制</td>
-<td>待写</td>
+<td><a href="../lessons/10-induction-heads.html">正文完成</a>，练习待做 · <a href="../animations/10-induction-heads.gif">GIF</a> · <a href="../animations/10-induction-heads.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>11</td>
@@ -297,7 +297,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>materials/code/annotated-transformer/repo/the_annotated_transformer.py</code>（A8）</td>
 <td>T21、T22、1</td>
 <td>源码函数 ↔ 讲义章节对照图</td>
-<td>待写</td>
+<td><a href="../lessons/11-annotated-transformer.html">正文完成</a>，练习待做 · <a href="../animations/11-annotated-transformer.gif">GIF</a> · <a href="../animations/11-annotated-transformer.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>★</td>
@@ -777,6 +777,85 @@ log 问"e 的几次方"，1 是零、越小越负。<br />
 扣分就取负 log：猜对不扣，越错越狠没上限；连乘变相加，整句不怕小。<br />
 全部位置取平均，一次前向全拿到；分数直接算，减去最大不溢出。<br />
 平均 loss 取 exp，就是困惑度：相当于在几个词里犹豫。</p>
+</blockquote>
+<h3 id="2"><a href="../lessons/02-backprop.html">第 2 章 · 梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a></h3>
+<blockquote>
+<p>迈一小步看高低，斜率就是导数；所有偏导排成向量，就是梯度。<br />
+逆着梯度挪一步，乘上学习率。<br />
+函数套函数，斜率连着乘。<br />
+前向存中间，反向乘回去：下游梯度乘本层斜率，一次算完所有参数。<br />
+softmax 接交叉熵，梯度就是 p 减 y。<br />
+数值斜率查小例，真训练靠自动求导。</p>
+</blockquote>
+<h3 id="3-sgd-momentum-adam-adamw"><a href="../lessons/03-optimizers.html">第 3 章 · 优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a></h3>
+<blockquote>
+<p>窄长山谷 SGD，陡的方向卡步长，缓的方向慢慢挪。<br />
+动量像铁球，同向越滚越快，来回互相抵消。<br />
+Adam 每参数一把尺，梯度平方量陡缓；开头被零拖小，修正除以一减 β 的 t 次方。<br />
+衰减别混进梯度，AdamW 单独减 αλθ。<br />
+参数梯度加两矩，十六字节一个参数。</p>
+</blockquote>
+<h3 id="4"><a href="../lessons/04-lr-schedule.html">第 4 章 · 学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a></h3>
+<blockquote>
+<p>先热身、再全速、最后慢慢刹：线性升到峰，余弦降到底，之后停在最低。<br />
+退火走一半，学习率在中点。<br />
+开头梯度乱、v̂ 不准，warmup 走小步。<br />
+所有梯度拼一条，超长就按比例缩，方向不变；裁前范数记日志。</p>
+</blockquote>
+<h3 id="5-batch"><a href="../lessons/05-training-loop.html">第 5 章 · 一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a></h3>
+<blockquote>
+<p>文档拼成一长串，中间插分隔；随机剪段，输入答案错一位。<br />
+批乘长乘步数，就是总 token。<br />
+取批、前向、算 loss，反向、裁剪、更新、清梯度。<br />
+盯四条线：train、val、梯度范数、学习率；val 一升就是过拟合。<br />
+存档三件：参数、优化器、步数，少一件就接不上。</p>
+</blockquote>
+<h3 id="6-attention-bahdanau-vs"><a href="../lessons/06-bahdanau.html">第 6 章 · attention 的起源：Bahdanau 的加性打分 vs 点积打分</a></h3>
+<blockquote>
+<p>整句压一张卡片，句子一长就写不下。<br />
+每写一个词回头看，打分、softmax、加权求上下文。<br />
+加性打分：各乘一矩阵，加起来过 tanh，再用 v 收；<br />
+点积打分：方向一致就高分，没有参数，一次矩阵乘。<br />
+点积快又省，除以根号 d，就把加性比下去。</p>
+</blockquote>
+<h3 id="7-transformer-a1"><a href="../lessons/07-formal-algorithms.html">第 7 章 · 把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a></h3>
+<blockquote>
+<p>十四个算法一本说明书：一到七是零件，十是 GPT，十三训练、十四生成。<br />
+单个 query 看上下文：缩放点积、softmax、加权 value。<br />
+并排做加 mask 是四，做多头是五。<br />
+先 norm 再子层，结果加回 X；只有 MLP 中间变宽。<br />
+论文一列一 token，a1 一行一 token，形状互为转置。</p>
+</blockquote>
+<h3 id="8-flops-6-token"><a href="../lessons/08-flops.html">第 8 章 · 数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a></h3>
+<blockquote>
+<p>矩阵乘法 2mnk，一个参数一个 token 两次运算。<br />
+反向两回同样大：一回传给上一层，一回交给优化器；前二后四，训练六 N D。<br />
+QK 和 AV 没参数，随序列长度涨。<br />
+比一比 n 和六倍宽：远小于就忽略，接近了就算上。</p>
+</blockquote>
+<h3 id="9-encoder-only-bert-decoder-only"><a href="../lessons/09-bert.html">第 9 章 · encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a></h3>
+<blockquote>
+<p>阅读理解看两边，写作只看前面。<br />
+看两边不能猜自己，答案就在输入里。<br />
+完形填空十五分，八成换遮罩、一成换随机、一成不动；只在选中处算 loss。<br />
+句首 CLS 当总结，SEP 隔两句，三种嵌入相加。<br />
+每个位置都出信号、天生会生成、还能 KV cache，所以大模型都选 decoder-only。</p>
+</blockquote>
+<h3 id="10-induction-head"><a href="../lessons/10-induction-heads.html">第 10 章 · 残差流与 induction head：模型怎么学会“照着前面抄”</a></h3>
+<blockquote>
+<p>残差流是共享白板，每层只加不擦；写进不同子空间，后面的头各读各的。<br />
+第一头看前一位，把“我前面是谁”贴胸前。<br />
+第二头拿着自己去比纸条，前面是我的那位，把他报出来。<br />
+A B 再见 A，就猜 B；学的是算法，不是词对。<br />
+两层才搭得出，长出来那刻 loss 鼓个包，上下文学习跟着跳。</p>
+</blockquote>
+<h3 id="11-the-annotated-transformer"><a href="../lessons/11-annotated-transformer.html">第 11 章 · 读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a></h3>
+<blockquote>
+<p>一个类一个零件，L230 读到 L1172，前作从头拼一遍。<br />
+残差先 norm 再子层，源码偷懒成了 Pre-LN，最后补一个 norm。<br />
+源码 LayerNorm 无偏 std、ε 在根号外，宽了才和官方一样。<br />
+平滑目标零点九，其余均分；自信过了九成反而罚。<br />
+Noam 调度：线性升到 warmup，之后一除根号步。</p>
 </blockquote>
 <h3 id="44-vit"><a href="../lessons/44-vit.html">第 44 章 · ViT：把图片切成小块，当成一句话</a></h3>
 <blockquote>

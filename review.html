@@ -104,6 +104,249 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <div class="arithmatex">\[\text{perplexity} = \exp\left(\frac{1}{m} \sum_{i=1}^{m} \ell_i\right)\]</div>
 <p>先对 loss 取平均，再取 e 的次方（handout 式 18）。读作"模型平均相当于在几个词里犹豫"：k 个词里平均瞎猜，loss = log k，困惑度 = k。全对 = 1；词表 10000 的模型刚开始 loss ≈ log 10000 ≈ 9.21，困惑度 ≈ 10000。AIAYN base 的 4.92 是按 BPE token 算的，不能和按整词算的比（Table 3 注）。</p>
 </details>
+<h3 id="b20">B20 · 链式法则是什么？反向传播怎么一次算出所有参数的梯度？</h3>
+<p>来源：<a href="lessons/02-backprop.html">第 2 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>导数是斜率；梯度是所有偏导数排成的向量，指向 loss 涨得最快的方向；SGD：θ ← θ − α∇L。</li>
+<li>链式法则：函数套函数，导数连乘，dy/dx = dy/du · du/dx（例：(3x + 1)² 在 x = 1 是 8 × 3 = 24）。</li>
+<li>反向传播：前向存下每层的中间结果；反向从 loss 出发，“下游梯度 × 本层局部斜率”一层层乘回去。线性层 y = Wx：∂L/∂W = (∂L/∂y)xᵀ，∂L/∂x = Wᵀ(∂L/∂y)；ReLU 乘开关 [a &gt; 0]，被关掉的单元梯度为 0。</li>
+<li>每个中间量的梯度只算一次、被上游共用，所以计算量和前向同量级（约 2 倍），代价是要存中间结果。</li>
+</ul>
+<p>口诀：前向存中间，反向乘回去：下游梯度乘本层斜率</p>
+</details>
+<hr />
+<h3 id="b21-softmax-logits">B21 · softmax + 交叉熵对 logits 的梯度是什么？怎么检查自己的梯度对不对？</h3>
+<p>来源：<a href="lessons/02-backprop.html">第 2 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>∂L/∂o = p − y（y 是 one-hot）：错误类往下压、正确类往上抬，分量和为 0；正确类概率越接近 1，梯度越小。</li>
+<li>推导：L = −o_y + log Σe^{o_a}，对 o_k 求导得 −[k = y] + p_k。</li>
+<li>梯度检查：每个参数挪 ±ε，用 (L(θ + ε) − L(θ − ε))/2ε 和反向结果比相对误差（例：4.6e-11）；每个参数两次前向，只能查小例子；真训练用自动求导。</li>
+</ul>
+<p>口诀：softmax 接交叉熵，梯度就是 p 减 y</p>
+</details>
+<hr />
+<h3 id="b22-sgd-momentumadam">B22 · SGD 在窄长山谷里为什么慢？Momentum、Adam 各改了什么？偏差修正修的是什么？</h3>
+<p>来源：<a href="lessons/03-optimizers.html">第 3 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>f = ½(10x² + y²)：SGD 沿 x 每步乘 1 − 10α，要 α &lt; 0.2 才不发散；最陡的方向卡住学习率，缓的方向走得慢。</li>
+<li>Momentum：v ← βv + g，θ ← θ − αv；同向的梯度累积（约 1/(1 − β) 倍）、来回的抵消。</li>
+<li>Adam：m ← β₁m + (1 − β₁)g，v ← β₂v + (1 − β₂)g²，θ ← θ − α m̂/(√v̂ + ε)：每个参数按自己的梯度大小归一化步长，对梯度尺度不敏感。</li>
+<li>偏差修正：m、v 从 0 开始，前几步偏小；m̂ = m/(1 − β₁ᵗ)、v̂ = v/(1 − β₂ᵗ)。第 1 步修正后每个参数都走 α（例：g = 4 → m̂ = 4、v̂ = 16）。t 从 1 数。</li>
+</ul>
+<p>口诀：Adam 每参数一把尺，开头被零拖小，修正除以一减 β 的 t 次方</p>
+</details>
+<hr />
+<h3 id="b23-adamw-adam-l2-adamw">B23 · AdamW 和 Adam + L2 有什么区别？用 AdamW 每个参数要存几份？</h3>
+<p>来源：<a href="lessons/03-optimizers.html">第 3 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>Adam + L2：λθ 加进梯度，再被 √v̂ 除掉，衰减强度和梯度大小、和 λ 纠缠在一起（例：梯度为 0 时每步都减 α，λ = 0.1 和 0.01 结果一样）。</li>
+<li>AdamW：衰减单独做 θ ← θ − αλθ（解耦），λ 多大就衰减多少。a1 把偏差修正并进学习率 α_t = α√(1 − β₂ᵗ)/(1 − β₁ᵗ)。大模型常用 β = (0.9, 0.95)。</li>
+<li>fp32 训练每个参数：参数 4 B + 梯度 4 B + m 4 B + v 4 B = 16 B（1 亿参数 1.6 GB），还不算激活。</li>
+</ul>
+<p>口诀：衰减别混进梯度，AdamW 单独减 αλθ；参数梯度加两矩，十六字节</p>
+</details>
+<hr />
+<h3 id="b24-warmup-cosine-warmup">B24 · warmup + cosine 调度的公式是什么？为什么要 warmup？</h3>
+<p>来源：<a href="lessons/04-lr-schedule.html">第 4 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>t &lt; Tw：α_t = (t/Tw)αmax；Tw ≤ t ≤ Tc：α_t = αmin + ½(1 + cos((t − Tw)/(Tc − Tw)·π))(αmax − αmin)；t &gt; Tc：αmin。退火走一半时在两端中点。</li>
+<li>原版 Transformer：d^{-0.5}·min(step^{-0.5}, step·warmup^{-1.5})；现在也常用 WSD（预热、平稳、最后快速衰减）。</li>
+<li>warmup 的理由：开头参数随机、梯度乱；Adam 的 v̂ 只看了几步，可能偶然很小，一除步长特别大（例：第 1 步 √v̂ 的 90% 范围 [0.06, 1.92]，500 步后 [0.95, 1.06]）；Post-LN 开头梯度大。</li>
+</ul>
+<p>口诀：线性升到峰，余弦降到底，之后停在最低；开头 v̂ 不准，warmup 走小步</p>
+</details>
+<hr />
+<h3 id="b25">B25 · 梯度裁剪怎么做？为什么按全局范数整体裁？</h3>
+<p>来源：<a href="lessons/04-lr-schedule.html">第 4 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>所有参数的梯度拼成一个向量，算 ℓ2 范数 ‖g‖；超过 M 就整体乘 M/(‖g‖ + ε)（ε = 10⁻⁶），否则不动。例：[3, 4]、M = 1 → [0.6, 0.8]。</li>
+<li>整体缩放只改长度、不改方向；每个参数单独裁会改变方向。</li>
+<li>裁剪前的范数要记进日志：偶尔尖峰被裁没关系，几乎每步都在裁说明学习率太大或训练不稳。常取 M = 1.0。</li>
+</ul>
+<p>口诀：所有梯度拼一条，超长就按比例缩，方向不变</p>
+</details>
+<hr />
+<h3 id="b26-batch-token">B26 · batch 是怎么从语料里切出来的？总 token 数怎么算？</h3>
+<p>来源：<a href="lessons/05-training-loop.html">第 5 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>所有文档拼成一长串，中间插 &lt;|endoftext|&gt;；随机挑 B 个起点，x = s[i : i+m]，y = s[i+1 : i+m+1]（错开一位），形状都是 (B, m)。长 n 的串有 n − m 个可选起点。</li>
+<li>好处：不用补齐、不用把数据全读进内存（memmap）；代价是片段可能跨文档。</li>
+<li>总 token 数 = B × m × 步数（a1 TinyStories 要求 327,680,000），是比较不同配置的公共尺子；训练 FLOPs ≈ 6 × 参数 × token。</li>
+</ul>
+<p>口诀：文档拼一串，随机剪段，输入答案错一位；批乘长乘步数</p>
+</details>
+<hr />
+<h3 id="b27-checkpoint">B27 · 训练一步做哪几件事？该盯哪几条曲线？checkpoint 要存什么？</h3>
+<p>来源：<a href="lessons/05-training-loop.html">第 5 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>一步：取 batch → 前向 → loss → 反向 → 裁剪 → 按当前 lr 更新 → 清梯度；每 N 步：验证、存档、记日志。</li>
+<li>盯四条线：train loss（抖，看趋势）、val loss（train 降 val 升 = 过拟合）、梯度范数（频繁超上限或暴涨 = 不稳）、学习率（是否按调度走）。</li>
+<li>checkpoint：参数 + 优化器状态（m、v、动量）+ 步数，最好还有随机数状态。只存参数续训，动量和 Adam 的矩被清零，结果和不断训对不上。</li>
+</ul>
+<p>口诀：存档三件：参数、优化器、步数，少一件就接不上</p>
+</details>
+<hr />
+<h2 id="a">A 原理深化</h2>
+<h3 id="b28-bahdanau-attention-ec">B28 · 老式编码器-解码器的瓶颈是什么？Bahdanau attention 的 e、α、c 怎么算？</h3>
+<p>来源：<a href="lessons/06-bahdanau.html">第 6 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>瓶颈：整句原文压进一个固定长度的向量，句子越长丢得越多。</li>
+<li>Bahdanau：保留原文每个词的笔记 h_j（双向 RNN 输出）；写第 i 个词时 e_ij = a(s_{i−1}, h_j)，α_ij = softmax_j(e_ij)，c_i = Σ_j α_ij h_j，每一步的上下文都不同。</li>
+<li>加性打分 a = vᵀtanh(W s + U h)：一个小前馈网络。</li>
+</ul>
+<p>口诀：每写一个词回头看，打分、softmax、加权求上下文</p>
+</details>
+<hr />
+<h3 id="b29-transformer">B29 · 加性打分和点积打分有什么区别？为什么 Transformer 选了点积？</h3>
+<p>来源：<a href="lessons/06-bahdanau.html">第 6 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>加性：vᵀtanh(Ws + Uh)，要学 W、U、v（Bahdanau 设定约 300 万参数），每一对 (s, h) 过一次网络。</li>
+<li>点积：sᵀh，无参数，只看方向是否一致；n 个 query × m 个 key 一次矩阵乘法 QKᵀ。</li>
+<li>AIAYN §3.2.1：两者理论复杂度相近，点积实践中快得多、省内存；d 大时不缩放的点积会让 softmax 饱和，除以 √d_k 后就不输加性。Q、K 本身由可学矩阵得到，点积也有可学的“相关”标准（双线性形式）。</li>
+</ul>
+<p>口诀：点积快又省，除以根号 d，就把加性比下去</p>
+</details>
+<hr />
+<h3 id="b30-formal-algorithms-algorithm-114-a1">B30 · Formal Algorithms 的 Algorithm 1–14 各是什么？怎么对上 a1 的题？</h3>
+<p>来源：<a href="lessons/07-formal-algorithms.html">第 7 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>1 token embedding、2 位置嵌入、3 单 query 注意力、4 整段注意力 + Mask、5 多头、6 LayerNorm、7 unembedding；8 / 9 / 10 是 encoder-decoder / encoder-only / decoder-only 的整体前向；11–13 训练，14–15 推理。</li>
+<li>a1 走 Algorithm 10 这条线：embedding、rope（替换 2）、softmax + scaled_dot_product_attention（3、4）、multihead_self_attention（5）、rmsnorm（替换 6）、transformer_block / transformer_lm（10）、cross_entropy + adamw（13）、decoding（14）。</li>
+<li>读伪代码先看输入输出形状和参数表，再按行号对代码。</li>
+</ul>
+<p>口诀：一到七是零件，十是 GPT，十三训练、十四生成</p>
+</details>
+<hr />
+<h3 id="b31-algorithm-3-algorithm-10-a1">B31 · Algorithm 3 怎么算？Algorithm 10 每一行的形状怎么变？论文和 a1 的写法差在哪？</h3>
+<p>来源：<a href="lessons/07-formal-algorithms.html">第 7 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>Algorithm 3：q = W_q e，k_t = W_k e_t，v_t = W_v e_t，α = softmax(qᵀk_t/√d_attn)，输出 Σα_t v_t。</li>
+<li>Algorithm 10：嵌入 → L 层（行 5–6 Pre-LN 注意力 X ← X + MHA(LN(X))；行 7–8 Pre-LN MLP，GELU）→ 行 10 最后 LN → 行 11 softmax(W_u X)。只有 MLP 中间维度变成 d_mlp，其余都是 d_e。</li>
+<li>论文一列一个 token（X ∈ ℝ^{d×ℓ}，左乘 WX）；a1 / PyTorch 一行一个 token（(B, ℓ, d)，右乘 XWᵀ），形状互为转置。</li>
+</ul>
+<p>口诀：先 norm 再子层，结果加回 X；论文一列一 token，a1 一行一 token</p>
+</details>
+<hr />
+<h3 id="b32-flops-6nd-6">B32 · 一次矩阵乘法多少 FLOPs？“训练 ≈ 6ND”的 6 是怎么来的？</h3>
+<p>来源：<a href="lessons/08-flops.html">第 8 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>(m × k) @ (k × n) = 2mnk（每个输出 k 次乘、k 次加）；一个 token 过一个权重矩阵，每个参数 2 FLOPs。</li>
+<li>反向要算两样：∂L/∂x = (∂L/∂y)Wᵀ（传给上一层）和 ∂L/∂W = xᵀ(∂L/∂y)（给优化器），各一次同样大的矩阵乘法 → 4。</li>
+<li>前向 2 + 反向 4 = 每个参数每个 token 6；训练 FLOPs ≈ 6ND，推理每个 token ≈ 2N。</li>
+</ul>
+<p>口诀：前二后四，训练六 N D</p>
+</details>
+<hr />
+<h3 id="b33-flops">B33 · 一层的 FLOPs 花在哪？注意力什么时候不能忽略？</h3>
+<p>来源：<a href="lessons/08-flops.html">第 8 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>一层一个 token 前向：QKV 6d²、输出投影 2d²、FFN 4df（f = 4d 时 16d²），合计 24d²（对应 12d² 个参数）；注意力 QKᵀ 2nd、AV 2nd，没有参数，6ND 数不到。</li>
+<li>比值 4nd / 24d² = n/(6d)：d = 4096、n = 2048 时 0.083（6ND 很准）；n = 32768 时 1.33（注意力比参数矩阵还多）。因果 mask 下平均只看一半。</li>
+</ul>
+<p>口诀：比一比 n 和六倍宽：远小于就忽略，接近了就算上</p>
+</details>
+<hr />
+<h3 id="b34-bert-mlm-mask">B34 · BERT 的 MLM 怎么遮词？为什么不全换成 [MASK]？</h3>
+<p>来源：<a href="lessons/09-bert.html">第 9 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>双向模型不能直接“看全句猜每个位置”：每个词能通过注意力看到自己，复制就能把 loss 降到 0。</li>
+<li>MLM：每条序列随机选 15% 的位置；其中 80% 换 [MASK]、10% 换随机词、10% 不变；只在选中的位置算交叉熵猜原词。</li>
+<li>不全换 [MASK]：微调和使用时没有 [MASK]，全换会让预训练和使用对不上；留 10% 随机、10% 不变，迫使每个位置的表示都靠得住。</li>
+<li>输入：[CLS] 句首（输出当整句表示）、[SEP] 分隔；token + 句子 + 位置三种嵌入相加；NSP 后来被 RoBERTa 去掉。</li>
+</ul>
+<p>口诀：完形填空十五分，八成遮罩、一成随机、一成不动；只在选中处算 loss</p>
+</details>
+<hr />
+<h3 id="b35-decoder-only">B35 · 为什么现在的大模型几乎都是 decoder-only？</h3>
+<p>来源：<a href="lessons/09-bert.html">第 9 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>训练信号密：CLM 每个位置都在猜下一个（512 长 → 511 个信号），MLM 只有 15%（77 个）。</li>
+<li>天生会生成，提示、少样本自然成立；所有任务都能写成“接着往下写”，一个目标通吃。</li>
+<li>推理能用 KV cache：因果下前面的 K、V 算一次就能复用；双向模型每加一个 token 都要重算。</li>
+<li>双向模型留在检索嵌入、分类、MAE、DiT 等不需要逐个生成的地方。</li>
+</ul>
+<p>口诀：每个位置都出信号、天生会生成、还能 KV cache</p>
+</details>
+<hr />
+<h3 id="b36">B36 · 什么是残差流？“写进不同子空间”是什么意思？</h3>
+<p>来源：<a href="lessons/10-induction-heads.html">第 10 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>每层都是 X ← X + 子层(X)，展开 x_L = x_0 + Σ 各头输出 + Σ 各 MLP 输出：一条只加不擦的主干（共享白板）。</li>
+<li>每个组件通过自己的 W_Q、W_K、W_V 读残差流，再把结果加回去；不同组件可以写进不同方向（子空间），后面的组件专门读某块（K-composition：后一个头的 W_K 读前一个头写的子空间）。</li>
+</ul>
+<p>口诀：残差流是共享白板，每层只加不擦；写进不同子空间，后面的头各读各的</p>
+</details>
+<hr />
+<h3 id="b37-induction-head">B37 · induction head 由哪两个头组成？各读什么、做什么？它和上下文学习有什么关系？</h3>
+<p>来源：<a href="lessons/10-induction-heads.html">第 10 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>第 1 层 previous token head：每个位置看前一个位置，把那个 token 写进残差流的另一块子空间（“我前面是谁”）。</li>
+<li>第 2 层 induction head：query = 当前 token，key = 每个位置的“前一个 token”，value = 那个位置的 token；找到“前面是我”的位置，把它复制出来：[A][B] … [A] → [B]。学的是算法，不是具体词对。</li>
+<li>必须两层；训练中它突然出现的时刻，loss 曲线有个鼓包、上下文学习能力同时跳升，去掉它能力大降。</li>
+</ul>
+<p>口诀：第一头贴纸条“我前面是谁”，第二头拿着自己去比纸条；A B 再见 A，就猜 B</p>
+</details>
+<hr />
+<h3 id="b38-annotated-transformer-layernorm-pytorch">B38 · Annotated Transformer 的残差连接和 LayerNorm 和论文、PyTorch 有什么不同？</h3>
+<p>来源：<a href="lessons/11-annotated-transformer.html">第 11 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>SublayerConnection：<code>x + dropout(sublayer(norm(x)))</code>，是 Pre-LN（论文是 Post-LN：LN(x + Sublayer(x))），docstring 自己承认“为了简单把 norm 放前面”；所以 Encoder / Decoder 最后各补一个 LayerNorm。Pre-LN 主干不经过 norm，数值随层数增大。</li>
+<li>源码 LayerNorm：(x − μ)/(std + ε)，std 无偏（除以 n − 1）、ε 在根号外；nn.LayerNorm：(x − μ)/√(var + ε)，var 有偏、ε 在根号里。[1, 2, 3, 4]：−1.1619 vs −1.3416；宽度大时差别很小。</li>
+<li>Embeddings 查表后乘 √d_model。</li>
+</ul>
+<p>口诀：残差先 norm 再子层，源码偷懒成了 Pre-LN，最后补一个 norm</p>
+</details>
+<hr />
+<h3 id="b39-label-smoothing-noam">B39 · label smoothing 的目标分布怎么构造？原版的 Noam 学习率公式是什么？</h3>
+<p>来源：<a href="lessons/11-annotated-transformer.html">第 11 章</a> · 加入 2026-11-25 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>目标：正确类 1 − ε_ls，其余均分 ε_ls/(V − 2)（去掉正确类和 padding），padding 列清零；用 KLDivLoss 和模型的 log 概率比。ε_ls = 0.1：困惑度变差、BLEU 变好。</li>
+<li>正确类概率在 1 − ε_ls（0.9）时 loss 最小，再自信反而被罚，logits 不会被推向无穷。</li>
+<li>Noam：lr = factor·d^{-0.5}·min(step^{-0.5}, step·warmup^{-1.5})；warmup 内线性升，峰值在 step = warmup（d = 512、warmup = 4000 时约 7.0e-4），之后按 1/√step 降；step = 0 改成 1。</li>
+</ul>
+<p>口诀：平滑目标零点九，自信过了九成反而罚；Noam 线性升到 warmup，之后一除根号步</p>
+</details>
+<hr />
 <h2 id="v-transformer">V 视觉 Transformer</h2>
 <h3 id="b04-vit-tokenn-1">B04 · ViT 怎么把一张图变成一串 token？N 和每块的数怎么算？式 1 里加了哪两样东西？</h3>
 <p>来源：<a href="lessons/44-vit.html">第 44 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>

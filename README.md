@@ -3,7 +3,7 @@
 **在线阅读：<https://wikieden.github.io/beyond-transformer/>** · [讲义目录](https://wikieden.github.io/beyond-transformer/lessons/index.html) · [全部动画](https://wikieden.github.io/beyond-transformer/animations/index.html) · [复习卡片](https://wikieden.github.io/beyond-transformer/review.html) · [全部讲义书](https://wikieden.github.io/ai-books/)
 
 > 英文名：**Beyond Transformer** · 在线阅读：<https://wikieden.github.io/beyond-transformer/> · 前作：《[从零读懂 Transformer](https://wikieden.github.io/transformer-visual/)》（24 章）
-> 计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1 章、第 44–51 章（视觉段整段，练习待做）· 19 张复习卡片
+> 计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1–11 章、第 44–51 章（练习待做）· 39 张复习卡片 · 19 张静态图
 
 ## 这本书讲什么
 

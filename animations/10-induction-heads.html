@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>残差流与 induction head</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 10 章 · 两个头配合，完成“照着前面抄”</h1>
+<p class="sub">配套讲义：<a href="../lessons/10-induction-heads.html">第 10 章 · 残差流与 induction head：模型怎么学会“照着前面抄”</a>。每个 token 下面两格：上格“我是谁”（嵌入写的），下格“我前面是谁”（第 1 层的上一个词头写的）。第 2 层的 induction head 拿最后一个 token 去比每个位置的下格，匹配就把那个位置的上格复制出来。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="sq">序列</label><select id="sq"><option value="0"><s> A B C D A</option><option value="1"><s> C A D B C</option><option value="2"><s> D B A C D</option></select><label for="st">进度</label><input type="range" id="st" min="0" max="3" step="1" value="0"><span id="stv">0</span></div>
+<p class="note">看点：① 第 0 步：只有上格（嵌入）；② 第 1 步：每个位置伸一条线到前一个位置，把它的 token 抄进自己的下格；③ 第 2 步：最后一个 token 逐个比下格，匹配的那一格变亮；④ 第 3 步：把匹配位置的上格复制出来，就是预测：[A][B] … [A] → [B]。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['sq','st'],F=[[0,0],[0,1],[0,2],[0,3],[1,3],[2,3]];
+const SQS=[['<s>','A','B','C','D','A'],['<s>','C','A','D','B','C'],['<s>','D','B','A','C','D']];
+function render(sq,st){const s=SQS[sq],n=s.length,X=i=>50+i*100,last=s[n-1];let hit=-1;for(let j=1;j<n-1;j++)if(s[j-1]==last)hit=j;
+ s.forEach((t,i)=>{R(X(i),150,70,36,'var(--accent)',.3);T(t,X(i)+35,174,'middle','num');R(X(i),190,70,36,'var(--warm)',st>=1?.3:.06);if(st>=1)T(i==0?'<s>':s[i-1],X(i)+35,214,'middle','num')});
+ T('我是谁',44,174,'end','s');T('我前面是谁',44,214,'end','s');
+ if(st==1)for(let i=1;i<n;i++)AR(X(i-1)+35,150,X(i)+20,150,'var(--warm)',1.5);
+ if(st>=2){for(let j=0;j<n-1;j++){const ok=j==hit;el('path',{d:`M ${X(n-1)+35} 230 Q ${(X(n-1)+X(j))/2+35} ${290} ${X(j)+35} 230`,fill:'none',stroke:ok?'var(--purple)':'var(--line)','stroke-width':ok?3:1},sv);if(ok)R(X(j)-3,187,76,42,'var(--purple)',.25)}}
+ if(st>=3&&hit>=0){AR(X(hit)+35,148,X(n-1)+50,100,'var(--purple)',2.5);R(X(n-1)+10,62,90,34,'var(--good)',.5);T('预测 '+s[hit],X(n-1)+55,84,'middle','num')}
+ cap(['嵌入：每个位置只知道自己是谁','第 1 层：上一个词头把前一个 token 写进下格',`第 2 层：拿 ${last} 去比每个下格，位置 ${hit} 的下格是 ${last}`,`复制位置 ${hit} 的上格：预测下一个是 ${s[hit]}`][st])}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

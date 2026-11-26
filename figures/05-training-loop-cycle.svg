@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="300" viewBox="0 0 880 300">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="17" fill="#1f2937" text-anchor="start" font-weight="bold">训练循环的一圈</text>
+<text x="16.0" y="290.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal">每一步都做左边七件事；右边虚线框里的事每隔 N 步才做一次：在验证集上算 loss、存档、记日志。</text>
+<rect x="20.0" y="110.0" width="82.0" height="64.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="61.0" y="139.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">取 batch</text>
+<text x="61.0" y="155.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#4b5563" text-anchor="middle" font-weight="normal">x、y 错开一位</text>
+<rect x="112.0" y="110.0" width="82.0" height="64.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="153.0" y="139.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">前向</text>
+<text x="153.0" y="155.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#4b5563" text-anchor="middle" font-weight="normal">logits</text>
+<rect x="204.0" y="110.0" width="82.0" height="64.0" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.4" opacity="1"/>
+<text x="245.0" y="139.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">loss</text>
+<text x="245.0" y="155.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#4b5563" text-anchor="middle" font-weight="normal">交叉熵</text>
+<rect x="296.0" y="110.0" width="82.0" height="64.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="337.0" y="139.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">反向</text>
+<text x="337.0" y="155.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#4b5563" text-anchor="middle" font-weight="normal">loss.backward()</text>
+<rect x="388.0" y="110.0" width="82.0" height="64.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="429.0" y="139.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">裁剪</text>
+<text x="429.0" y="155.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#4b5563" text-anchor="middle" font-weight="normal">‖g‖ ≤ M</text>
+<rect x="480.0" y="110.0" width="82.0" height="64.0" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.4" opacity="1"/>
+<text x="521.0" y="139.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">更新</text>
+<text x="521.0" y="155.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#4b5563" text-anchor="middle" font-weight="normal">AdamW + 调度</text>
+<rect x="572.0" y="110.0" width="82.0" height="64.0" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4" opacity="1"/>
+<text x="613.0" y="139.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">清梯度</text>
+<text x="613.0" y="155.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#4b5563" text-anchor="middle" font-weight="normal">zero_grad</text>
+<line x1="102.0" y1="142.0" x2="112.0" y2="142.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="112.0,142.0 104.1,146.2 104.1,137.8" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="194.0" y1="142.0" x2="204.0" y2="142.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="204.0,142.0 196.1,146.2 196.1,137.8" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="286.0" y1="142.0" x2="296.0" y2="142.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="296.0,142.0 288.1,146.2 288.1,137.8" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="378.0" y1="142.0" x2="388.0" y2="142.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="388.0,142.0 380.1,146.2 380.1,137.8" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="470.0" y1="142.0" x2="480.0" y2="142.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="480.0,142.0 472.1,146.2 472.1,137.8" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="562.0" y1="142.0" x2="572.0" y2="142.0" stroke="#4b5563" stroke-width="1.6"/>
+<polygon points="572.0,142.0 564.1,146.2 564.1,137.8" fill="#4b5563" stroke="#4b5563" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<path d="M 613 174 L 613 220 L 61 220 L 61 174" fill="none" stroke="#6b7280" stroke-width="1.6" stroke-dasharray="4 3"/>
+<text x="330.0" y="238.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="middle" font-weight="normal">下一步</text>
+<rect x="680.0" y="60.0" width="180.0" height="170.0" rx="8" fill="#f9fafb" stroke="#6b7280" stroke-width="1.4" stroke-dasharray="5 4" opacity="1"/>
+<text x="770.0" y="84.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">每 N 步</text>
+<text x="770.0" y="112.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">验证集 loss</text>
+<text x="770.0" y="127.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">存 checkpoint</text>
+<text x="770.0" y="143.1" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">（参数 + 优化器</text>
+<text x="770.0" y="158.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">+ 步数）</text>
+<text x="770.0" y="174.1" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">记日志：loss、</text>
+<text x="770.0" y="189.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">梯度范数、lr</text>
+</svg>

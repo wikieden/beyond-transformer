@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 5 章 · 一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html" class="cur"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="5-batch">第 5 章 · 一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</h1><div class="run"><a class="btn" href="../animations/05-training-loop.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch05_training_loop.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch05_training_loop.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch05_training_loop.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：第 1–4 章有了 loss、梯度、优化器和学习率，怎么把它们串成一次真正的训练？语料是一整串 token，batch 是怎么从里面切出来的，输入和答案为什么错开一位？一共训了多少 token 怎么算？中途断了怎么接着训，checkpoint 里只存参数够不够？训练时该盯哪几条曲线？<br />
+讲解日期：2026-11-25 · 上一章：<a href="../lessons/04-lr-schedule.html">第 4 章 学习率调度与梯度裁剪</a> · 下一章：<a href="../lessons/06-bahdanau.html">第 6 章 attention 的起源</a><br />
+对应原文：CS336 a1 handout <code>cs336-spring2025/materials/text/cs336_spring2025_assignment1_basics.txt</code> §5.1 Data Loader L1671–L1684（整串 token、B 条长 m 的序列、目标错开一位）；§5.2 Checkpointing L1716–L1731（参数 + 优化器状态 + 步数）；§7.1–§7.2 L1870–L1930（实验记录、TinyStories、总 token 数 327,680,000）<br />
+本章缩写：B = batch size（一批几条序列）；m = context length（上下文长度：每条序列几个 token）；step（一步：一次前向 + 反向 + 更新）；epoch（一轮：把整份数据看一遍）；checkpoint（存档：能接着训所需的全部状态）；val = validation（验证集：不参与训练、只用来看模型有没有学偏的数据）；&lt;|endoftext|&gt;（文档之间的分隔符 token）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="token-batch2026-11-25">第一步：从一整串 token 里切 batch（2026-11-25）</h3>
+<p><strong>类比：从一卷长长的录音带上随机剪片段。</strong> 所有文档首尾相接，中间插一个分隔符 <code>&lt;|endoftext|&gt;</code>，变成一卷长带子（L1672–L1675）。训练时每次随机挑 B 个起点，各剪一段长 m 的片段，就是一个 batch。</p>
+<p><strong>输入和答案错开一位</strong>：语言模型的任务是“看到前面，猜下一个”。所以从起点 s 剪 m 个 token 当输入 x，再从 s + 1 剪 m 个当答案 y，y 的第 i 个就是 x 第 i 个的“下一个词”（L1676–L1678）。</p>
+<p><strong>数字演示</strong>（token 串长 12，m = 4，B = 2，起点 1 和 6，从 0 数）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>第 0 条（起点 1）</th>
+<th>第 1 条（起点 6）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>串</td>
+<td>[5, <strong>9, 2, 7, 1</strong>, 8, 3, 6, 4, 0, 2, 9]</td>
+<td>[5, 9, 2, 7, 1, 8, <strong>3, 6, 4, 0</strong>, 2, 9]</td>
+</tr>
+<tr>
+<td>x</td>
+<td>[9, 2, 7, 1]</td>
+<td>[3, 6, 4, 0]</td>
+</tr>
+<tr>
+<td>y</td>
+<td>[2, 7, 1, 8]</td>
+<td>[6, 4, 0, 2]</td>
+</tr>
+</tbody>
+</table>
+<p>x、y 的形状都是 (B, m) = (2, 4)。一条长 m 的序列一次前向能给出 m 个“猜下一个词”的训练信号（第 1 章式 16 对所有位置取平均）。起点从 0 到 n − m − 1 都行（y 要多用一个 token），长 12、m = 4 时共 8 个可选起点。</p>
+<p>这种切法的好处（L1679–L1684）：所有序列一样长，不用补齐（padding）；不用把整份数据读进内存，用 <code>np.memmap</code> 按需读就行。代价是一个片段可能跨过文档边界，所以要靠分隔符让模型知道“前面那篇结束了”。</p>
+<p><strong>一句话</strong>：所有文档拼成一串、中间插分隔符；随机挑 B 个起点各剪 m 个 token 当输入，错开一位再剪 m 个当答案。</p>
+<h3 id="token-2026-11-25">第二步：算 token 账（2026-11-25）</h3>
+<p>一次训练“看了多少数据”用 token 数衡量：</p>
+<div class="arithmatex">\[\text{总 token 数} = B \times m \times \text{步数}\]</div>
+<table>
+<thead>
+<tr>
+<th>B</th>
+<th>m</th>
+<th>步数</th>
+<th>总 token 数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>32</td>
+<td>256</td>
+<td>5,000</td>
+<td>40,960,000</td>
+</tr>
+<tr>
+<td>64</td>
+<td>512</td>
+<td>10,000</td>
+<td>327,680,000</td>
+</tr>
+</tbody>
+</table>
+<p>a1 在 TinyStories 上的标准实验就要求总 token 数是 327,680,000（L1926）：B、m、步数怎么配都行，乘起来对上就是同样的数据量，换配置比较才公平。token 数还决定计算量：训练 FLOPs ≈ 6 × 参数 × token 数（第 8 章推）。</p>
+<p><strong>一句话</strong>：总 token 数 = batch × 上下文长度 × 步数，是比较不同训练配置的公共尺子。</p>
+<h3 id="2026-11-25">第三步：一步做什么、看哪几条曲线（2026-11-25）</h3>
+<p>每一步固定是五件事：</p>
+<ol>
+<li>取一个 batch（第一步）；</li>
+<li>前向：模型算出每个位置的 logits，和 y 算交叉熵（第 1 章）；</li>
+<li>反向：<code>loss.backward()</code> 得到所有参数的梯度（第 2 章）；</li>
+<li>裁剪梯度、按当前步的学习率更新参数（第 3、4 章）；</li>
+<li>清空梯度，记日志；每隔一段时间在验证集上算一次 loss、存一次档。</li>
+</ol>
+<p><img alt="训练循环一圈" src="../figures/05-training-loop-cycle.png" />
+<em>图 5-1 · 训练循环的一圈：取 batch → 前向 → loss → 反向 → 裁剪 → 更新 → 清梯度。右边虚线框是“每隔 N 步才做”的事：验证、存档、记日志</em></p>
+<p><strong>数字演示</strong>（一个两参数的玩具模型拟合 y = 2x + 1，带动量的 SGD，lr = 0.1，batch 16，训 60 步）：</p>
+<table>
+<thead>
+<tr>
+<th>步</th>
+<th>train loss</th>
+<th>val loss</th>
+<th>梯度范数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2.0681</td>
+<td>2.3345</td>
+<td>2.3898</td>
+</tr>
+<tr>
+<td>16</td>
+<td>0.3081</td>
+<td>0.0972</td>
+<td>0.8841</td>
+</tr>
+<tr>
+<td>31</td>
+<td>0.0193</td>
+<td>0.0253</td>
+<td>0.1175</td>
+</tr>
+<tr>
+<td>46</td>
+<td>0.0201</td>
+<td>0.0214</td>
+<td>0.1002</td>
+</tr>
+<tr>
+<td>60</td>
+<td>0.0103</td>
+<td>0.0203</td>
+<td>0.0557</td>
+</tr>
+</tbody>
+</table>
+<p>最后学到 w = 2.080、b = 1.079。<strong>train loss 每步都在抖</strong>（每个 batch 不同），所以要看平滑后的趋势；<strong>val loss</strong> 才说明模型有没有学到“通用”的东西。训练时至少盯四条曲线：</p>
+<table>
+<thead>
+<tr>
+<th>曲线</th>
+<th>正常的样子</th>
+<th>出问题的信号</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>train loss</td>
+<td>先快降后慢降，带噪声</td>
+<td>突然跳高（loss spike），或者长时间不降</td>
+</tr>
+<tr>
+<td>val loss</td>
+<td>跟着 train 降</td>
+<td>train 还在降、val 开始升：过拟合</td>
+</tr>
+<tr>
+<td>梯度范数</td>
+<td>开头大、慢慢变小变稳</td>
+<td>频繁超过裁剪上限，或者突然暴涨</td>
+</tr>
+<tr>
+<td>学习率</td>
+<td>按调度走（第 4 章）</td>
+<td>和预期不符：调度写错了</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="训练曲线" src="../figures/05-training-loop-curves.png" />
+<em>图 5-2 · 玩具模型 60 步的训练曲线（对数纵轴）。蓝：train loss（每步都在抖）；橙：val loss；灰：梯度范数。val 和 train 一起降、最后贴在噪声水平 0.01–0.02 附近</em></p>
+<p>读曲线时种子方差、平滑滞后这些坑，见《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/07-read-curves-and-ablations.html">第 7 章</a>。</p>
+<p><strong>一句话</strong>：每步“取 batch、前向、反向、裁剪更新、清梯度”；盯 train、val、梯度范数、学习率四条曲线。</p>
+<h3 id="checkpoint-2026-11-25">第四步：checkpoint 要存什么（2026-11-25）</h3>
+<p>训练可能跑几天，机器会挂、任务会超时。checkpoint 要存下“接着训所需的全部状态”（L1724–L1728）：</p>
+<ul>
+<li><strong>模型参数</strong>：最起码的；</li>
+<li><strong>优化器状态</strong>：AdamW 的 m、v（第 3 章），动量 SGD 的速度 v；</li>
+<li><strong>步数</strong>：学习率调度要知道现在是第几步；</li>
+<li>（更严格的还要存）随机数生成器的状态，保证接下来取的 batch 一样。</li>
+</ul>
+<p><strong>数字演示</strong>（同一个玩具模型，总共 60 步）：</p>
+<table>
+<thead>
+<tr>
+<th>做法</th>
+<th>最后的 w</th>
+<th>最后的 b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>不断地训 60 步</td>
+<td>2.079918</td>
+<td>1.078894</td>
+</tr>
+<tr>
+<td>训 30 步存档（全部状态），读档再训 30 步</td>
+<td>2.079918</td>
+<td>1.078894</td>
+</tr>
+<tr>
+<td>训 30 步只存参数（动量清零），读档再训 30 步</td>
+<td>2.007454</td>
+<td>1.003701</td>
+</tr>
+</tbody>
+</table>
+<p>完整存档续训和不断训的结果一模一样。只存参数时，动量被清零，接下来的走法就变了，最终结果对不上。这个例子里恰好离真值更近，但这只是运气；对 AdamW 来说，m、v 清零等于重新从头估计，前几步的步长会被放大（第 4 章第二步），大模型上可能直接引起 loss 尖峰。</p>
+<p><strong>场景代码</strong>：PyTorch 存档和读档（真实库调用；本书环境没装 torch，没跑过）：</p>
+<pre><code class="language-python">torch.save({&quot;model&quot;: model.state_dict(), &quot;optimizer&quot;: opt.state_dict(), &quot;step&quot;: step}, &quot;ckpt.pt&quot;)
+ck = torch.load(&quot;ckpt.pt&quot;)
+model.load_state_dict(ck[&quot;model&quot;]); opt.load_state_dict(ck[&quot;optimizer&quot;]); step = ck[&quot;step&quot;]
+</code></pre>
+<p>更多细节（<code>state_dict</code> 里有什么、怎么省空间）见《PyTorch 从里到外》<a href="https://wikieden.github.io/pytorch-inside-out/lessons/10-save-load.html">第 10 章</a>；完整的训练循环写法见<a href="https://wikieden.github.io/pytorch-inside-out/lessons/09-training-loop.html">第 9 章</a>。</p>
+<p><strong>一句话</strong>：checkpoint 至少存参数、优化器状态和步数；只存参数，续训时动量和 Adam 的矩被清零，结果就和不断训对不上。</p>
+<h3 id="_2">动画演示：训练循环转一圈</h3>
+<p><img alt="一次完整训练" src="../animations/05-training-loop.gif" /></p>
+<p>可交互版：<a href="../animations/05-training-loop.html">animations/05-training-loop.html</a>（▶ 播放转圈；滑块调已经训了几步，看右边曲线怎么长出来）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>左边是 token 串，高亮的两段是这一步抽到的 x（蓝）和 y（橙），错开一位（第一步）；</li>
+<li>中间七个框依次亮起：取 batch → 前向 → loss → 反向 → 裁剪 → 更新 → 清梯度（第三步）；</li>
+<li>右边 train loss 和 val loss 曲线随步数延长；每 15 步出现一个“存档”标记（第四步）。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：token 串是 [4, 8, 1, 3, 9, 2, 7]，m = 3。起点 2 的 x 和 y 各是什么？一共有多少个可选起点？</p>
+<p><strong>题 2</strong>（第二步）：想让总 token 数还是 327,680,000，但上下文长度改成 1024、batch 改成 32，要训多少步？</p>
+<p><strong>题 3</strong>（第三步）：日志里 train loss 一直在降，val loss 第 3000 步后开始上升。这说明什么？你会怎么做？</p>
+<p><strong>题 4</strong>（第四步）：存档时存了参数和优化器状态，却忘了存步数。读档后步数从 0 重新数，用第 4 章的 warmup + cosine 调度，接下来的学习率会怎么走？对训练有什么影响？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>文档拼成一长串，中间插分隔；随机剪段，输入答案错一位。<br />
+批乘长乘步数，就是总 token。<br />
+取批、前向、算 loss，反向、裁剪、更新、清梯度。<br />
+盯四条线：train、val、梯度范数、学习率；val 一升就是过拟合。<br />
+存档三件：参数、优化器、步数，少一件就接不上。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B26–B27</a>（B26 从 token 串切 batch 与总 token 数；B27 训练一步的五件事、该盯的曲线和 checkpoint 要存什么）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ CS336 a1 handout</td>
+<td>§5.1 L1671–L1684；§5.2 L1716–L1731；§7.1–§7.2 L1870–L1930</td>
+<td>作业里的数据加载、存档和实验要求</td>
+</tr>
+<tr>
+<td>★ 《PyTorch 从里到外》<a href="https://wikieden.github.io/pytorch-inside-out/lessons/09-training-loop.html">第 9 章 训练循环</a>、<a href="https://wikieden.github.io/pytorch-inside-out/lessons/10-save-load.html">第 10 章 存档</a></td>
+<td>全部</td>
+<td>PyTorch 里的完整写法</td>
+</tr>
+<tr>
+<td>《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/07-read-curves-and-ablations.html">第 7 章 读曲线和消融</a></td>
+<td>种子方差、平滑</td>
+<td>怎么从抖动的曲线里看出真变化</td>
+</tr>
+<tr>
+<td>nanoGPT <code>train.py</code>（<code>transformer-deep-dive/materials/code/nanoGPT/repo/</code>）</td>
+<td><code>get_batch</code>、主循环</td>
+<td>一个真实项目的训练循环</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>可选起点数</strong>：长 n 的串、窗口 m，需要 x 和 y 各 m 个、共 m + 1 个连续 token，起点有 n − m 个。</li>
+<li><strong>随机切片 ≈ 有放回抽样</strong>：每步独立随机挑起点，一个 epoch 的说法只是近似（有的片段被看了多次，有的没看到）。</li>
+<li><strong>动量对状态的依赖</strong>：带动量的更新是 θ 和 v 的联合递推，只恢复 θ 等于把 v 重置成 0。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>x = s[i : i+m]，y = s[i+1 : i+m+1]</td>
+<td>输入和答案错开一位</td>
+</tr>
+<tr>
+<td>起点数 = n − m</td>
+<td>可选的切片个数</td>
+</tr>
+<tr>
+<td>总 token = B × m × 步数</td>
+<td>token 账</td>
+</tr>
+<tr>
+<td 优化器状态_ 参数_ 步数>checkpoint =</td>
+<td>续训所需的状态</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch05_training_loop.py</code>，配套测试 <code>tests/test_ch05.py</code>，notebook 在 <code>notebooks/ch05_training_loop.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch05_training_loop.py  
+uv run pytest tests/test_ch05.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 切 batch</td>
+<td>错开一位</td>
+<td><code>windows(STREAM, [1, 6], 4)</code></td>
+<td>x = [[9, 2, 7, 1], [3, 6, 4, 0]]</td>
+</tr>
+<tr>
+<td>第二步 token 账</td>
+<td>B × m × 步数</td>
+<td><code>token_budget(64, 512, 10000)</code></td>
+<td>327,680,000</td>
+</tr>
+<tr>
+<td>第三步 训练循环</td>
+<td>五件事</td>
+<td><code>train(60)</code></td>
+<td>w = 2.080、b = 1.079</td>
+</tr>
+<tr>
+<td>第四步 存档</td>
+<td>全部状态 vs 只存参数</td>
+<td><code>resume_demo()</code></td>
+<td>一致 vs 对不上</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">x = np.stack([stream[s : s + m] for s in starts])          # 输入
+y = np.stack([stream[s + 1 : s + m + 1] for s in starts])  # 答案：错开一位
+vw, vb = beta * vw + gw, beta * vb + gb                    # 动量也是状态，要存
+r1.bit_generator.state = rng_state                         # 随机数状态也恢复，batch 才对得上
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>随机数状态也是 checkpoint 的一部分</strong>：<code>resume_demo</code> 恢复了随机数生成器，续训取到的 batch 才和不断训一样，结果才能逐位一致。</li>
+<li><strong>这里是两参数的玩具模型</strong>：作业要写的 <code>get_batch</code>（返回指定设备上的张量）、<code>save_checkpoint</code> / <code>load_checkpoint</code> 和完整的训练脚本留给自己写。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>train</code> 的 lr 改成 0.5，曲线还收敛吗？梯度范数怎么变？</li>
+<li>把 <code>resume_demo</code> 里续训时的随机数生成器换成新的种子（不恢复状态），“完整存档续训”还和不断训一致吗？</li>
+</ul><nav class="pager"><a href="04-lr-schedule.html">← 第 4 章 · 学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="06-bahdanau.html">第 6 章 · attention 的起源：Bahdanau 的加性打分 vs 点积打分 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

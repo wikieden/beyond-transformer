@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="270" viewBox="0 0 880 270">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="17" fill="#1f2937" text-anchor="start" font-weight="bold">两种训练目标的信号密度</text>
+<text x="16.0" y="260.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal">同一条 12 个 token 的序列。上：MLM，只有被选中的 2 个位置（橙）产生 loss；下：CLM，每个位置都在猜下一个词（蓝），产生 11 个 loss。</text>
+<text x="40.0" y="82.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="13" fill="#1f2937" text-anchor="middle" font-weight="bold">MLM</text>
+<rect x="80.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="109.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">[CLS]</text>
+<rect x="144.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#ea580c" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="173.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">my</text>
+<text x="173.0" y="110.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#ea580c" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="208.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="237.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">dog</text>
+<rect x="272.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="301.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">is</text>
+<rect x="336.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="365.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">hairy</text>
+<rect x="400.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="429.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">and</text>
+<rect x="464.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="493.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">he</text>
+<rect x="528.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="557.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">likes</text>
+<rect x="592.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#ea580c" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="621.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">to</text>
+<text x="621.0" y="110.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#ea580c" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="656.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="685.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">play</text>
+<rect x="720.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="749.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">fetch</text>
+<rect x="784.0" y="60.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="813.0" y="81.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">[SEP]</text>
+<text x="40.0" y="182.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="13" fill="#1f2937" text-anchor="middle" font-weight="bold">CLM</text>
+<rect x="80.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="109.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">[CLS]</text>
+<text x="109.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="144.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="173.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">my</text>
+<text x="173.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="208.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="237.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">dog</text>
+<text x="237.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="272.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="301.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">is</text>
+<text x="301.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="336.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="365.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">hairy</text>
+<text x="365.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="400.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="429.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">and</text>
+<text x="429.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="464.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="493.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">he</text>
+<text x="493.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="528.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="557.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">likes</text>
+<text x="557.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="592.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="621.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">to</text>
+<text x="621.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="656.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="685.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">play</text>
+<text x="685.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="720.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.8"/>
+<text x="749.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">fetch</text>
+<text x="749.0" y="210.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">loss</text>
+<rect x="784.0" y="160.0" width="58.0" height="32.0" rx="4" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<text x="813.0" y="181.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10.5" fill="#1f2937" text-anchor="middle" font-weight="normal">[SEP]</text>
+</svg>

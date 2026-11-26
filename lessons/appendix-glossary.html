@@ -68,7 +68,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
 <span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
 </div></header>
-<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html" class="cur">附录 · 缩写与术语表</a></nav><main>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html" class="cur">附录 · 缩写与术语表</a></nav><main>
 <h1 id="_1">附录 · 缩写与术语表</h1>
 <blockquote>
 <p>本书新出现的缩写和术语，按出现顺序登记。原版那本已经讲过的（Q / K / V、<span class="arithmatex">\(d_{model}\)</span>、FFN、LayerNorm、PE、RNN、BPE、logits 等）见《<a href="https://wikieden.github.io/transformer-visual/lessons/appendix-glossary.html">从零读懂 Transformer</a>》的缩写表，这里不重复。</p>
@@ -216,6 +216,265 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>label（标签）/ smoothing（平滑）</td>
 <td>正确词的目标设成 0.9 而不是 1，剩下的分给别的词（AIAYN §5.4）</td>
 <td><a href="../lessons/01-cross-entropy.html">第 1 章</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="211">训练与原理（第 2–11 章）</h2>
+<table>
+<thead>
+<tr>
+<th>缩写</th>
+<th>全称</th>
+<th>意思</th>
+<th>第一次出现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>∂</td>
+<td>partial（偏）</td>
+<td>偏导数：只让一个变量动、其余不动时的导数</td>
+<td><a href="../lessons/02-backprop.html">第 2 章</a></td>
+</tr>
+<tr>
+<td>∇</td>
+<td>nabla（纳布拉）</td>
+<td>梯度：所有偏导数排成的向量，指向 loss 涨得最快的方向</td>
+<td><a href="../lessons/02-backprop.html">第 2 章</a></td>
+</tr>
+<tr>
+<td>ReLU</td>
+<td>Rectified Linear Unit（整流 / 线性 / 单元）</td>
+<td>max(0, x)；被关掉（输入 ≤ 0）的单元梯度为 0</td>
+<td><a href="../lessons/02-backprop.html">第 2 章</a></td>
+</tr>
+<tr>
+<td>one-hot</td>
+<td>独热</td>
+<td>只有一格是 1、其余是 0 的向量</td>
+<td><a href="../lessons/02-backprop.html">第 2 章</a></td>
+</tr>
+<tr>
+<td>SGD</td>
+<td>Stochastic Gradient Descent（随机 / 梯度 / 下降）</td>
+<td>θ ← θ − α∇L，每步用一个随机 batch 的梯度</td>
+<td><a href="../lessons/02-backprop.html">第 2 章</a></td>
+</tr>
+<tr>
+<td>backprop</td>
+<td>backpropagation（反向传播）</td>
+<td>从 loss 出发，下游梯度 × 本层局部斜率，一层层乘回去</td>
+<td><a href="../lessons/02-backprop.html">第 2 章</a></td>
+</tr>
+<tr>
+<td>Adam</td>
+<td>Adaptive Moment estimation（自适应 / 矩 / 估计）</td>
+<td>用梯度的一阶矩定方向、二阶矩给每个参数定步长</td>
+<td><a href="../lessons/03-optimizers.html">第 3 章</a></td>
+</tr>
+<tr>
+<td>AdamW</td>
+<td>Adam with decoupled Weight decay（解耦的权重衰减）</td>
+<td>衰减单独做 θ ← θ − αλθ，不混进梯度</td>
+<td><a href="../lessons/03-optimizers.html">第 3 章</a></td>
+</tr>
+<tr>
+<td>β₁、β₂</td>
+<td>beta 1、beta 2</td>
+<td>一阶、二阶矩的衰减系数，常用 0.9、0.999（大模型 0.95）</td>
+<td><a href="../lessons/03-optimizers.html">第 3 章</a></td>
+</tr>
+<tr>
+<td>m̂、v̂</td>
+<td>m hat、v hat</td>
+<td>偏差修正后的一阶、二阶矩：除以 1 − βᵗ</td>
+<td><a href="../lessons/03-optimizers.html">第 3 章</a></td>
+</tr>
+<tr>
+<td>weight decay</td>
+<td>权重衰减</td>
+<td>每步把参数往 0 拉一点，系数 λ</td>
+<td><a href="../lessons/03-optimizers.html">第 3 章</a></td>
+</tr>
+<tr>
+<td>lr</td>
+<td>learning rate（学习率）</td>
+<td>一步迈多大，记作 α</td>
+<td><a href="../lessons/04-lr-schedule.html">第 4 章</a></td>
+</tr>
+<tr>
+<td>warmup</td>
+<td>预热</td>
+<td>开头若干步学习率从 0 线性升到峰值</td>
+<td><a href="../lessons/04-lr-schedule.html">第 4 章</a></td>
+</tr>
+<tr>
+<td>cosine annealing</td>
+<td>余弦退火</td>
+<td>学习率按余弦曲线从 αmax 降到 αmin</td>
+<td><a href="../lessons/04-lr-schedule.html">第 4 章</a></td>
+</tr>
+<tr>
+<td>WSD</td>
+<td>Warmup-Stable-Decay</td>
+<td>预热 / 平稳 / 衰减三段式学习率调度</td>
+<td><a href="../lessons/04-lr-schedule.html">第 4 章</a></td>
+</tr>
+<tr>
+<td>gradient clipping</td>
+<td>梯度裁剪</td>
+<td>所有梯度拼成一个向量，长度超过 M 就整体缩到 M</td>
+<td><a href="../lessons/04-lr-schedule.html">第 4 章</a></td>
+</tr>
+<tr>
+<td>ℓ2 范数</td>
+<td>L2 norm</td>
+<td>各分量平方和开根号，向量的长度</td>
+<td><a href="../lessons/04-lr-schedule.html">第 4 章</a></td>
+</tr>
+<tr>
+<td>step</td>
+<td>步</td>
+<td>一次前向 + 反向 + 更新</td>
+<td><a href="../lessons/05-training-loop.html">第 5 章</a></td>
+</tr>
+<tr>
+<td>epoch</td>
+<td>轮</td>
+<td>把整份数据看一遍</td>
+<td><a href="../lessons/05-training-loop.html">第 5 章</a></td>
+</tr>
+<tr>
+<td>checkpoint</td>
+<td>存档</td>
+<td>接着训所需的全部状态：参数、优化器状态、步数</td>
+<td><a href="../lessons/05-training-loop.html">第 5 章</a></td>
+</tr>
+<tr>
+<td>val</td>
+<td>validation（验证集）</td>
+<td>不参与训练、只用来看模型有没有学偏的数据</td>
+<td><a href="../lessons/05-training-loop.html">第 5 章</a></td>
+</tr>
+<tr>
+<td>RNN</td>
+<td>Recurrent Neural Network（循环 / 神经 / 网络）</td>
+<td>一个词一个词地读，每读一个更新一次隐状态</td>
+<td><a href="../lessons/06-bahdanau.html">第 6 章</a></td>
+</tr>
+<tr>
+<td>encoder-decoder</td>
+<td>编码器-解码器</td>
+<td>一个读原文、一个写译文；原版 Transformer 也是这种结构</td>
+<td><a href="../lessons/06-bahdanau.html">第 6 章</a></td>
+</tr>
+<tr>
+<td>additive attention</td>
+<td>加性注意力</td>
+<td>打分 vᵀtanh(Ws + Uh)（Bahdanau）</td>
+<td><a href="../lessons/06-bahdanau.html">第 6 章</a></td>
+</tr>
+<tr>
+<td>tanh</td>
+<td>hyperbolic tangent（双曲正切）</td>
+<td>把数压到 (−1, 1)</td>
+<td><a href="../lessons/06-bahdanau.html">第 6 章</a></td>
+</tr>
+<tr>
+<td>DTransformer</td>
+<td>Decoder-only Transformer</td>
+<td>只有解码器的 Transformer（GPT 那种），Formal Algorithms 的 Algorithm 10</td>
+<td><a href="../lessons/07-formal-algorithms.html">第 7 章</a></td>
+</tr>
+<tr>
+<td>d_e、d_attn、d_mlp</td>
+<td>embedding / attention / MLP dimension</td>
+<td>嵌入维数、注意力里 q k 的维数、MLP 中间层维数</td>
+<td><a href="../lessons/07-formal-algorithms.html">第 7 章</a></td>
+</tr>
+<tr>
+<td>FLOPs</td>
+<td>Floating-point Operations（浮点运算次数）</td>
+<td>一次矩阵乘法 2mnk；训练 ≈ 6 × 参数 × token</td>
+<td><a href="../lessons/08-flops.html">第 8 章</a></td>
+</tr>
+<tr>
+<td>6ND</td>
+<td>6 × N × D</td>
+<td>训练 FLOPs 的估算：前向 2、反向 4，N 参数量、D token 数</td>
+<td><a href="../lessons/08-flops.html">第 8 章</a></td>
+</tr>
+<tr>
+<td>BERT</td>
+<td>Bidirectional Encoder Representations from Transformers（双向 / 编码器 / 表示）</td>
+<td>encoder-only，用 MLM 预训练</td>
+<td><a href="../lessons/09-bert.html">第 9 章</a></td>
+</tr>
+<tr>
+<td>MLM</td>
+<td>Masked Language Model（遮词语言模型）</td>
+<td>随机选 15% 的位置（80% [MASK]、10% 随机、10% 不变），只猜这些位置</td>
+<td><a href="../lessons/09-bert.html">第 9 章</a></td>
+</tr>
+<tr>
+<td>NSP</td>
+<td>Next Sentence Prediction（下一句预测）</td>
+<td>用 [CLS] 判断 B 是不是 A 的下一句</td>
+<td><a href="../lessons/09-bert.html">第 9 章</a></td>
+</tr>
+<tr>
+<td>CLM</td>
+<td>Causal Language Model（因果语言模型）</td>
+<td>只看前文猜下一个词（GPT 那种）</td>
+<td><a href="../lessons/09-bert.html">第 9 章</a></td>
+</tr>
+<tr>
+<td>[CLS]、[SEP]、[MASK]</td>
+<td>classification / separator / mask</td>
+<td>句首（整句表示）、分隔两句、被遮住的位置</td>
+<td><a href="../lessons/09-bert.html">第 9 章</a></td>
+</tr>
+<tr>
+<td>residual stream</td>
+<td>残差流</td>
+<td>每层只加不擦的主干向量；各组件读它、再把结果加回去</td>
+<td><a href="../lessons/10-induction-heads.html">第 10 章</a></td>
+</tr>
+<tr>
+<td>induction head</td>
+<td>归纳头</td>
+<td>找“前一个词是当前词”的位置，把它后面的词复制出来：[A][B] … [A] → [B]</td>
+<td><a href="../lessons/10-induction-heads.html">第 10 章</a></td>
+</tr>
+<tr>
+<td>previous token head</td>
+<td>上一个词头</td>
+<td>把前一个 token 的信息写进当前位置</td>
+<td><a href="../lessons/10-induction-heads.html">第 10 章</a></td>
+</tr>
+<tr>
+<td>K-composition</td>
+<td>K 组合</td>
+<td>后一个头的 W_K 读前一个头写进残差流的子空间</td>
+<td><a href="../lessons/10-induction-heads.html">第 10 章</a></td>
+</tr>
+<tr>
+<td>in-context learning</td>
+<td>上下文学习</td>
+<td>不改参数，只靠提示里的例子学会新任务</td>
+<td><a href="../lessons/10-induction-heads.html">第 10 章</a></td>
+</tr>
+<tr>
+<td>Post-LN、Pre-LN</td>
+<td>Post- / Pre-LayerNorm</td>
+<td>LN(x + Sublayer(x)) / x + Sublayer(LN(x))；Annotated Transformer 源码其实是 Pre-LN</td>
+<td><a href="../lessons/11-annotated-transformer.html">第 11 章</a></td>
+</tr>
+<tr>
+<td>Noam</td>
+<td>Noam 调度</td>
+<td>d^{-0.5}·min(step^{-0.5}, step·warmup^{-1.5})，原版 Transformer 的学习率</td>
+<td><a href="../lessons/11-annotated-transformer.html">第 11 章</a></td>
 </tr>
 </tbody>
 </table>

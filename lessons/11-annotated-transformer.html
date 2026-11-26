@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 11 章 · 读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html" class="cur"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="11-the-annotated-transformer">第 11 章 · 读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</h1><div class="run"><a class="btn" href="../animations/11-annotated-transformer.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch11_annotated_transformer.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch11_annotated_transformer.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch11_annotated_transformer.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：前作讲的原版 Transformer，落到真正能跑的 PyTorch 代码里是什么样？The Annotated Transformer 这份最出名的逐行注释实现，函数怎么和论文、前作的章节对上？它的残差连接为什么是“先 norm”，和论文写的不一样？它的 LayerNorm 和 PyTorch 自带的差在哪？label smoothing 和原版的学习率公式在代码里怎么写？<br />
+讲解日期：2026-11-25 · 上一章：<a href="../lessons/10-induction-heads.html">第 10 章 残差流与 induction head</a> · 下一章：第 12 章 Pre-LN（待写）<br />
+对应原文：The Annotated Transformer <code>transformer-deep-dive/materials/code/annotated-transformer/repo/the_annotated_transformer.py</code>：EncoderDecoder L230、Generator L256、clones L286、Encoder L292–L305、LayerNorm L315–L328、SublayerConnection L344–L357（“Note for code simplicity the norm is first as opposed to last”）、subsequent_mask L441、attention L519、MultiHeadedAttention L589、Embeddings L704–L711（乘 √d_model）、make_model L822–L845、rate L1058–L1068、LabelSmoothing L1148–L1172、置信度惩罚的例子 L1228–L1240、训练用 smoothing = 0.1 L1644；AIAYN §5.3 式 3 L363–L376、§5.4 label smoothing L409–L410<br />
+本章缩写：Post-LN = Post-LayerNorm（先加残差再 LayerNorm，原版论文的写法）；Pre-LN = Pre-LayerNorm（先 LayerNorm 再进子层，结果加回残差）；ε_ls = label smoothing 的平滑系数；KL = Kullback–Leibler divergence（KL 散度：两个分布差多少）；std = standard deviation（标准差）；ddof = delta degrees of freedom（自由度修正：除以 n − ddof）；Noam（原版学习率调度的俗称，取自作者之一 Noam Shazeer）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-25">第一步：源码地图：函数 ↔ 论文 ↔ 前作章节（2026-11-25）</h3>
+<p><strong>类比：拿着说明书（第 7 章）对实物。</strong> 第 7 章的伪代码是“应该怎么拼”，这份源码是“真的拼出来的样子”。先把零件和章节对上，后面几步再看它在哪几处偷偷改了做法。</p>
+<table>
+<thead>
+<tr>
+<th>源码</th>
+<th>行号</th>
+<th>做什么</th>
+<th>前作 / 本书</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EncoderDecoder</code></td>
+<td>L230</td>
+<td>整个模型：编码、解码、生成</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/21-transformer-layer.html">T21</a></td>
+</tr>
+<tr>
+<td><code>Generator</code></td>
+<td>L256</td>
+<td>线性层 + log_softmax，乘回词表</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/22-embedding-softmax.html">T22</a></td>
+</tr>
+<tr>
+<td><code>clones</code></td>
+<td>L286</td>
+<td>把一层深拷贝 N 份</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>Encoder</code></td>
+<td>L292</td>
+<td>N 层 + <strong>最后一个 LayerNorm</strong></td>
+<td>T21</td>
+</tr>
+<tr>
+<td><code>LayerNorm</code></td>
+<td>L315</td>
+<td>自己写的 LayerNorm（第三步）</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/19-layernorm.html">T19</a></td>
+</tr>
+<tr>
+<td><code>SublayerConnection</code></td>
+<td>L344</td>
+<td>残差 + norm（第二步）</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/18-residual.html">T18</a></td>
+</tr>
+<tr>
+<td><code>subsequent_mask</code></td>
+<td>L441</td>
+<td>因果 mask</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/17-causal-mask.html">T17</a></td>
+</tr>
+<tr>
+<td><code>attention</code></td>
+<td>L519</td>
+<td>缩放点积注意力</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/08-sqrt-dk.html">T8</a>–T12</td>
+</tr>
+<tr>
+<td><code>MultiHeadedAttention</code></td>
+<td>L589</td>
+<td>多头</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/13-multi-head.html">T13</a></td>
+</tr>
+<tr>
+<td><code>PositionwiseFeedForward</code></td>
+<td>L677</td>
+<td>FFN</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/20-ffn.html">T20</a></td>
+</tr>
+<tr>
+<td><code>Embeddings</code></td>
+<td>L704</td>
+<td>查表后<strong>乘 √d_model</strong></td>
+<td>T22</td>
+</tr>
+<tr>
+<td><code>PositionalEncoding</code></td>
+<td>L748</td>
+<td>sin / cos 位置编码</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/15-sin-cos.html">T15</a></td>
+</tr>
+<tr>
+<td><code>make_model</code></td>
+<td>L822</td>
+<td>N = 6、d = 512、d_ff = 2048、h = 8，Xavier 初始化</td>
+<td>T24</td>
+</tr>
+<tr>
+<td><code>rate</code></td>
+<td>L1058</td>
+<td>原版学习率（第五步）</td>
+<td>第 4 章</td>
+</tr>
+<tr>
+<td><code>LabelSmoothing</code></td>
+<td>L1148</td>
+<td>平滑后的目标 + KL loss（第四步）</td>
+<td>第 1 章</td>
+</tr>
+</tbody>
+</table>
+<p><code>Embeddings</code> 乘 √d_model（L711）是原版论文 §3.4 的做法：嵌入表的数初始化得很小，乘一下让它和位置编码的量级相当。</p>
+<p><strong>一句话</strong>：The Annotated Transformer 一个类对应论文的一个零件，按 L230 到 L1172 的顺序读，就是把前作 24 章从头拼一遍。</p>
+<h3 id="sublayerconnection-pre-ln2026-11-25">第二步：SublayerConnection 其实是 Pre-LN（2026-11-25）</h3>
+<p>论文写的是 Post-LN：每个子层的输出是 <span class="arithmatex">\(\text{LayerNorm}(x + \text{Sublayer}(x))\)</span>。源码的注释也照抄了这句话，可代码（L357）是：</p>
+<pre><code class="language-python">return x + self.dropout(sublayer(self.norm(x)))
+</code></pre>
+<p>先 norm、进子层、再加回 x：这是 <strong>Pre-LN</strong>。类的 docstring 里自己承认了（L347–L348）：“为了代码简单，norm 放在前面而不是后面”。所以 <code>Encoder</code> 最后还要补一个 LayerNorm（L298、L305），因为 Pre-LN 的主干上从来没被 norm 过。</p>
+<p><strong>数字演示</strong>（x = [1, 2, 3, 4]，子层是“乘 3”）：</p>
+<table>
+<thead>
+<tr>
+<th>写法</th>
+<th>公式</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>论文 Post-LN</td>
+<td>LN(x + 3x)</td>
+<td>[−1.3416, −0.4472, 0.4472, 1.3416]</td>
+</tr>
+<tr>
+<td>源码 Pre-LN</td>
+<td>x + 3·LN(x)</td>
+<td>[−3.0249, 0.6584, 4.3416, 8.0249]</td>
+</tr>
+</tbody>
+</table>
+<p>Post-LN 每层的输出都被拉回均值 0、方差 1；Pre-LN 的主干 x 原样往下传，每层只加一点东西，越往后数值越大（所以最后要补一个 norm）。这个“偷懒”的改动其实是对的：Pre-LN 更好训、不太依赖 warmup，后来几乎所有大模型都改成了 Pre-LN（第 12 章细讲为什么）。</p>
+<p><img alt="Post-LN 和 Pre-LN" src="../figures/11-annotated-transformer-ln.png" />
+<em>图 11-1 · 左：论文的 Post-LN，LayerNorm 在残差加法之后，主干每层都被 norm；右：源码的 Pre-LN，LayerNorm 只在进子层之前，主干（灰色粗线）不经过 norm，最后补一个 LayerNorm</em></p>
+<p><strong>一句话</strong>：Annotated Transformer 的 SublayerConnection 是 x + Sublayer(LN(x))，也就是 Pre-LN，和论文的 Post-LN 不同，所以 Encoder、Decoder 最后各补了一个 LayerNorm。</p>
+<h3 id="layernorm-nnlayernorm-2026-11-25">第三步：它的 LayerNorm 和 nn.LayerNorm 不完全一样（2026-11-25）</h3>
+<p>源码自己写的 LayerNorm（L315–L328）：</p>
+<div class="arithmatex">\[\text{LN}_{\text{源码}}(x) = a\cdot\frac{x - \mu}{\text{std}(x) + \varepsilon} + b,\qquad \text{std 除以 } n - 1\]</div>
+<p>PyTorch 的 <code>nn.LayerNorm</code>：</p>
+<div class="arithmatex">\[\text{LN}_{\text{torch}}(x) = a\cdot\frac{x - \mu}{\sqrt{\text{var}(x) + \varepsilon}} + b,\qquad \text{var 除以 } n\]</div>
+<p>两处不同：标准差除以 n − 1（<code>x.std()</code> 默认无偏）还是 n；ε 加在根号外还是根号里。</p>
+<p><strong>数字演示</strong>（x = [1, 2, 3, 4]，a = 1、b = 0）：</p>
+<table>
+<thead>
+<tr>
+<th>写法</th>
+<th>标准差</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>源码</td>
+<td>√(5/3) ≈ 1.2910</td>
+<td>[−1.1619, −0.3873, 0.3873, 1.1619]</td>
+</tr>
+<tr>
+<td>nn.LayerNorm</td>
+<td>√(5/4) ≈ 1.1180</td>
+<td>[−1.3416, −0.4472, 0.4472, 1.3416]</td>
+</tr>
+</tbody>
+</table>
+<p>n = 4 时差了约 13%；d = 512 时只差 0.1%。可学习的 a、b 会吸收这点差别，训练效果几乎一样，但<strong>拿这份代码的权重去对 nn.LayerNorm 的输出，数字不会完全对上</strong>。a1 用的 RMSNorm 又是另一种写法（第 13 章）。</p>
+<p><strong>一句话</strong>：源码的 LayerNorm 用无偏标准差、ε 在根号外，nn.LayerNorm 用有偏方差、ε 在根号里；宽度大时差别很小，但逐位对数字时要注意。</p>
+<h3 id="label-smoothing2026-11-25">第四步：label smoothing：别让模型太自信（2026-11-25）</h3>
+<p>原版论文 §5.4（L409–L410）：训练时用 ε_ls = 0.1 的 label smoothing，困惑度变差，但 BLEU 变好。</p>
+<p><strong>做法</strong>（L1160–L1166）：目标分布不再是 one-hot，而是</p>
+<ul>
+<li>正确类给 1 − ε_ls = 0.9；</li>
+<li>剩下的 0.1 平均分给其他类（除去正确类和 padding，所以除以词表大小 − 2）；</li>
+<li>padding 那一列清零。</li>
+</ul>
+<p>再用 KL 散度（<code>nn.KLDivLoss</code>）比较模型的分布和这个目标分布（和交叉熵只差一个常数）。</p>
+<p><strong>数字演示</strong>（词表 5，padding 是 0，正确类 2）：目标分布 = [0, 0.0333, 0.9, 0.0333, 0.0333]。</p>
+<table>
+<thead>
+<tr>
+<th>模型的预测</th>
+<th>KL loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[0.01, 0.05, 0.9, 0.02, 0.02]（正确类 0.9）</td>
+<td>0.0205</td>
+</tr>
+<tr>
+<td>[0.001, 0.001, 0.996, 0.001, 0.001]（几乎 100% 自信）</td>
+<td>0.2594</td>
+</tr>
+</tbody>
+</table>
+<p><strong>太自信反而被罚</strong>（源码 L1228–L1240 的例子）：让正确类的概率从 0.25 一路涨到 0.97，loss 先降后升，在正确类概率 <strong>0.900</strong> 时最小。没有平滑时，loss 会一直降到概率为 1；有了平滑，模型最多“自信到 90%”就够了，logits 不会被推向无穷大。</p>
+<p><img alt="label smoothing 的 loss 曲线" src="../figures/11-annotated-transformer-ls.png" />
+<em>图 11-2 · 横轴是模型给正确类的概率（其余 3 类均分剩下的），纵轴是 loss。蓝：label smoothing（ε = 0.1）的 KL loss，在 0.9 处最低，再往上反而变大；灰虚线：普通交叉熵，一直降到概率为 1</em></p>
+<p><strong>一句话</strong>：label smoothing 把目标从 one-hot 改成“正确类 0.9、其余均分 0.1”，模型自信超过 0.9 反而被罚，防止 logits 无限变大。</p>
+<h3 id="noam-2026-11-25">第五步：原版的学习率：Noam 调度（2026-11-25）</h3>
+<p><code>rate()</code>（L1058–L1068）就是 AIAYN 式 3（L363–L376）：</p>
+<div class="arithmatex">\[\text{lr}(\text{step}) = \text{factor}\cdot d_{\text{model}}^{-0.5}\cdot\min(\text{step}^{-0.5},\ \text{step}\cdot\text{warmup}^{-1.5})\]</div>
+<p>两段：step &lt; warmup 时取后一项，线性上升；之后取前一项，按 1/√step 下降；两段在 step = warmup 时相等，那里是最高点。</p>
+<p><strong>数字演示</strong>（d = 512、warmup = 4000、factor = 1）：</p>
+<table>
+<thead>
+<tr>
+<th>step</th>
+<th>1</th>
+<th>1,000</th>
+<th>4,000</th>
+<th>16,000</th>
+<th>100,000</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>lr</td>
+<td>1.75e-7</td>
+<td>1.75e-4</td>
+<td><strong>6.99e-4</strong></td>
+<td>3.49e-4</td>
+<td>1.40e-4</td>
+</tr>
+</tbody>
+</table>
+<p>峰值 = 512^{-0.5} × 4000^{-0.5} ≈ 7.0 × 10⁻⁴；4 倍步数时降到一半（1/√4）。和第 4 章的 cosine 调度比：都有 warmup，但 Noam 的下降是 1/√step，永远不到底；cosine 在 Tc 步时降到预先定好的 αmin。源码里 <code>step = 0</code> 时改成 1（L1063–L1064），避免 0 的负数次方。</p>
+<p><strong>场景代码</strong>：源码里把 rate 接到 PyTorch 的调度器上（真实库调用的写法；本书环境没装 torch，没跑过）：</p>
+<pre><code class="language-python">optimizer = torch.optim.Adam(model.parameters(), lr=1.0, betas=(0.9, 0.98), eps=1e-9)
+lr_scheduler = LambdaLR(optimizer, lr_lambda=lambda step: rate(step, model_size=512, factor=1.0, warmup=4000))
+# 基础 lr 设成 1，真正的学习率完全由 rate() 决定
+</code></pre>
+<p><strong>一句话</strong>：原版学习率 = d^{-0.5}·min(step^{-0.5}, step·warmup^{-1.5})：warmup 步内线性升到峰值，之后按 1/√step 下降。</p>
+<h3 id="post-ln-pre-ln">动画演示：同一个输入走 Post-LN 和 Pre-LN</h3>
+<p><img alt="读原版源码" src="../animations/11-annotated-transformer.gif" /></p>
+<p>可交互版：<a href="../animations/11-annotated-transformer.html">animations/11-annotated-transformer.html</a>（滑块：叠几层；下拉切换 Post-LN / Pre-LN）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>每层的子层都是“乘 3 再加一点偏移”（第二步）；</li>
+<li>Post-LN：每层之后都被 norm，柱子的高度一直在 ±1.5 以内；</li>
+<li>Pre-LN：主干原样往下传，每层加一点，柱子越来越高，最后一层补的 LayerNorm 才把它拉回来。</li>
+</ol>
+<h2 id="_2">练习与作答记录</h2>
+<p><strong>题 1</strong>（第二步）：x = [0, 2]，子层是“加 1”（f(v) = v + 1），分别算 Post-LN 和 Pre-LN 的输出（LayerNorm 用有偏方差、ε 忽略）。</p>
+<p><strong>题 2</strong>（第三步）：x = [2, 4, 6]，源码的 LayerNorm 和 nn.LayerNorm 的输出各是多少（ε 忽略）？</p>
+<p><strong>题 3</strong>（第四步）：词表 6、padding 是 0、正确类 3、ε_ls = 0.2，目标分布是什么？</p>
+<p><strong>题 4</strong>（第五步）：d = 1024、warmup = 8000，学习率的峰值是多少，在第几步？第 32000 步是多少？</p>
+<h2 id="_3">口诀</h2>
+<blockquote>
+<p>一个类一个零件，L230 读到 L1172，前作从头拼一遍。<br />
+残差先 norm 再子层，源码偷懒成了 Pre-LN，最后补一个 norm。<br />
+源码 LayerNorm 无偏 std、ε 在根号外，宽了才和官方一样。<br />
+平滑目标零点九，其余均分；自信过了九成反而罚。<br />
+Noam 调度：线性升到 warmup，之后一除根号步。</p>
+</blockquote>
+<h2 id="_4">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B38–B39</a>（B38 SublayerConnection 的 Pre-LN 写法与 LayerNorm 的两处差别；B39 label smoothing 的目标分布与 Noam 学习率）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_5">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_6">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ The Annotated Transformer（Harvard NLP，2022 版）</td>
+<td>L230–L860（模型）；L1058–L1240（训练）</td>
+<td>原版的逐行实现</td>
+</tr>
+<tr>
+<td>★ AIAYN</td>
+<td>§3.4 嵌入乘 √d；§5.3 式 3 L363–L376；§5.4 L409–L410</td>
+<td>源码对照的论文原文</td>
+</tr>
+<tr>
+<td>Rethinking the Inception Architecture（Szegedy 等 2016）</td>
+<td>label smoothing 一节（本地没有文本版）</td>
+<td>label smoothing 的出处</td>
+</tr>
+<tr>
+<td>本书 <a href="../lessons/04-lr-schedule.html">第 4 章</a>、第 12 章</td>
+<td>调度；Pre-LN 为什么好训</td>
+<td>本章两个改动的来龙去脉</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">数学原理</h3>
+<ul>
+<li><strong>Pre-LN 的主干</strong>：x_L = x_0 + Σ f_l(LN(x_l))，主干不经过 norm，方差随层数增长。</li>
+<li><strong>无偏 vs 有偏</strong>：std_无偏 = std_有偏 × √(n/(n − 1))，n 大时趋于 1。</li>
+<li><strong>label smoothing 的最优</strong>：目标分布 q 下，KL(q‖p) 在 p = q 时最小，所以正确类概率的最优值就是 1 − ε_ls。</li>
+<li><strong>Noam 调度的峰值</strong>：两项在 step = warmup 处相等，峰值 = d^{-0.5}·warmup^{-0.5}。</li>
+</ul>
+<h3 id="_8">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\text{LN}(x + \text{Sublayer}(x))\)</span></td>
+<td>论文的 Post-LN</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x + \text{Sublayer}(\text{LN}(x))\)</span></td>
+<td>源码的 Pre-LN</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(a(x - \mu)/(\text{std}_{n-1} + \varepsilon) + b\)</span></td>
+<td>源码的 LayerNorm</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(q = (1 - \varepsilon_{ls})\cdot\text{onehot} + \frac{\varepsilon_{ls}}{V - 2}\cdot(\text{其余})\)</span></td>
+<td>平滑后的目标</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(d^{-0.5}\min(\text{step}^{-0.5}, \text{step}\cdot\text{warmup}^{-1.5})\)</span></td>
+<td>Noam 学习率</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch11_annotated_transformer.py</code>，配套测试 <code>tests/test_ch11.py</code>，notebook 在 <code>notebooks/ch11_annotated_transformer.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch11_annotated_transformer.py  
+uv run pytest tests/test_ch11.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第二步 Post-LN vs Pre-LN</td>
+<td>两种残差</td>
+<td><code>post_ln</code>、<code>pre_ln</code></td>
+<td>[−1.34, …] vs [−3.02, …, 8.02]</td>
+</tr>
+<tr>
+<td>第三步 两种 LayerNorm</td>
+<td>n − 1 vs n</td>
+<td><code>layer_norm_annotated</code>、<code>layer_norm_torch</code></td>
+<td>−1.1619 vs −1.3416</td>
+</tr>
+<tr>
+<td>第四步 label smoothing</td>
+<td>目标分布 + KL</td>
+<td><code>smoothed_target()</code>、<code>kl_loss()</code>、<code>confidence_curve()</code></td>
+<td>最低点在 0.900</td>
+</tr>
+<tr>
+<td>第五步 Noam 调度</td>
+<td>min 两项</td>
+<td><code>rate(step)</code></td>
+<td>峰值 6.99e-4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">return x + sub(layer_norm_torch(x))              # 源码的 SublayerConnection：先 norm
+return (x - x.mean()) / (x.std(ddof=1) + eps)    # 源码的 LayerNorm：无偏 std，ε 在外
+d = np.full(size, smoothing / (size - 2)); d[target] = 1 - smoothing; d[padding_idx] = 0
+return factor * model_size**-0.5 * min(step**-0.5, step * warmup**-1.5)
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong><code>x.std()</code> 的默认值</strong>：PyTorch 的 <code>Tensor.std()</code> 默认无偏（除以 n − 1），NumPy 的 <code>np.std()</code> 默认有偏（除以 n）。同一个名字，两个库默认不一样，这里用 <code>ddof=1</code> 对齐源码。</li>
+<li><strong>KLDivLoss 吃的是 log 概率</strong>：源码的 <code>Generator</code> 输出 log_softmax，<code>LabelSmoothing</code> 直接把它传给 <code>KLDivLoss</code>；q = 0 的格（padding）不贡献 loss。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>confidence_curve</code> 的 smoothing 改成 0.3，最低点移到哪？</li>
+<li>把 <code>pre_ln</code> 叠三层（每层子层都乘 3），主干上的数长到多大？</li>
+</ul><nav class="pager"><a href="10-induction-heads.html">← 第 10 章 · 残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="44-vit.html">第 44 章 · ViT：把图片切成小块，当成一句话 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

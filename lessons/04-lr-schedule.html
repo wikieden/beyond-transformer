@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 4 章 · 学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html" class="cur"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="4">第 4 章 · 学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</h1><div class="run"><a class="btn" href="../animations/04-lr-schedule.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch04_lr_schedule.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch04_lr_schedule.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch04_lr_schedule.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：为什么训练时学习率不是一个固定的数，而是先升后降？warmup（预热）在防什么？cosine（余弦）退火的公式怎么读？偶尔一个 batch 的梯度特别大，把训练带崩了，梯度裁剪怎么把它压住？裁剪是一个参数一个参数地裁，还是整体裁？<br />
+讲解日期：2026-11-25 · 上一章：<a href="../lessons/03-optimizers.html">第 3 章 优化器</a> · 下一章：<a href="../lessons/05-training-loop.html">第 5 章 一次完整训练</a><br />
+对应原文：CS336 a1 handout <code>cs336-spring2025/materials/text/cs336_spring2025_assignment1_basics.txt</code> §4.4 L1610–L1630（warmup + cosine 的三段公式）、§4.5 L1648–L1655（按全局 ℓ2 范数裁剪，ε = 10⁻⁶）；AIAYN <code>transformer-deep-dive/materials/text/papers/attention-is-all-you-need-1706.03762.txt</code> §5.3 式 3 L363–L376（原版的 warmup + 按 step^{-0.5} 衰减）<br />
+本章缩写：lr = learning rate（学习率）；αmax、αmin = 最大、最小学习率；Tw = warm-up 步数（预热步数）；Tc = cosine annealing 步数（余弦退火结束的那一步）；cosine annealing（余弦退火：学习率按余弦曲线从高降到低）；ℓ2 范数（L2 norm：各分量平方和再开根号，也就是向量的长度）；M = max norm（梯度范数的上限）；WSD = Warmup-Stable-Decay（预热 / 平稳 / 衰减三段式调度）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="warmup-cosine2026-11-25">第一步：warmup + cosine：先慢慢加速，再慢慢刹车（2026-11-25）</h3>
+<p><strong>类比：开车。</strong> 刚上路先慢慢加速（引擎还没热，路况也不熟）；上了高速开得最快；快到目的地慢慢减速，好停准位置。学习率也是这样：开头小、中段大、结尾小。</p>
+<p>a1 §4.4（L1619–L1630）的三段公式：</p>
+<div class="arithmatex">\[\alpha_t = \begin{cases} \dfrac{t}{T_w}\alpha_{\max} &amp; t &lt; T_w\ \text{（warmup：线性升）}\\[2mm] \alpha_{\min} + \dfrac12\left(1 + \cos\left(\dfrac{t - T_w}{T_c - T_w}\pi\right)\right)(\alpha_{\max} - \alpha_{\min}) &amp; T_w \le t \le T_c\ \text{（余弦降）}\\[2mm] \alpha_{\min} &amp; t &gt; T_c\ \text{（停在最低）}\end{cases}\]</div>
+<p><strong>怎么读中间那段</strong>：<span class="arithmatex">\(\frac{t - T_w}{T_c - T_w}\)</span> 是“退火走完了几成”，从 0 走到 1；乘 π 后 cos 从 1 走到 −1；<span class="arithmatex">\(\frac12(1 + \cos)\)</span> 就从 1 平滑地降到 0；再按比例放到 αmax 和 αmin 之间。</p>
+<p><strong>数字演示</strong>（αmax = 10⁻³、αmin = 10⁻⁴、Tw = 100、Tc = 1000）：</p>
+<table>
+<thead>
+<tr>
+<th>t</th>
+<th>0</th>
+<th>50</th>
+<th>100</th>
+<th>325</th>
+<th>550</th>
+<th>775</th>
+<th>1000</th>
+<th>1200</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>退火走了几成</td>
+<td>—</td>
+<td>—</td>
+<td>0</td>
+<td>0.25</td>
+<td>0.5</td>
+<td>0.75</td>
+<td>1</td>
+<td>—</td>
+</tr>
+<tr>
+<td>αt（× 10⁻³）</td>
+<td>0</td>
+<td>0.5</td>
+<td>1.0</td>
+<td>0.868</td>
+<td>0.55</td>
+<td>0.232</td>
+<td>0.1</td>
+<td>0.1</td>
+</tr>
+</tbody>
+</table>
+<p>退火走到一半（t = 550）时，学习率正好在两端的中点 0.55 × 10⁻³。余弦曲线开头和结尾都平、中间陡：刚过峰值时降得慢，最后一段也降得慢，让模型在低学习率下“精修”一段时间。</p>
+<p>原版 Transformer 用的是另一种：<span class="arithmatex">\(d_{\text{model}}^{-0.5}\min(\text{step}^{-0.5}, \text{step}\cdot\text{warmup}^{-1.5})\)</span>（AIAYN 式 3，L363–L376），先线性升，再按 1/√step 慢慢降（<a href="../lessons/11-annotated-transformer.html">第 11 章</a>用源码算一遍）。现在还常见 WSD：预热后保持不变，最后 10–20% 的步数快速降下来，好处是可以中途决定训多久（见《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/43-modern-optimizers.html">第 43 章</a>）。</p>
+<p><img alt="warmup + cosine 调度" src="../figures/04-lr-schedule-curve.png" />
+<em>图 4-1 · αmax = 10⁻³、αmin = 10⁻⁴、Tw = 100、Tc = 1000 的学习率曲线。灰色阴影是 warmup 段；点是表里的 8 个取值；1000 步以后停在 αmin</em></p>
+<p><strong>一句话</strong>：学习率先在 Tw 步里从 0 线性升到 αmax，再按余弦曲线在 Tc 步时降到 αmin，之后保持不变。</p>
+<h3 id="warmup2026-11-25">第二步：为什么要 warmup（2026-11-25）</h3>
+<p>刚开始训练时有两个问题：</p>
+<ol>
+<li><strong>参数是随机的，梯度方向乱、大小也不稳</strong>：一上来就用大学习率，可能一步就把模型推到很差的地方，之后很难回来。</li>
+<li><strong>Adam 的 v̂ 还没估准</strong>：第 3 章说 Adam 每一步除以 <span class="arithmatex">\(\sqrt{\hat v}\)</span>。前几步 v̂ 只看了很少几个梯度，可能偶然很小，一除步子就特别大。</li>
+</ol>
+<p><strong>数字演示</strong>（梯度服从均值 0.1、标准差 1 的正态分布，真实的 √E[g²] ≈ 1.005；重复 2000 次，看 √v̂ 的 90% 范围）：</p>
+<table>
+<thead>
+<tr>
+<th>只看了几步</th>
+<th>√v̂ 的 90% 范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>[0.061, 1.922]</td>
+</tr>
+<tr>
+<td>5</td>
+<td>[0.505, 1.497]</td>
+</tr>
+<tr>
+<td>50</td>
+<td>[0.839, 1.165]</td>
+</tr>
+<tr>
+<td>500</td>
+<td>[0.952, 1.057]</td>
+</tr>
+</tbody>
+</table>
+<p>第 1 步时 √v̂ 有 5% 的可能小于 0.061，这时步长被放大 16 倍以上。warmup 让这几步的学习率也很小，等 v̂ 估准了再放开。还有一个原因是结构上的：原版的 Post-LN 在开头输出层附近梯度很大，离开 warmup 就训不动（第 12 章讲 Pre-LN 时细说）。</p>
+<p><strong>一句话</strong>：开头参数随机、Adam 的 v̂ 也没估准，大学习率容易一步走坏；warmup 让最初几百步走小步。</p>
+<h3 id="2026-11-25">第三步：梯度裁剪：按全局长度整体缩小（2026-11-25）</h3>
+<p><strong>类比：限速。</strong> 平时开多快都行，超过限速就整体按比例降到限速以下，方向不变。</p>
+<p>a1 §4.5（L1648–L1655）：把<strong>所有参数</strong>的梯度拼成一个大向量 g，算它的长度（ℓ2 范数）：</p>
+<div class="arithmatex">\[\|g\|_2 = \sqrt{\sum_i g_i^2},\qquad g \leftarrow \begin{cases} g &amp; \|g\|_2 \le M\\ g\cdot\dfrac{M}{\|g\|_2 + \varepsilon} &amp; \|g\|_2 &gt; M\end{cases}\]</div>
+<p><strong>数字演示</strong>（M = 1，ε = 10⁻⁶）：</p>
+<table>
+<thead>
+<tr>
+<th>梯度</th>
+<th>范数</th>
+<th>缩放系数</th>
+<th>裁后</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[3, 4]</td>
+<td>5</td>
+<td>0.2</td>
+<td>[0.6, 0.8]</td>
+</tr>
+<tr>
+<td>[0.3, 0.4]</td>
+<td>0.5</td>
+<td>1（不动）</td>
+<td>[0.3, 0.4]</td>
+</tr>
+<tr>
+<td>参数 1：[3, 0]；参数 2：[[0, 4], [0, 0]]</td>
+<td>5（合起来算）</td>
+<td>0.2</td>
+<td>[0.6, 0]；[[0, 0.8], [0, 0]]</td>
+</tr>
+</tbody>
+</table>
+<p>第三行是两个参数：各自的范数是 3 和 4，单独裁的话参数 2 被压得更多，梯度的方向就变了。<strong>整体裁剪</strong>只改长度、不改方向：模型这一步仍然往“正确的方向”走，只是走得没那么猛。裁后范数是 1/(1 + 10⁻⁶)，略小于 M（L1655）。</p>
+<p>大模型训练常取 M = 1.0。梯度范数是训练日志里最该盯的曲线之一：偶尔的尖峰被裁掉没关系；如果几乎每步都在裁，说明学习率太大或训练已经不稳了（第 18 章的 logit 发散）。</p>
+<p><img alt="梯度范数与裁剪" src="../figures/04-lr-schedule-clip.png" />
+<em>图 4-2 · 一段训练日志里的梯度范数（示意）。灰线是裁剪前，偶尔有尖峰；红虚线是上限 M = 1；蓝线是裁剪后，尖峰被压到 1 以下，其余不变</em></p>
+<p><strong>场景代码</strong>：PyTorch 训练循环里的调度和裁剪（真实库调用；本书环境没装 torch，没跑过）：</p>
+<pre><code class="language-python">sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda t: lr_fn(t) / opt.defaults[&quot;lr&quot;])  # lr_fn 是第一步的三段公式
+loss.backward()
+gnorm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # 返回裁剪前的总范数，记进日志
+opt.step(); sched.step(); opt.zero_grad()
+</code></pre>
+<p><strong>一句话</strong>：梯度裁剪把所有参数的梯度当一个向量，长度超过 M 就整体按比例缩到 M，方向不变；裁剪前的范数要记进日志。</p>
+<h3 id="_2">动画演示：学习率曲线和梯度裁剪</h3>
+<p><img alt="学习率调度与梯度裁剪" src="../animations/04-lr-schedule.gif" /></p>
+<p>可交互版：<a href="../animations/04-lr-schedule.html">animations/04-lr-schedule.html</a>（滑块：当前步 t、warmup 步数 Tw；右边拖梯度的长度看裁剪）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>左边是学习率曲线，红点是当前步 t，右上角写出当前的 αt（第一步）；</li>
+<li>把 Tw 拉长：上升段变缓，余弦段变短；</li>
+<li>右边：灰色箭头是原梯度，蓝色箭头是裁剪后的；长度超过圆圈（M = 1）就被缩回圆上，方向不变（第三步）。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：αmax = 6 × 10⁻⁴、αmin = 6 × 10⁻⁵、Tw = 200、Tc = 2000。t = 100、t = 1100、t = 3000 时学习率各是多少？</p>
+<p><strong>题 2</strong>（第二步）：不用 warmup、第 1 步就用 αmax，Adam 第 1 步每个参数走多远（用第 3 章的偏差修正）？为什么说“第 1 步的步长和梯度大小无关”在这里反而是个问题？</p>
+<p><strong>题 3</strong>（第三步）：两个参数的梯度是 [6, 8] 和 [0, 0]，M = 5。整体裁剪后各是多少？如果改成每个参数单独裁到 5，结果一样吗？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>先热身、再全速、最后慢慢刹：线性升到峰，余弦降到底，之后停在最低。<br />
+退火走一半，学习率在中点。<br />
+开头梯度乱、v̂ 不准，warmup 走小步。<br />
+所有梯度拼一条，超长就按比例缩，方向不变；裁前范数记日志。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B24–B25</a>（B24 warmup + cosine 的三段公式与 warmup 的理由；B25 按全局 ℓ2 范数的梯度裁剪）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ CS336 a1 handout</td>
+<td>§4.4 L1610–L1630；§4.5 L1648–L1655</td>
+<td>作业里的调度公式和裁剪规则</td>
+</tr>
+<tr>
+<td>★ AIAYN</td>
+<td>§5.3 式 3 L363–L376</td>
+<td>原版的 warmup + 1/√step 调度</td>
+</tr>
+<tr>
+<td>SGDR（Loshchilov &amp; Hutter 2016）</td>
+<td>全文（本地没有文本版）</td>
+<td>余弦退火和 warm restarts 的出处</td>
+</tr>
+<tr>
+<td>《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/43-modern-optimizers.html">第 43 章</a>、<a href="https://wikieden.github.io/math-and-eval-stats/lessons/44-training-stability.html">第 44 章</a></td>
+<td>WSD 调度；训练稳定性</td>
+<td>现代调度和 loss 尖峰</td>
+</tr>
+<tr>
+<td>本书 <a href="../lessons/11-annotated-transformer.html">第 11 章</a></td>
+<td>rate() 函数</td>
+<td>原版调度的代码实现</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>余弦退火</strong>：<span class="arithmatex">\(\frac12(1 + \cos(\pi s))\)</span> 在 s = 0、1 处导数为 0，开头结尾都平滑。</li>
+<li><strong>v̂ 的估计误差</strong>：只看 k 个样本时，v̂ 的相对标准差约 √(2/k)（正态梯度的平方是卡方分布）。</li>
+<li><strong>整体裁剪保方向</strong>：g 乘一个正数 c，方向不变，长度变成 c‖g‖。</li>
+<li><strong>裁剪 vs 降学习率</strong>：整体裁剪等价于这一步的学习率乘 M/‖g‖，只在梯度过大时生效。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\alpha_t = \frac{t}{T_w}\alpha_{\max}\)</span>（t &lt; Tw）</td>
+<td>warmup</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\alpha_t = \alpha_{\min} + \frac12(1 + \cos(\frac{t - T_w}{T_c - T_w}\pi))(\alpha_{\max} - \alpha_{\min})\)</span></td>
+<td>余弦退火</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\alpha_t = \alpha_{\min}\)</span>（t &gt; Tc）</td>
+<td>退火后</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(d^{-0.5}\min(\text{step}^{-0.5}, \text{step}\cdot\text{warmup}^{-1.5})\)</span></td>
+<td>原版 Transformer 的调度</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(g \leftarrow g\cdot M/(\lVert g\rVert_2 + \varepsilon)\)</span>（‖g‖ &gt; M 时）</td>
+<td>梯度裁剪</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch04_lr_schedule.py</code>，配套测试 <code>tests/test_ch04.py</code>，notebook 在 <code>notebooks/ch04_lr_schedule.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch04_lr_schedule.py  
+uv run pytest tests/test_ch04.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 调度</td>
+<td>三段公式</td>
+<td><code>lr_at(t)</code></td>
+<td>t = 550 → 5.5e-4</td>
+</tr>
+<tr>
+<td>第二步 v̂ 的噪声</td>
+<td>滑动平均</td>
+<td><code>early_v_noise()</code></td>
+<td>1 步 [0.061, 1.922] → 500 步 [0.952, 1.057]</td>
+</tr>
+<tr>
+<td>第三步 裁剪</td>
+<td>整体缩放</td>
+<td><code>clip(grads)</code></td>
+<td>[3, 4] → [0.6, 0.8]</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">if t &lt; tw: return t / tw * amax                                          # warmup
+if t &lt;= tc: return amin + 0.5 * (1 + math.cos((t - tw) / (tc - tw) * math.pi)) * (amax - amin)
+norm = math.sqrt(sum(float((g * g).sum()) for g in grads))               # 所有参数拼起来的长度
+return [g * (max_norm / (norm + eps)) for g in grads]                    # 超了就整体缩
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>边界的等号</strong>：a1 写的是 t &lt; Tw 走 warmup、Tw ≤ t ≤ Tc 走余弦，所以 t = Tw 时正好是 αmax，t = Tc 时正好是 αmin，两段接得上。</li>
+<li><strong>这里只是把公式代进去</strong>：作业的 <code>get_lr_cosine_schedule</code> 和原地修改梯度的 <code>gradient_clipping</code> 两个 adapter 留给自己写。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>lr_at</code> 的 αmin 改成 0，曲线的后半段怎么变？</li>
+<li>把 <code>early_v_noise</code> 里的梯度均值从 0.1 改成 2，第 1 步的范围还那么宽吗？</li>
+</ul><nav class="pager"><a href="03-optimizers.html">← 第 3 章 · 优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="05-training-loop.html">第 5 章 · 一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 6 章 · attention 的起源：Bahdanau 的加性打分 vs 点积打分 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html" class="cur"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="6-attention-bahdanau-vs">第 6 章 · attention 的起源：Bahdanau 的加性打分 vs 点积打分</h1><div class="run"><a class="btn" href="../animations/06-bahdanau.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch06_bahdanau.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch06_bahdanau.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch06_bahdanau.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：attention 不是 Transformer 发明的，它最早出现在 2014 年的 RNN 翻译模型里。当时的模型有什么毛病，逼出了 attention？Bahdanau 的“对齐模型”怎么给原文每个词打分？加性打分 vᵀtanh(Ws + Uh) 和后来 Transformer 用的点积打分 sᵀh 有什么区别，为什么最后点积赢了？<br />
+讲解日期：2026-11-25 · 上一章：<a href="../lessons/05-training-loop.html">第 5 章 一次完整训练</a> · 下一章：<a href="../lessons/07-formal-algorithms.html">第 7 章 把 Transformer 写成伪代码</a><br />
+对应原文：Bahdanau <code>transformer-deep-dive/materials/text/papers/bahdanau-attention-1409.0473.txt</code> 摘要与引言“固定长度向量是瓶颈” L25–L27、L47–L51；§3.1 式 (4)–(6) L154–L190（上下文 c_i、权重 α_ij、对齐模型 e_ij）；附录 A.1.2 L813（e = vᵀtanh(W s + U h)）；隐层维数 1000 L310–L312、L953–L955；AIAYN §3.2.1 L177–L186（加性 vs 点积）<br />
+本章缩写：RNN = Recurrent Neural Network（循环 / 神经 / 网络：一个词一个词地读，每读一个更新一次隐状态）；encoder-decoder（编码器-解码器：一个读原文、一个写译文）；h_j = 原文第 j 个词的注释向量（annotation，编码器的输出）；s_i = 解码器写第 i 个词时的隐状态；e_ij = 对齐分数；α_ij = 对齐权重（e 的 softmax）；c_i = 上下文向量（context）；tanh = 双曲正切（把数压到 (−1, 1)）；d_a = 对齐模型的隐层维数（原文记作 n′）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-25">第一步：瓶颈：整句话压成一个固定长度的向量（2026-11-25）</h3>
+<p><strong>类比：听完一整段话再复述。</strong> 早期的翻译模型像一个同声传译员，却被规定“听完整句，只能在一张小卡片上记一个摘要，然后只看卡片翻译”。句子短还行，句子一长，卡片写不下，后半句翻得一塌糊涂。</p>
+<p>2014 年的 RNN 编码器-解码器就是这样：编码器读完原文，最后的隐状态就是那张“卡片”，一个固定长度的向量；解码器只靠它生成整句译文。Bahdanau 的论文开头就点出（L25–L27、L47–L51）：固定长度的向量是瓶颈，句子越长越糟。</p>
+<p><strong>数字演示</strong>（卡片只有 4 个数）：</p>
+<table>
+<thead>
+<tr>
+<th>句长</th>
+<th>平均每个词分到几个数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td>20</td>
+<td>0.20</td>
+</tr>
+<tr>
+<td>80</td>
+<td>0.05</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话</strong>：老式编码器-解码器把整句话压进一个固定长度的向量，句子越长信息丢得越多。</p>
+<h3 id="bahdanau2026-11-25">第二步：Bahdanau：写每个词时回头加权看原文（2026-11-25）</h3>
+<p><strong>类比：翻译时一边写一边回头看原文。</strong> 不再只靠卡片，而是把原文每个词的“笔记” <span class="arithmatex">\(h_j\)</span> 都留着。每写一个译文词，先问“现在最该看原文哪几个词”，给每个词打个分，换成权重，再把笔记按权重加起来，当作这一步的参考。</p>
+<p>§3.1（L154–L190）：</p>
+<div class="arithmatex">\[e_{ij} = a(s_{i-1}, h_j),\qquad \alpha_{ij} = \frac{\exp(e_{ij})}{\sum_k \exp(e_{ik})},\qquad c_i = \sum_j \alpha_{ij}h_j\]</div>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(s_{i-1}\)</span></td>
+<td>解码器写上一个词之后的状态：“我现在写到哪了”</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(h_j\)</span></td>
+<td>原文第 j 个词的笔记（双向 RNN 的输出，前后文都看过）</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(e_{ij}\)</span></td>
+<td>对齐分数：写第 i 个词时，原文第 j 个词有多相关</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\alpha_{ij}\)</span></td>
+<td>softmax 后的权重，加起来是 1</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(c_i\)</span></td>
+<td>这一步的上下文：原文笔记的加权平均，每一步都不一样</td>
+</tr>
+</tbody>
+</table>
+<p>这里的打分函数 a 是一个小的前馈网络（附录 A.1.2，L813），叫<strong>加性打分</strong>（additive）：</p>
+<div class="arithmatex">\[e_{ij} = v^\top\tanh(W s_{i-1} + U h_j)\]</div>
+<p>s 和 h 各自乘一个矩阵变到同一个空间，<strong>加起来</strong>过 tanh，再用向量 v 收成一个数。</p>
+<p><strong>数字演示</strong>（编的 2 维小例子：原文 3 个词 h₁ = [1, 0]、h₂ = [0, 1]、h₃ = [1, 1]；s = [0, 2]；W = I，U = [[1, 0], [0, −1]]，v = [1, 1]）：</p>
+<table>
+<thead>
+<tr>
+<th>j</th>
+<th>U h_j</th>
+<th>W s + U h_j</th>
+<th>tanh 后</th>
+<th>e = v·tanh</th>
+<th>α</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>[1, 0]</td>
+<td>[1, 2]</td>
+<td>[0.762, 0.964]</td>
+<td>1.7256</td>
+<td>0.4549</td>
+</tr>
+<tr>
+<td>2</td>
+<td>[0, −1]</td>
+<td>[0, 1]</td>
+<td>[0, 0.762]</td>
+<td>0.7616</td>
+<td>0.1735</td>
+</tr>
+<tr>
+<td>3</td>
+<td>[1, −1]</td>
+<td>[1, 1]</td>
+<td>[0.762, 0.762]</td>
+<td>1.5232</td>
+<td>0.3716</td>
+</tr>
+</tbody>
+</table>
+<p>上下文 c = 0.4549·h₁ + 0.1735·h₂ + 0.3716·h₃ = <strong>[0.8265, 0.5451]</strong>。</p>
+<p><img alt="带注意力的编码器-解码器" src="../figures/06-bahdanau-arch.png" />
+<em>图 6-1 · 下面一排是双向 RNN 读原文得到的笔记 h₁…h₄；上面是解码器。写第 i 个词时，用 s_{i−1} 给每个 h_j 打分，softmax 成 α（线越粗权重越大），加权得到 c_i，再和 s_{i−1}、上一个词一起算出 s_i 和下一个词</em></p>
+<p><strong>一句话</strong>：Bahdanau 让解码器每写一个词，就用当前状态给原文每个词打分、softmax 成权重、加权求出这一步的上下文，原文不再被压进一个向量。</p>
+<h3 id="2026-11-25_1">第三步：点积打分：不用学参数，一次矩阵乘法算完（2026-11-25）</h3>
+<p>Transformer 把打分换成了更简单的点积（前作<a href="https://wikieden.github.io/transformer-visual/lessons/02-dot-product.html">第 2 章</a>、<a href="https://wikieden.github.io/transformer-visual/lessons/11-matrix-qk.html">第 11 章</a>）：</p>
+<div class="arithmatex">\[e_j = s^\top h_j\]</div>
+<p><strong>数字演示</strong>（同样的 s 和 h）：</p>
+<table>
+<thead>
+<tr>
+<th>j</th>
+<th>sᵀh_j</th>
+<th>α</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>0.0634</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2</td>
+<td>0.4683</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td>0.4683</td>
+</tr>
+</tbody>
+</table>
+<p>c = <strong>[0.5317, 0.9366]</strong>。两种打分给出的权重完全不同：加性打分里 U 把 h 的第 2 维翻了号，所以它“喜欢” h₁；点积直接看方向是否一致，s = [0, 2] 只看第 2 维，喜欢 h₂、h₃。打分函数本身就决定了“什么算相关”。</p>
+<p><img alt="两种打分给出的对齐权重" src="../figures/06-bahdanau-scores.png" />
+<em>图 6-2 · 同一个 s、同样三个 h，左边是加性打分的权重 α，右边是点积打分的权重。加性打分有可学的 W、U、v，能学出任意的“相关”标准；点积只看两个向量方向是否一致</em></p>
+<p><strong>一句话</strong>：点积打分 sᵀh 没有参数，只看两个向量是否同向；加性打分用一个小网络，能学出更灵活的“相关”标准。</p>
+<h3 id="2026-11-25_2">第四步：为什么最后点积赢了（2026-11-25）</h3>
+<p>AIAYN §3.2.1（L177–L186）说得很直接：两种打分理论复杂度差不多，但<strong>点积在实践中快得多、省内存得多</strong>，因为它就是一次矩阵乘法，能用高度优化的矩阵乘法代码。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>加性打分</th>
+<th>点积打分</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>要学的参数</td>
+<td>W（d_a × d_s）、U（d_a × d_h）、v（d_a）</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Bahdanau 的设定（d_s = 1000，双向 h = 2000，d_a = 1000，L953–L955）</td>
+<td>3,001,000</td>
+<td>0</td>
+</tr>
+<tr>
+<td>n 个 query × m 个 key 怎么算</td>
+<td>每一对都要过一次 tanh 网络</td>
+<td>QKᵀ 一次矩阵乘法</td>
+</tr>
+<tr>
+<td>维数大时</td>
+<td>稳定</td>
+<td>分数方差随 d 增大，要除以 √d（前作<a href="https://wikieden.github.io/transformer-visual/lessons/08-sqrt-dk.html">第 8 章</a>）</td>
+</tr>
+</tbody>
+</table>
+<p>AIAYN 还提到：d_k 小时两者效果差不多，d_k 大时不缩放的点积不如加性打分（L184–L186），原因是点积太大让 softmax 饱和，所以才有了 <span class="arithmatex">\(1/\sqrt{d_k}\)</span>。缩放修好了这个弱点，点积就全面胜出。另外，Transformer 里的 Q、K 本身就是输入乘可学的矩阵 <span class="arithmatex">\(W_Q\)</span>、<span class="arithmatex">\(W_K\)</span> 得到的，点积 <span class="arithmatex">\((W_Q x)^\top(W_K y)\)</span> 也有了可学的“相关”标准，只是把它做成了双线性的形式。</p>
+<p><strong>场景代码</strong>：PyTorch 里的两种打分（真实库调用；本书环境没装 torch，没跑过）：</p>
+<pre><code class="language-python"># 加性打分：每一对 (s, h) 都过一个小网络
+e_add = (v * torch.tanh(W(s)[:, None, :] + U(h)[None, :, :])).sum(-1)   # (n, m)
+# 点积打分：一次矩阵乘法
+e_dot = (q @ k.transpose(-2, -1)) / math.sqrt(q.size(-1))                 # (n, m)
+out = F.scaled_dot_product_attention(q, k, v)                            # 现在的标准写法
+</code></pre>
+<p><strong>一句话</strong>：点积打分没有参数、一次矩阵乘法就算完，配上 1/√d 缩放后效果不输加性打分，所以 Transformer 选了它。</p>
+<h3 id="_2">动画演示：每写一个词，回头看原文哪几个</h3>
+<p><img alt="attention 的起源" src="../animations/06-bahdanau.gif" /></p>
+<p>可交互版：<a href="../animations/06-bahdanau.html">animations/06-bahdanau.html</a>（▶ 播放：解码器一个词一个词地写；下拉切换加性 / 点积打分）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>下面一排是原文 4 个词，上面一排是正在写的译文（第二步）；</li>
+<li>每写一个词，从它连到原文每个词的线的粗细就是 α，右边的条形图给出具体数值；</li>
+<li>切换成点积打分：同一步的权重分布变了（第三步）。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第二步）：原文 2 个词，对齐分数 e = [1, 3]，h₁ = [2, 0]、h₂ = [0, 2]。α 和上下文 c 各是多少？（提示：e² ≈ 7.389）</p>
+<p><strong>题 2</strong>（第三步）：s = [1, 1]，h₁ = [1, 0]、h₂ = [0, 1]、h₃ = [1, 1]，点积打分的 e 和 α 各是多少？</p>
+<p><strong>题 3</strong>（第四步）：d_s = d_h = 512、d_a = 256，加性打分要学多少个参数？n = 100 个 query、m = 100 个 key 时，加性打分要过几次 tanh 网络？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>整句压一张卡片，句子一长就写不下。<br />
+每写一个词回头看，打分、softmax、加权求上下文。<br />
+加性打分：各乘一矩阵，加起来过 tanh，再用 v 收；<br />
+点积打分：方向一致就高分，没有参数，一次矩阵乘。<br />
+点积快又省，除以根号 d，就把加性比下去。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B28–B29</a>（B28 编码器-解码器的瓶颈与 Bahdanau 的 e、α、c；B29 加性打分 vs 点积打分，点积为什么胜出）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Bahdanau, Cho, Bengio 2015</td>
+<td>引言 L25–L51；§3.1 L154–L190；附录 A.1.2 L813</td>
+<td>attention 的起源、加性打分</td>
+</tr>
+<tr>
+<td>★ AIAYN</td>
+<td>§3.2.1 L177–L186</td>
+<td>为什么选点积、为什么要缩放</td>
+</tr>
+<tr>
+<td>Luong 等 2015，Effective Approaches to Attention-based NMT</td>
+<td>§3.1（本地没有文本版）</td>
+<td>点积、general、concat 三种打分的比较</td>
+</tr>
+<tr>
+<td>前作 <a href="https://wikieden.github.io/transformer-visual/lessons/02-dot-product.html">第 2 章 点积</a>、<a href="https://wikieden.github.io/transformer-visual/lessons/08-sqrt-dk.html">第 8 章 √d_k</a></td>
+<td>全部</td>
+<td>点积打分和缩放</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>加权平均</strong>：α 非负、和为 1，c 是 h 的凸组合，落在 h 们张成的“范围”里。</li>
+<li><strong>加性打分的表达力</strong>：vᵀtanh(Ws + Uh) 是一个单隐层网络，能逼近任意的打分函数（隐层够宽时）。</li>
+<li><strong>点积打分</strong>：sᵀh = ‖s‖‖h‖cos θ；配上可学的投影就是双线性形式 xᵀW_Qᵀ W_K y。</li>
+<li><strong>点积的方差</strong>：分量独立、均值 0、方差 1 时，d 维点积的方差是 d，所以要除以 √d。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(e_{ij} = v^\top\tanh(W s_{i-1} + U h_j)\)</span></td>
+<td>加性打分</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(e_{ij} = s^\top h_j\)</span></td>
+<td>点积打分</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\alpha_{ij} = \exp(e_{ij})/\sum_k\exp(e_{ik})\)</span></td>
+<td>对齐权重</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(c_i = \sum_j \alpha_{ij}h_j\)</span></td>
+<td>上下文向量</td>
+</tr>
+<tr>
+<td>参数 = d_a·d_s + d_a·d_h + d_a</td>
+<td>加性打分要学的参数</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch06_bahdanau.py</code>，配套测试 <code>tests/test_ch06.py</code>，notebook 在 <code>notebooks/ch06_bahdanau.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch06_bahdanau.py  
+uv run pytest tests/test_ch06.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 瓶颈</td>
+<td>d / n</td>
+<td><code>bottleneck()</code></td>
+<td>0.80、0.20、0.05</td>
+</tr>
+<tr>
+<td>第二步 加性打分</td>
+<td>vᵀtanh(Ws + Uh)</td>
+<td><code>additive_scores()</code>、<code>context()</code></td>
+<td>α = [0.4549, 0.1735, 0.3716]</td>
+</tr>
+<tr>
+<td>第三步 点积打分</td>
+<td>sᵀh</td>
+<td><code>dot_scores()</code></td>
+<td>α = [0.0634, 0.4683, 0.4683]</td>
+</tr>
+<tr>
+<td>第四步 参数量</td>
+<td>d_a(d_s + d_h + 1)</td>
+<td><code>param_count(1000, 2000, 1000)</code></td>
+<td>3,001,000</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">e = np.array([v @ np.tanh(w @ s + u @ hj) for hj in h])   # 加性：每个 h_j 过一次小网络
+e = h @ s                                                  # 点积：一次矩阵乘法
+a = softmax(e); c = a @ h                                  # 权重加权求上下文
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>加性打分是一个循环</strong>：每个 h_j 都要单独过一遍 tanh 网络；点积是一行 <code>h @ s</code>。这就是“实践中快得多”的直观来源。</li>
+<li><strong>W s 可以先算好</strong>：同一步里 W s 对所有 j 都一样，只算一次；Bahdanau 的附录里也把 U h_j 提前算好存起来。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 U 改成单位阵，加性打分的权重变成什么样？和点积的排序一致吗？</li>
+<li>把 s 改成 [2, 0]，两种打分各自最看重哪个词？</li>
+</ul><nav class="pager"><a href="05-training-loop.html">← 第 5 章 · 一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="07-formal-algorithms.html">第 7 章 · 把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

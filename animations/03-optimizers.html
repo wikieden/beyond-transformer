@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>优化器</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 3 章 · 三种优化器在同一个窄长碗里怎么走</h1>
+<p class="sub">配套讲义：<a href="../lessons/03-optimizers.html">第 3 章 · 优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a>。f(x, y) = ½(10x² + y²)：x 方向陡、y 方向缓。从 (1, 1) 出发。SGD：θ − αg；Momentum：v ← 0.9v + g，θ − αv；Adam：m̂ / √v̂ 定方向和步长。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="md">方法</label><select id="md"><option value="0">SGD</option><option value="1">Momentum</option><option value="2">Adam</option></select><label for="n">步数</label><input type="range" id="n" min="0" max="50" step="1" value="50"><span id="nv">50</span><label for="lr">学习率 α</label><input type="range" id="lr" min="0.01" max="0.25" step="0.01" value="0.02"><span id="lrv">0.02</span></div>
+<p class="note">看点：① SGD、α = 0.02：在缓的 y 方向挪得很慢；把 α 拉过 0.2，x 方向 |1 − 10α| > 1，越跳越大、发散；② Momentum：带着惯性冲下去，同样的 α 快很多，但会过冲；③ Adam：开头沿对角线走，两个方向一样快，和梯度大小无关。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['md','n','lr'],F=[[0,50,0.02],[0,8,0.21],[1,10,0.02],[1,50,0.02],[2,5,0.1],[2,50,0.1]];
+function path(md,n,lr){let p=[1,1],v=[0,0],m=[0,0],s=[0,0];const out=[p.slice()];for(let t=1;t<=n;t++){const g=[10*p[0],p[1]];
+ for(let i=0;i<2;i++){if(md==0)p[i]-=lr*g[i];else if(md==1){v[i]=0.9*v[i]+g[i];p[i]-=lr*v[i]}else{m[i]=0.9*m[i]+0.1*g[i];s[i]=0.999*s[i]+0.001*g[i]*g[i];p[i]-=lr*(m[i]/(1-0.9**t))/(Math.sqrt(s[i]/(1-0.999**t))+1e-8)}}out.push(p.slice())}return out}
+function render(md,n,lr){const pt=path(+md,+n,+lr),q=pt[pt.length-1],fv=0.5*(10*q[0]*q[0]+q[1]*q[1]);
+ cap(`${['SGD','Momentum','Adam'][md]}、α = ${(+lr).toFixed(2)}、${n} 步：点 (${q[0].toFixed(3)}, ${q[1].toFixed(3)})，f = ${isFinite(fv)&&fv<1e6?fv.toPrecision(3):'发散'}`);
+ frame(110,40,460,300);const M=CL(PM(110,40,460,300,[-1.2,1.3],[-0.5,1.3]),110,40,460,300);
+ [0.05,0.2,0.5,1,2,4].forEach(c=>{const ps=[];for(let i=0;i<=120;i++){const t=2*Math.PI*i/120;ps.push(M(Math.sqrt(c/5)*Math.cos(t),Math.sqrt(2*c)*Math.sin(t)))}P(ps,'var(--line)',1)});
+ const o=M(0,0);C(o[0],o[1],4,'var(--good)',1);const col=['var(--muted)','var(--accent)','var(--warm)'][md];P(pt.map(p=>M(p[0],p[1])),col,2);pt.forEach((p,i)=>{if(i%2==0){const a=M(p[0],p[1]);C(a[0],a[1],2.5,col,1)}});
+ T('x（陡）',566,356,'end','s');T('y（缓）',114,56,'start','s')}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

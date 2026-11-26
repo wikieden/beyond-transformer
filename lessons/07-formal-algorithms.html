@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 7 章 · 把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html" class="cur"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="7-transformer-a1">第 7 章 · 把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</h1><div class="run"><a class="btn" href="../animations/07-formal-algorithms.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch07_formal_algorithms.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch07_formal_algorithms.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch07_formal_algorithms.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：前作 24 章把 Transformer 拆成了一个个零件，CS336 a1 要你一个个函数地实现它。有没有一份“说明书”，把整个模型写成几页严格的伪代码？Formal Algorithms 这篇论文的 Algorithm 1–14 分别对应什么？论文里一列是一个 token，a1 里一行是一个 token，形状怎么对？单个 query 的注意力一步步怎么算？<br />
+讲解日期：2026-11-25 · 上一章：<a href="../lessons/06-bahdanau.html">第 6 章 attention 的起源</a> · 下一章：<a href="../lessons/08-flops.html">第 8 章 数 FLOPs</a><br />
+对应原文：Formal Algorithms for Transformers <code>transformer-deep-dive/materials/text/papers/formal-algorithms-transformers-2207.09238.txt</code> Algorithm 1–2 L248 起、Algorithm 3 L277–L300、Algorithm 4–5 L327–L360、Algorithm 6–7 L399–L420、Algorithm 10（DTransformer）L802–L838、Algorithm 13 / 14（DTraining / DInference）L854、L886；CS336 a1 handout §3 各题 L864–L1316<br />
+本章缩写：DTransformer = Decoder-only Transformer（只有解码器的 Transformer，GPT 那种）；EDTransformer = Encoder-Decoder Transformer（原版那种）；ETransformer = Encoder-only Transformer（BERT 那种）；d_e = embedding 维数（同前作的 <span class="arithmatex">\(d_{model}\)</span>）；d_attn = 注意力里 q、k 的维数；d_mlp = MLP 中间层维数；N_V = 词表大小；ℓ = 序列长度（论文用 ℓ，a1 用 seq_len）；GELU = Gaussian Error Linear Unit（高斯误差线性单元，一种平滑的 ReLU）；W_u = unembedding 矩阵（把向量乘回词表的矩阵）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="algorithm-1142026-11-25">第一步：一份“说明书”：Algorithm 1–14（2026-11-25）</h3>
+<p><strong>类比：拼乐高的说明书。</strong> 前作是一块块讲零件“为什么长这样”，a1 是让你自己把零件做出来。Formal Algorithms 这篇论文像说明书：每一步用了哪个零件、输入输出是什么形状、参数有哪些，全用严格的伪代码写清楚，不写一句代码，也不留模糊的地方。</p>
+<table>
+<thead>
+<tr>
+<th>算法</th>
+<th>做什么</th>
+<th>前作哪章</th>
+<th>a1 哪个题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Algorithm 1</td>
+<td>Token embedding：按 token 编号查表取一列</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/22-embedding-softmax.html">T22</a></td>
+<td>embedding</td>
+</tr>
+<tr>
+<td>Algorithm 2</td>
+<td>Positional embedding：位置也查表（或 sin / cos）</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/14-positional-encoding.html">T14</a>–T16</td>
+<td>rope（a1 换成了 RoPE）</td>
+</tr>
+<tr>
+<td>Algorithm 3</td>
+<td>单 query 注意力：一个 token 看全部上下文</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/02-dot-product.html">T2</a>–T9</td>
+<td>softmax、scaled_dot_product_attention</td>
+</tr>
+<tr>
+<td>Algorithm 4</td>
+<td>整段注意力 + Mask</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/11-matrix-qk.html">T11</a>、T12、<a href="https://wikieden.github.io/transformer-visual/lessons/17-causal-mask.html">T17</a></td>
+<td>scaled_dot_product_attention</td>
+</tr>
+<tr>
+<td>Algorithm 5</td>
+<td>多头注意力</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/13-multi-head.html">T13</a></td>
+<td>multihead_self_attention</td>
+</tr>
+<tr>
+<td>Algorithm 6</td>
+<td>LayerNorm</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/19-layernorm.html">T19</a></td>
+<td>rmsnorm（a1 换成了 RMSNorm）</td>
+</tr>
+<tr>
+<td>Algorithm 7</td>
+<td>Unembedding：乘回词表</td>
+<td>T22</td>
+<td>transformer_lm 的输出层</td>
+</tr>
+<tr>
+<td>Algorithm 10</td>
+<td>DTransformer：GPT 式的整体前向</td>
+<td><a href="https://wikieden.github.io/transformer-visual/lessons/21-transformer-layer.html">T21</a>、T24</td>
+<td>transformer_block、transformer_lm</td>
+</tr>
+<tr>
+<td>Algorithm 13</td>
+<td>DTraining：交叉熵 + 梯度下降</td>
+<td>本书第 1–4 章</td>
+<td>cross_entropy、adamw、training_together</td>
+</tr>
+<tr>
+<td>Algorithm 14</td>
+<td>DInference：逐个采样生成</td>
+<td>T22</td>
+<td>decoding</td>
+</tr>
+</tbody>
+</table>
+<p>Algorithm 8、9 是原版的 encoder-decoder 和 BERT 式的 encoder-only，11、12、15 是它们对应的训练和推理。现在的大模型几乎都是 decoder-only（第 9 章讲原因），所以 a1 只要你做 Algorithm 10 这一条线。</p>
+<p><strong>一句话</strong>：Formal Algorithms 用 14 个伪代码算法写清了整个 Transformer，其中 Algorithm 1–7 是零件，10 是 GPT 式整体前向，13、14 是训练和生成，正好对上 a1 §3–§6 的各个题。</p>
+<h3 id="algorithm-3-query-2026-11-25">第二步：Algorithm 3：一个 query 怎么看全部上下文（2026-11-25）</h3>
+<p>Algorithm 3（L277–L300）把注意力写成最小的单位：只有<strong>一个</strong>当前 token e，看 T 个上下文 token <span class="arithmatex">\(e_t\)</span>：</p>
+<div class="arithmatex">\[q = W_q e + b_q,\quad k_t = W_k e_t + b_k,\quad v_t = W_v e_t + b_v,\quad \alpha_t = \frac{\exp(q^\top k_t/\sqrt{d_{attn}})}{\sum_u \exp(q^\top k_u/\sqrt{d_{attn}})},\quad \tilde v = \sum_t \alpha_t v_t\]</div>
+<p>和第 6 章 Bahdanau 的式子一模一样的结构：打分、softmax、加权平均，只是打分换成了缩放点积，“原文笔记”换成了 <span class="arithmatex">\(v_t\)</span>。</p>
+<p><strong>数字演示</strong>（d = 2，没有 bias；e = [1, 0]，上下文 [1, 0]、[0, 1]、[1, 1]；<span class="arithmatex">\(W_q\)</span> = 2I，<span class="arithmatex">\(W_k\)</span> = I，<span class="arithmatex">\(W_v\)</span> = [[1, 0], [0, −1]]）：</p>
+<table>
+<thead>
+<tr>
+<th>t</th>
+<th><span class="arithmatex">\(k_t\)</span></th>
+<th><span class="arithmatex">\(q^\top k_t/\sqrt2\)</span></th>
+<th>α</th>
+<th><span class="arithmatex">\(v_t\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>[1, 0]</td>
+<td>1.4142</td>
+<td>0.4458</td>
+<td>[1, 0]</td>
+</tr>
+<tr>
+<td>2</td>
+<td>[0, 1]</td>
+<td>0</td>
+<td>0.1084</td>
+<td>[0, −1]</td>
+</tr>
+<tr>
+<td>3</td>
+<td>[1, 1]</td>
+<td>1.4142</td>
+<td>0.4458</td>
+<td>[1, −1]</td>
+</tr>
+</tbody>
+</table>
+<p>q = [2, 0]；输出 <span class="arithmatex">\(\tilde v\)</span> = 0.4458·[1, 0] + 0.1084·[0, −1] + 0.4458·[1, −1] = <strong>[0.8916, −0.5542]</strong>。</p>
+<p>Algorithm 4 就是把 Algorithm 3 对所有 query 并排做，再加一个 Mask（因果时 query t 只能看 t′ ≤ t）；Algorithm 5 把它做 H 遍（每头一套 W）再拼起来乘 <span class="arithmatex">\(W_o\)</span>。</p>
+<p><strong>一句话</strong>：Algorithm 3 是注意力的最小单位：一个 query 和所有 key 做缩放点积、softmax 成权重、加权平均 value；Algorithm 4、5 是把它并排做、加 mask、做多头。</p>
+<h3 id="algorithm-10-tokena1-token2026-11-25">第三步：Algorithm 10 每一行的形状：论文“列是 token”，a1“行是 token”（2026-11-25）</h3>
+<p>Algorithm 10（L802–L838）是 GPT 式模型的整体前向。用一个玩具配置（词表 10、2 层、2 头、d_e = 4、d_mlp = 16、序列 5）跟一遍形状：</p>
+<table>
+<thead>
+<tr>
+<th>行</th>
+<th>做什么</th>
+<th>论文的形状</th>
+<th>a1 的形状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2–3</td>
+<td>查 token 表 + 位置表，拼成 X</td>
+<td>4 × 5</td>
+<td>5 × 4</td>
+</tr>
+<tr>
+<td>5</td>
+<td>layer_norm</td>
+<td>4 × 5</td>
+<td>5 × 4</td>
+</tr>
+<tr>
+<td>6</td>
+<td>X ← X + MHAttention（因果 mask）</td>
+<td>4 × 5</td>
+<td>5 × 4</td>
+</tr>
+<tr>
+<td>7</td>
+<td>layer_norm</td>
+<td>4 × 5</td>
+<td>5 × 4</td>
+</tr>
+<tr>
+<td>8</td>
+<td>MLP 中间（GELU）</td>
+<td>16 × 5</td>
+<td>5 × 16</td>
+</tr>
+<tr>
+<td>8</td>
+<td>X ← X + MLP</td>
+<td>4 × 5</td>
+<td>5 × 4</td>
+</tr>
+<tr>
+<td>4–9</td>
+<td>上面 5–8 行再做一遍（第 2 层）</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td>最后的 layer_norm</td>
+<td>4 × 5</td>
+<td>5 × 4</td>
+</tr>
+<tr>
+<td>11</td>
+<td>P = softmax(W_u X)</td>
+<td>10 × 5</td>
+<td>5 × 10</td>
+</tr>
+</tbody>
+</table>
+<p>几个从伪代码里一眼就能看出的事实：</p>
+<ul>
+<li><strong>层 5、7 是“先 norm 再进子层”</strong>：Algorithm 10 写的是 Pre-LN（第 12 章细讲），和原版论文的 Post-LN 不同；最后还有一个 layer_norm（行 10）。</li>
+<li><strong>残差是“X ←  X + …”</strong>：每层只往 X 上加东西，形状一直不变（第 10 章的残差流）。</li>
+<li><strong>整个模型里，只有 MLP 中间那一下维度变大</strong>（4 → 16），其余都是 d_e。</li>
+<li><strong>论文一列一个 token</strong>（<span class="arithmatex">\(X \in \mathbb{R}^{d_e\times\ell}\)</span>，矩阵左乘：<span class="arithmatex">\(W X\)</span>）；<strong>a1 和 PyTorch 一行一个 token</strong>（(batch, seq, d)，矩阵右乘：<span class="arithmatex">\(X W^\top\)</span>）。同一个模型，所有形状都转置了一下。</li>
+</ul>
+<p><img alt="Algorithm 10 的数据流" src="../figures/07-formal-algorithms-flow.png" />
+<em>图 7-1 · Algorithm 10 的数据流（玩具配置）。左边一列是伪代码行号，中间是每一步的操作，右边是论文写法的形状（d × ℓ）和 a1 写法的形状（ℓ × d）。蓝色是 L 层循环的一层，只有 MLP 中间（橙）维度变成 16</em></p>
+<p><strong>一句话</strong>：Algorithm 10 是“查表 → L 层（Pre-LN 注意力 + Pre-LN MLP，都是残差加）→ 最后 norm → 乘回词表”；论文一列一个 token，a1 一行一个 token，形状互为转置。</p>
+<h3 id="2026-11-25">第四步：读伪代码的习惯：先看形状和参数表（2026-11-25）</h3>
+<p>每个 Algorithm 开头都先写 Input、Output、Hyperparameters、Parameters，最后才是步骤。读的时候先看这四样：</p>
+<ol>
+<li><strong>输入输出的形状</strong>：比如 Algorithm 10 输入是 token 编号序列 x，输出是 <span class="arithmatex">\(P \in (0, 1)^{N_V\times\ell}\)</span>，第 t 列是“看到前 t 个后，下一个词的分布”；</li>
+<li><strong>参数表</strong>：每层有哪些矩阵、什么形状，数一数就知道参数量（第 8 章）；</li>
+<li><strong>行号</strong>：每行一件事，和代码一一对应，写代码时把行号当注释，调试时一行一行对。</li>
+</ol>
+<p>这篇论文也是 a1 的推荐阅读，做 T-M0（a1 §3 的模型前向）时可以对着 Algorithm 10 一行行写。</p>
+<p><strong>场景代码</strong>：把 Algorithm 10 的行号当注释写 PyTorch（真实库调用的写法；本书环境没装 torch，没跑过）：</p>
+<pre><code class="language-python">def forward(self, x):                                       # Algorithm 10
+    X = self.tok_emb(x) + self.pos_emb(torch.arange(x.size(1)))   # 行 2–3（a1：形状 (B, ℓ, d_e)）
+    for blk in self.blocks:                                 # 行 4
+        X = X + blk.attn(blk.ln1(X))                        # 行 5–6：Pre-LN 注意力，因果 mask 在 attn 里
+        X = X + blk.mlp(blk.ln2(X))                         # 行 7–8：Pre-LN MLP
+    return self.lm_head(self.ln_f(X))                       # 行 10–11（a1 返回 logits，softmax 放进 loss）
+</code></pre>
+<p><strong>一句话</strong>：读伪代码先看输入输出形状和参数表，再按行号一行行对代码。</p>
+<h3 id="_2">动画演示：伪代码一行一行走，形状跟着变</h3>
+<p><img alt="把 Transformer 写成伪代码" src="../animations/07-formal-algorithms.gif" /></p>
+<p>可交互版：<a href="../animations/07-formal-algorithms.html">animations/07-formal-algorithms.html</a>（▶ 播放 / → 单步；勾选框切换论文写法 / a1 写法的形状）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>左边是 Algorithm 10 的伪代码，当前行高亮（第三步）；</li>
+<li>右边是 X 的形状，画成一个矩形：走到 MLP 中间那一行时变宽（16），其余时候都是 4；</li>
+<li>勾上“a1 写法”：矩形横过来，一行一个 token。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一、三步）：Algorithm 9 是 BERT 式的 encoder-only。它的注意力 Mask 应该是什么样？和 Algorithm 10 行 6 的 Mask[t, t′] = [[t ≤ t′]] 有什么不同，为什么？</p>
+<p><strong>题 2</strong>（第二步）：Algorithm 3 里，e = [0, 1]，其余和正文的例子一样。q、三个分数、α 和输出各是多少？（提示：<span class="arithmatex">\(e^{1.4142} \approx 4.113\)</span>）</p>
+<p><strong>题 3</strong>（第三步）：配置改成 d_e = 8、d_mlp = 32、词表 50、序列 6。行 8 的 MLP 中间、行 11 的输出，论文写法和 a1 写法的形状各是什么？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>十四个算法一本说明书：一到七是零件，十是 GPT，十三训练、十四生成。<br />
+单个 query 看上下文：缩放点积、softmax、加权 value。<br />
+并排做加 mask 是四，做多头是五。<br />
+先 norm 再子层，结果加回 X；只有 MLP 中间变宽。<br />
+论文一列一 token，a1 一行一 token，形状互为转置。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B30–B31</a>（B30 Algorithm 1–14 与 a1 各题的对应；B31 Algorithm 3 与 Algorithm 10 每一行的形状、论文与 a1 的转置关系）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Formal Algorithms for Transformers（Phuong &amp; Hutter 2022）</td>
+<td>Algorithm 1–7 L248–L420；Algorithm 10 L802–L838；Algorithm 13–14 L854–L900</td>
+<td>整个 Transformer 的严格伪代码</td>
+</tr>
+<tr>
+<td>★ CS336 a1 handout</td>
+<td>§3 L864–L1316</td>
+<td>每个零件对应的作业题</td>
+</tr>
+<tr>
+<td>前作 <a href="https://wikieden.github.io/transformer-visual/lessons/21-transformer-layer.html">第 21 章 拼装</a>、<a href="https://wikieden.github.io/transformer-visual/lessons/24-wrap-up.html">第 24 章 总结</a></td>
+<td>全部</td>
+<td>零件怎么拼成一层、一个模型</td>
+</tr>
+<tr>
+<td>本书 <a href="../lessons/11-annotated-transformer.html">第 11 章</a></td>
+<td>全部</td>
+<td>原版 encoder-decoder 的真实源码</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>列向量 vs 行向量</strong>：论文 y = Wx（W 是 d_out × d_in），a1 y = xWᵀ（x 是行向量，W 仍是 d_out × d_in）；两者是同一个线性映射。</li>
+<li><strong>注意力的置换性</strong>：去掉位置编码和 mask，Algorithm 4 对上下文 token 的顺序不敏感，所以需要 Algorithm 2。</li>
+<li><strong>残差保持形状</strong>：X ← X + f(X) 要求 f 的输出和 X 同形，所以子层的最后都要投影回 d_e。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(e_t = W_e[:, x_t] + W_p[:, t]\)</span></td>
+<td>Algorithm 10 行 2：嵌入</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\alpha_t = \text{softmax}_t(q^\top k_t/\sqrt{d_{attn}})\)</span></td>
+<td>Algorithm 3：单 query 的权重</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\tilde v = \sum_t\alpha_t v_t\)</span></td>
+<td>Algorithm 3：输出</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(X \leftarrow X + \text{MHAttention}(\text{LN}(X))\)</span></td>
+<td>Algorithm 10 行 5–6</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(X \leftarrow X + W_2\,\text{GELU}(W_1\text{LN}(X) + b_1) + b_2\)</span></td>
+<td>Algorithm 10 行 7–8</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(P = \text{softmax}(W_u\,\text{LN}(X))\)</span></td>
+<td>Algorithm 10 行 10–11</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch07_formal_algorithms.py</code>，配套测试 <code>tests/test_ch07.py</code>，notebook 在 <code>notebooks/ch07_formal_algorithms.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch07_formal_algorithms.py  
+uv run pytest tests/test_ch07.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 对照表</td>
+<td>—</td>
+<td><code>MAP</code></td>
+<td>10 行</td>
+</tr>
+<tr>
+<td>第二步 Algorithm 3</td>
+<td>缩放点积 + softmax</td>
+<td><code>single_query(e, ctx, ...)</code></td>
+<td>α = [0.4458, 0.1084, 0.4458]，输出 [0.8916, −0.5542]</td>
+</tr>
+<tr>
+<td>第三步 Algorithm 10 的形状</td>
+<td>—</td>
+<td><code>shape_trace()</code></td>
+<td>论文 (4, 5)、a1 (5, 4)；输出 (10, 5) / (5, 10)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">q = wq @ e                       # 论文写法：列向量，左乘
+k = ctx @ wk.T                   # 上下文是一行一个 token：右乘 Wᵀ
+s = k @ q / np.sqrt(len(q))      # 每个上下文 token 一个分数
+out = softmax(s) @ (ctx @ wv.T)  # 加权平均 value
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>同一个函数里两种写法都出现了</strong>：q 用列向量左乘，k、v 因为上下文按行存，用右乘 Wᵀ。写 a1 时统一成“一行一个 token、右乘 Wᵀ”最不容易错。</li>
+<li><strong>这里只跟踪形状、算一个单 query 的例子</strong>：a1 §3 的完整前向（带参数、能过测试）留给里程碑 T-M0。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>single_query</code> 的 <span class="arithmatex">\(W_q\)</span> 改成 5I，α 怎么变？（分数放大，softmax 更尖）</li>
+<li>给 <code>shape_trace</code> 传 L = 4，表多出几行？</li>
+</ul><nav class="pager"><a href="06-bahdanau.html">← 第 6 章 · attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="08-flops.html">第 8 章 · 数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

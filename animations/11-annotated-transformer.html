@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>读原版源码</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 11 章 · 同一个输入，走 Post-LN 和 Pre-LN</h1>
+<p class="sub">配套讲义：<a href="../lessons/11-annotated-transformer.html">第 11 章 · 读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a>。输入 x = [1, 2, 3, 4]，每层的子层都是 f(v) = 3v + [0.5, −0.2, 0.1, 0.3]。Post-LN：x ← LN(x + f(x))；Pre-LN（Annotated Transformer 源码的写法）：x ← x + f(LN(x))，最后补一个 LN。每一列是一层之后的 4 个数。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="md">写法</label><select id="md"><option value="0">论文 Post-LN</option><option value="1">源码 Pre-LN</option></select><label for="n">叠几层</label><input type="range" id="n" min="0" max="6" step="1" value="0"><span id="nv">0</span></div>
+<p class="note">看点：① Post-LN：每层之后都被 norm，柱子始终在 ±1.5 以内；② Pre-LN：主干原样往下传，每层加一点，柱子越来越高；③ Pre-LN 最后一列是补上的 LayerNorm，把数值拉回来，所以源码的 Encoder、Decoder 末尾各有一个 norm。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['md','n'],F=[[0,0],[0,2],[0,6],[1,0],[1,2],[1,4],[1,6]];
+const LN=v=>{const m=v.reduce((a,b)=>a+b,0)/v.length,s=Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/v.length+1e-5);return v.map(x=>(x-m)/s)},B0=[0.5,-0.2,0.1,0.3],FF=v=>v.map((x,i)=>3*x+B0[i]);
+function render(md,n){let x=[1,2,3,4];const cols=[x.slice()];for(let l=0;l<n;l++){x=md==0?LN(x.map((v,i)=>v+FF(x)[i])):x.map((v,i)=>v+FF(LN(x))[i]);cols.push(x.slice())}if(md==1&&n>0)cols.push(LN(x));
+ const mx=Math.max(4,...cols.flat().map(Math.abs));frame(30,40,620,290);const z=185,sc=130/mx;L(30,z,650,z,'var(--line)',1);
+ cols.forEach((c,ci)=>{const x0=40+ci*72;c.forEach((v,i)=>{const h=v*sc;R(x0+i*15,h>0?z-h:z,13,Math.abs(h),ci==cols.length-1&&md==1&&n>0?'var(--good)':'var(--accent)',.75)});T(ci==0?'输入':(md==1&&n>0&&ci==cols.length-1?'补 LN':'第 '+ci+' 层'),x0+30,346,'middle','s')});
+ cap(`${md==0?'Post-LN':'Pre-LN'}、${n} 层：最后一层（norm 前）的最大绝对值 ${Math.max(...x.map(Math.abs)).toFixed(2)}`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

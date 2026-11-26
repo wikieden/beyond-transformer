@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>学习率调度与梯度裁剪</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 4 章 · warmup + cosine 曲线，和梯度裁剪</h1>
+<p class="sub">配套讲义：<a href="../lessons/04-lr-schedule.html">第 4 章 · 学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a>。左：αmax = 10⁻³、αmin = 10⁻⁴、Tc = 1000，Tw 可调；红点是当前步。右：一个二维梯度，长度超过 M = 1（圆）就整体缩回圆上，方向不变。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="t">当前步 t</label><input type="range" id="t" min="0" max="1200" step="25" value="550"><span id="tv">550</span><label for="tw">warmup 步数 Tw</label><input type="range" id="tw" min="0" max="400" step="25" value="100"><span id="twv">100</span><label for="g">梯度长度</label><input type="range" id="g" min="0.2" max="4" step="0.1" value="2.5"><span id="gv">2.5</span></div>
+<p class="note">看点：① t 在 warmup 段：学习率线性升；t = Tw 时到峰值 10⁻³；退火走一半时在中点 0.55 × 10⁻³；② 把 Tw 拉长：上升段变缓，余弦段变短；③ 右边梯度长度 < 1 时不动，> 1 时缩成长度 1（蓝），灰色是原来的，方向一样。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['t','tw','g'],F=[[0,100,0.6],[50,100,0.6],[100,100,1.5],[325,100,2.5],[550,100,3.5],[775,100,0.8],[1000,100,1.2],[550,300,2.5]];
+const lrf=(t,tw)=>{const a=1e-3,b=1e-4,tc=1000;if(t<tw)return t/tw*a;if(t<=tc)return b+0.5*(1+Math.cos((t-tw)/(tc-tw)*Math.PI))*(a-b);return b};
+function render(t,tw,g){t=+t;tw=+tw;g=+g;const lr=lrf(t,tw);frame(30,50,370,270);const M=PM(30,50,370,270,[0,1200],[0,1.1]);
+ if(tw>0){const a=M(0,1.1),b=M(tw,0);R(a[0],a[1],b[0]-a[0],b[1]-a[1],'var(--line)',.5)}
+ const ps=[];for(let s=0;s<=1200;s+=5)ps.push(M(s,lrf(s,tw)*1000));P(ps,'var(--accent)',2.5);const q=M(t,lr*1000);C(q[0],q[1],6,'var(--bad)',1);
+ [0,300,600,900,1200].forEach(v=>T(String(v),M(v,0)[0],336,'middle','s'));T('lr（× 10⁻³）',34,66,'start','s');
+ const cx=545,cy=185,R0=55;el('circle',{cx,cy,r:R0,fill:'none',stroke:'var(--bad)','stroke-dasharray':'4 3'},sv);const ang=-0.6,sc=g>1?1/(g+1e-6):1;
+ AR(cx,cy,cx+R0*g*Math.cos(ang),cy+R0*g*Math.sin(ang),'var(--muted)',2);AR(cx,cy,cx+R0*g*sc*Math.cos(ang),cy+R0*g*sc*Math.sin(ang),'var(--accent)',3.5);T('M = 1',cx,cy+R0+18,'middle','s');
+ cap(`t = ${t}：lr = ${(lr*1000).toFixed(3)} × 10⁻³；梯度长度 ${g.toFixed(1)} → ${(g*sc).toFixed(3)}（缩放 ${sc.toFixed(3)}）`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

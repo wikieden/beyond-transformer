@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BERT</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 9 章 · 遮掉几个词，从两边猜（MLM）vs 只看前面猜下一个（CLM）</h1>
+<p class="sub">配套讲义：<a href="../lessons/09-bert.html">第 9 章 · encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a>。BERT 的例句。MLM：随机选 15% 的位置，80% 换成 [MASK]、10% 换随机词、10% 不变，只在这些位置算 loss；CLM：每个位置只看左边、猜下一个词。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="md">训练目标</label><select id="md"><option value="0">MLM（BERT）</option><option value="1">CLM（GPT）</option></select><label for="sd">换一次随机</label><input type="range" id="sd" min="1" max="8" step="1" value="1"><span id="sdv">1</span></div>
+<p class="note">看点：① MLM：被选中的位置（橙）连向左右两边所有词，只有它们下面有 loss；② 有时被选中的词保持原样，但仍然要猜；③ 切到 CLM：每个位置只连向左边，每个位置都有 loss：同一条序列给出的训练信号多得多。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['md','sd'],F=[[0,1],[0,2],[0,3],[0,5],[1,1]];
+const TOK=['[CLS]','my','dog','is','hairy','and','he','likes','to','play','fetch','[SEP]'],VOC=['the','cat','apple','run','blue'];
+function render(md,sd){const n=TOK.length,X=i=>30+i*54;seed(+sd*7);const sel=[],shown=TOK.slice(),how={};
+ if(md==0){for(let i=1;i<n-1;i++)if(rnd()<0.2)sel.push(i);if(!sel.length)sel.push(1+Math.floor(rnd()*10));sel.forEach(i=>{const r=rnd();if(r<0.8){shown[i]='[MASK]';how[i]='[MASK]'}else if(r<0.9){shown[i]=VOC[Math.floor(rnd()*5)];how[i]='随机'}else how[i]='不变'})}
+ TOK.forEach((t,i)=>{T(t,X(i)+24,300,'middle','s')});
+ shown.forEach((t,i)=>{const on=md==0?sel.includes(i):i<n-1;R(X(i),170,48,30,on?(md==0?'var(--warm)':'var(--accent)'):'var(--line)',on?.55:.3);T(t,X(i)+24,190,'middle','s');if(on)T('loss',X(i)+24,225,'middle','s')});
+ if(md==0)sel.forEach(i=>{for(let j=0;j<n;j++)if(j!=i)el('path',{d:`M ${X(i)+24} 170 Q ${(X(i)+X(j))/2+24} ${170-Math.abs(i-j)*12} ${X(j)+24} 170`,fill:'none',stroke:'var(--warm)','stroke-width':1,opacity:.5},sv)});
+ else{const i=7;for(let j=0;j<i;j++)el('path',{d:`M ${X(i)+24} 170 Q ${(X(i)+X(j))/2+24} ${170-(i-j)*12} ${X(j)+24} 170`,fill:'none',stroke:'var(--accent)','stroke-width':1.2,opacity:.6},sv)}
+ T('输入（处理后）',30,160,'start','s');T('原句',30,282,'start','s');
+ cap(md==0?`MLM：选中 ${sel.length} 个位置（${sel.map(i=>TOK[i]+'→'+how[i]).join('，')}），只有它们算 loss`:`CLM：${n-1} 个位置都在猜下一个词（图上只画了 likes 能看到的左边）`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

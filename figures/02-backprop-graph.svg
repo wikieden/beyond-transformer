@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="330" viewBox="0 0 900 330">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="17" fill="#1f2937" text-anchor="start" font-weight="bold">两层网络的计算图：前向存值，反向乘回梯度</text>
+<text x="16.0" y="320.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal">上排蓝箭头是前向，框里是这一步的值；下排橙箭头是反向，框里是 loss 对这一步的梯度。ReLU 关掉的第 1 个单元（a₁ = −1.5）梯度变成 0。</text>
+<rect x="20.0" y="60.0" width="132.0" height="64.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="86.0" y="88.3" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">x</text>
+<text x="86.0" y="104.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[1.00, 2.00]</text>
+<rect x="20.0" y="190.0" width="132.0" height="54.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="86.0" y="213.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">∂L/∂x</text>
+<text x="86.0" y="228.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">—</text>
+<rect x="167.0" y="60.0" width="132.0" height="64.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="233.0" y="88.3" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">a = W₁x</text>
+<text x="233.0" y="104.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[-1.50, 2.00]</text>
+<rect x="167.0" y="190.0" width="132.0" height="54.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="233.0" y="213.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">∂L/∂a</text>
+<text x="233.0" y="228.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[0, -0.15]</text>
+<rect x="314.0" y="60.0" width="132.0" height="64.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="380.0" y="88.3" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">h = ReLU(a)</text>
+<text x="380.0" y="104.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[0, 2.00]</text>
+<rect x="314.0" y="190.0" width="132.0" height="54.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="380.0" y="213.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">∂L/∂h</text>
+<text x="380.0" y="228.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[-0.17, -0.15]</text>
+<rect x="461.0" y="60.0" width="132.0" height="64.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="527.0" y="88.3" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">o = W₂h</text>
+<text x="527.0" y="104.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[-2.00, 2.00, 0]</text>
+<rect x="461.0" y="190.0" width="132.0" height="54.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="527.0" y="213.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">∂L/∂o</text>
+<text x="527.0" y="228.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[0.02, -0.13, 0.12]</text>
+<rect x="608.0" y="60.0" width="132.0" height="64.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="674.0" y="88.3" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">p = softmax</text>
+<text x="674.0" y="104.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[0.02, 0.87, 0.12]</text>
+<rect x="608.0" y="190.0" width="132.0" height="54.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="674.0" y="213.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">∂L/∂p</text>
+<text x="674.0" y="228.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">[0, −1.15, 0]</text>
+<rect x="755.0" y="60.0" width="132.0" height="64.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="821.0" y="88.3" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">L = −log p₁</text>
+<text x="821.0" y="104.6" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">0.1429</text>
+<rect x="755.0" y="190.0" width="132.0" height="54.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="821.0" y="213.2" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12" fill="#1f2937" text-anchor="middle" font-weight="bold">∂L/∂L</text>
+<text x="821.0" y="228.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11" fill="#4b5563" text-anchor="middle" font-weight="normal">1</text>
+<line x1="152.0" y1="92.0" x2="167.0" y2="92.0" stroke="#2563eb" stroke-width="2"/>
+<polygon points="167.0,92.0 159.1,96.2 159.1,87.8" fill="#2563eb" stroke="#2563eb" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="167.0" y1="217.0" x2="152.0" y2="217.0" stroke="#ea580c" stroke-width="2"/>
+<polygon points="152.0,217.0 159.9,212.8 159.9,221.2" fill="#ea580c" stroke="#ea580c" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="299.0" y1="92.0" x2="314.0" y2="92.0" stroke="#2563eb" stroke-width="2"/>
+<polygon points="314.0,92.0 306.1,96.2 306.1,87.8" fill="#2563eb" stroke="#2563eb" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="314.0" y1="217.0" x2="299.0" y2="217.0" stroke="#ea580c" stroke-width="2"/>
+<polygon points="299.0,217.0 306.9,212.8 306.9,221.2" fill="#ea580c" stroke="#ea580c" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="446.0" y1="92.0" x2="461.0" y2="92.0" stroke="#2563eb" stroke-width="2"/>
+<polygon points="461.0,92.0 453.1,96.2 453.1,87.8" fill="#2563eb" stroke="#2563eb" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="461.0" y1="217.0" x2="446.0" y2="217.0" stroke="#ea580c" stroke-width="2"/>
+<polygon points="446.0,217.0 453.9,212.8 453.9,221.2" fill="#ea580c" stroke="#ea580c" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="593.0" y1="92.0" x2="608.0" y2="92.0" stroke="#2563eb" stroke-width="2"/>
+<polygon points="608.0,92.0 600.1,96.2 600.1,87.8" fill="#2563eb" stroke="#2563eb" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="608.0" y1="217.0" x2="593.0" y2="217.0" stroke="#ea580c" stroke-width="2"/>
+<polygon points="593.0,217.0 600.9,212.8 600.9,221.2" fill="#ea580c" stroke="#ea580c" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="740.0" y1="92.0" x2="755.0" y2="92.0" stroke="#2563eb" stroke-width="2"/>
+<polygon points="755.0,92.0 747.1,96.2 747.1,87.8" fill="#2563eb" stroke="#2563eb" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<line x1="755.0" y1="217.0" x2="740.0" y2="217.0" stroke="#ea580c" stroke-width="2"/>
+<polygon points="740.0,217.0 747.9,212.8 747.9,221.2" fill="#ea580c" stroke="#ea580c" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" opacity="1"/>
+<text x="450.0" y="44.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#2563eb" text-anchor="middle" font-weight="bold">前向 →</text>
+<text x="450.0" y="270.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#ea580c" text-anchor="middle" font-weight="bold">← 反向</text>
+</svg>

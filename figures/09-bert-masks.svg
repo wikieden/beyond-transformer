@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="300" viewBox="0 0 860 300">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="17" fill="#1f2937" text-anchor="start" font-weight="bold">双向 mask 和因果 mask</text>
+<text x="16.0" y="290.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal">5 个 token，行 = 谁在看，列 = 被看的；蓝色 = 能看。左：双向（BERT），每个位置看全部；右：因果（GPT），只看自己和前面。</text>
+<text x="265.0" y="45.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="13" fill="#1f2937" text-anchor="middle" font-weight="bold">双向（BERT）</text>
+<rect x="170.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="208.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="246.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="284.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="322.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="170.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="208.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="246.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="284.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="322.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="170.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="208.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="246.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="284.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="322.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="170.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="208.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="246.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="284.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="322.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="170.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="208.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="246.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="284.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="322.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<text x="595.0" y="45.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="13" fill="#1f2937" text-anchor="middle" font-weight="bold">因果（GPT）</text>
+<rect x="500.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="538.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="576.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="614.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="652.0" y="60.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="500.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="538.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="576.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="614.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="652.0" y="98.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="500.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="538.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="576.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="614.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="652.0" y="136.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="500.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="538.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="576.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="614.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="652.0" y="174.0" width="34.0" height="34.0" rx="3" fill="#f3f4f6" stroke="none" stroke-width="1.4" opacity="1"/>
+<rect x="500.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="538.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="576.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="614.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+<rect x="652.0" y="212.0" width="34.0" height="34.0" rx="3" fill="#2563eb" stroke="none" stroke-width="1.4" opacity="0.85"/>
+</svg>
