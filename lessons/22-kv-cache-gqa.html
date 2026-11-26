@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 22 章 · KV cache 与 MQA / GQA：生成时为什么要存 K、V，怎么让它变小 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="21-llama.html"><span class="n">21</span>LLaMA 配方：Pre-norm + RMSNorm + SwiGLU + RoPE 怎么拼到一起</a><a href="22-kv-cache-gqa.html" class="cur"><span class="n">22</span>KV cache 与 MQA / GQA：生成时为什么要存 K、V，怎么让它变小</a><a href="23-sliding-window.html"><span class="n">23</span>滑动窗口：每层只看前 W 个词，叠起来为什么能看得很远</a><a href="24-configs.html"><span class="n">24</span>大厂怎么选配置：LLaMA 3 的缩放律选型、长上下文续训、Qwen3 的 QK-norm</a><a href="25-mla.html"><span class="n">25</span>MLA：把 K、V 压成一个小向量存，用时再展开；RoPE 为什么要单独拆出来</a><a href="26-nanochat.html"><span class="n">26</span>读源码：nanoGPT 和 nanochat 逐项对比</a><a href="27-moe-router.html"><span class="n">27</span>MoE：很多个 FFN 专家，每个词只走其中几个</a><a href="28-load-balance.html"><span class="n">28</span>负载均衡：专家忙闲不均怎么办（Switch 的 top-1、容量系数、均衡 loss）</a><a href="29-router-zloss-mixtral.html"><span class="n">29</span>router z-loss 与 Mixtral：MoE 训练怎么稳住，一个开源 MoE 长什么样</a><a href="30-deepseekmoe.html"><span class="n">30</span>DeepSeekMoE：专家切细、共享专家，以及不加 loss 的负载均衡</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="22-kv-cache-mqa-gqa-kv">第 22 章 · KV cache 与 MQA / GQA：生成时为什么要存 K、V，怎么让它变小</h1><div class="run"><a class="btn" href="../animations/22-kv-cache-gqa.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch22_kv_cache_gqa.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch22_kv_cache_gqa.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch22_kv_cache_gqa.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：模型一个词一个词地生成，每多一个词，前面所有词的 K、V 都要重新算一遍吗？KV cache 存的是什么、为什么结果完全不变？它有多大，为什么长文本、大 batch 时显存全被它吃掉？MQA 让所有头共用一组 K、V，GQA 折中成几组，cache 能小多少、代价是什么？已经训好的 MHA 模型怎么改成 GQA？<br />
+讲解日期：2026-11-26 · 上一章：<a href="../lessons/21-llama.html">第 21 章 LLaMA 配方</a> · 下一章：<a href="../lessons/23-sliding-window.html">第 23 章 滑动窗口</a><br />
+对应原文：MQA <code>llm-full-stack/materials/text/papers/mqa-1911.02150.txt</code> 摘要 L18–L22、引言 L30–L35（逐个生成的速度受限于“反复从显存读 K、V”的带宽）；GQA <code>llm-full-stack/materials/text/papers/gqa-2305.13245.txt</code> 摘要 L20–L35（GQA 是 MHA 和 MQA 之间的插值；用 5% 的预训练算力 uptrain）、§2.1 Uptraining L36–L58（把各头的 K、V 投影取平均）；LLaMA 3 <code>transformer-deep-dive/materials/text/papers/llama3-herd-2407.21783.txt</code> L314（GQA，8 组 K、V）<br />
+本章缩写：KV cache = Key-Value cache（键值缓存）；MHA = Multi-Head Attention（多头注意力：每个头一组 K、V）；MQA = Multi-Query Attention（多查询注意力：所有头共用一组 K、V）；GQA = Grouped-Query Attention（分组查询注意力：几个头共用一组）；H、H_kv = Q 头数、K/V 组数；d_head = 每头维数；prefill（预填充：一次处理整段提示）；decode（解码：之后每步生成一个 token）；uptraining（在已训好的模型上改结构后少量继续训练）；GiB = 2³⁰ 字节。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="kv-cache-kv-2026-11-26">第一步：KV cache：前面算过的 K、V 存起来（2026-11-26）</h3>
+<p><strong>类比：写作文时的草稿本。</strong> 每写一个新字，都要回头看前面写过的所有字（注意力）。前面每个字的“要点”（K、V）一旦写下就不会变（因果 mask：前面的词看不到后面），所以记在草稿本上，下次直接翻，不用重新读一遍原文再总结。</p>
+<p>生成第 t 个 token 时，它的 q 要和前面 t 个位置的 k 做点积、对 v 加权。因果 mask 保证位置 j &lt; t 的 k_j、v_j 不受后面 token 影响，算一次就永远不变。KV cache 就是把每层每个位置的 k、v 存下来，每步只为<strong>新 token</strong> 算一次 k、v，追加进去。</p>
+<p><strong>数字演示</strong>（4 个头、d = 8，逐步生成 6 个 token）：</p>
+<table>
+<thead>
+<tr>
+<th>做法</th>
+<th>6 步的 K、V 投影次数</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每步从头算</td>
+<td>1 + 2 + … + 6 = 21</td>
+<td>—</td>
+</tr>
+<tr>
+<td>带 KV cache</td>
+<td>6</td>
+<td>和从头算完全一样（差 0）</td>
+</tr>
+</tbody>
+</table>
+<p>生成 1000 个 token：从头算要 500,500 次，带 cache 只要 1000 次。代价是显存：cache 随生成长度一直涨。</p>
+<p><strong>一句话</strong>：因果 mask 下前面位置的 K、V 不会变，KV cache 把它们存起来，每步只算新 token 的 K、V，结果不变、计算量从 O(n²) 降到 O(n)。</p>
+<h3 id="cache-2026-11-26">第二步：cache 有多大（2026-11-26）</h3>
+<div class="arithmatex">\[\text{KV cache 字节数} = 2 \times L \times H_{kv} \times d_{head} \times n \times \text{每个数的字节数} \times \text{batch}\]</div>
+<p>2 是 K 和 V 两份，L 是层数，n 是 token 数。</p>
+<p><strong>数字演示</strong>（32 层、32 个 Q 头、d_head = 128、bf16，读到 4096 个 token）：</p>
+<table>
+<thead>
+<tr>
+<th>结构</th>
+<th>K、V 组数</th>
+<th>一条序列</th>
+<th>batch 32</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MHA</td>
+<td>32</td>
+<td>2.000 GiB</td>
+<td>64.0 GiB</td>
+</tr>
+<tr>
+<td>GQA</td>
+<td>8</td>
+<td>0.500 GiB</td>
+<td>16.0 GiB</td>
+</tr>
+<tr>
+<td>MQA</td>
+<td>1</td>
+<td>0.062 GiB</td>
+<td>2.0 GiB</td>
+</tr>
+</tbody>
+</table>
+<p>一个 7B 模型的 bf16 权重约 13 GiB；MHA 下 batch 32、4096 长度的 cache 就要 64 GiB，是权重的 5 倍。MQA 论文（L30–L35）指出的瓶颈是：decode 时每生成一个 token 都要把整个 cache 从显存读一遍，<strong>速度受限于显存带宽</strong>，而不是算力（<a href="https://wikieden.github.io/math-and-eval-stats/lessons/47-inference-cost.html">《数学与实验统计》第 47 章</a>的 roofline）。cache 越小，读得越快、能放下的 batch 越大。</p>
+<p><img alt="三种结构的 KV cache" src="../figures/22-kv-cache-gqa-bytes.png" />
+<em>图 22-1 · 32 层、d_head = 128、bf16，batch 32 时 KV cache 随序列长度的增长。橙：MHA（32 组）；蓝：GQA（8 组）；绿：MQA（1 组）。灰虚线是一个 7B 模型 bf16 权重的大小</em></p>
+<p><strong>一句话</strong>：KV cache = 2·L·H_kv·d_head·n·字节·batch，长序列、大 batch 时远超模型权重；decode 每步都要读一遍，速度受带宽限制。</p>
+<h3 id="mqa-gqa-q-kv2026-11-26">第三步：MQA 和 GQA：几个 Q 头共用一组 K、V（2026-11-26）</h3>
+<p><strong>MQA</strong>（Shazeer 2019）：所有 Q 头共用<strong>一组</strong> K、V。cache 缩小 H 倍，但质量会掉一些。</p>
+<p><strong>GQA</strong>（Ainslie 等 2023，摘要 L20–L35）：把 H 个 Q 头分成 H_kv 组，每组共用一组 K、V。H_kv = H 就是 MHA，H_kv = 1 就是 MQA，中间是插值。</p>
+<table>
+<thead>
+<tr>
+<th>H = 4</th>
+<th>Q 头用哪组 K、V</th>
+<th>cache 是 MHA 的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H_kv = 4（MHA）</td>
+<td>[0, 1, 2, 3]</td>
+<td>1</td>
+</tr>
+<tr>
+<td>H_kv = 2（GQA）</td>
+<td>[0, 0, 1, 1]</td>
+<td>1/2</td>
+</tr>
+<tr>
+<td>H_kv = 1（MQA）</td>
+<td>[0, 0, 0, 0]</td>
+<td>1/4</td>
+</tr>
+</tbody>
+</table>
+<p>论文的结论：GQA 的质量接近 MHA，速度接近 MQA。LLaMA 3（L314）、Qwen3、Mistral 都用 8 组 K、V，不管多少个 Q 头。参数量也少了：K、V 投影从 d × d 变成 d × (H_kv·d_head)。</p>
+<p><strong>把训好的 MHA 改成 GQA</strong>（§2.1，L36–L58）：组内各头的 K、V 投影矩阵<strong>取平均</strong>当初始化，再用原预训练约 5% 的算力继续训练（uptraining），比从头训一个 GQA 模型便宜得多。</p>
+<p><img alt="GQA 的分组" src="../figures/22-kv-cache-gqa-groups.png" />
+<em>图 22-2 · 8 个 Q 头（上）和它们用的 K、V（下）。左：MHA，8 组；中：GQA，2 组，每 4 个 Q 头共用一组；右：MQA，1 组</em></p>
+<p><strong>场景代码</strong>：PyTorch 里的 GQA（真实写法；本书 chapter-code 只用 NumPy，这段没跑过）：</p>
+<pre><code class="language-python">q = self.q_proj(x).view(B, T, H, Dh)
+k = self.k_proj(x).view(B, T, H_kv, Dh)            # 只有 H_kv 组
+v = self.v_proj(x).view(B, T, H_kv, Dh)
+if kv_cache is not None:
+    k, v = kv_cache.update(k, v)                   # 追加新 token 的 K、V，返回全部
+k = k.repeat_interleave(H // H_kv, dim=2)          # 每组复制给 H/H_kv 个 Q 头（只在计算时展开，不存）
+v = v.repeat_interleave(H // H_kv, dim=2)
+y = F.scaled_dot_product_attention(q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2), is_causal=kv_cache is None)
+</code></pre>
+<p>在 a1 模型上加 GQA、写 KV cache 解码并实测 cache 大小，是里程碑 T-M5。</p>
+<p><strong>一句话</strong>：GQA 让每 H/H_kv 个 Q 头共用一组 K、V，cache 缩小 H/H_kv 倍、质量接近 MHA；已有 MHA 模型可以组内取平均再 uptrain 5% 改过来。</p>
+<h3 id="token-token-cache">动画演示：一个 token 一个 token 生成，cache 一格格变长</h3>
+<p><img alt="KV cache 与 GQA" src="../animations/22-kv-cache-gqa.gif" /></p>
+<p>可交互版：<a href="../animations/22-kv-cache-gqa.html">animations/22-kv-cache-gqa.html</a>（滑块：生成到第几个 token；下拉：MHA / GQA / MQA）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>上面一排是已经生成的 token，新 token 的 q（亮）去看所有旧的 k（第一步）；</li>
+<li>下面是 cache：每个 token 一列，每组 K、V 一行；切到 GQA、MQA，行数变少（第三步）；</li>
+<li>右上角是“从头算”和“带 cache”累计的投影次数，以及 cache 的字节数。</li>
+</ol>
+<h2 id="_2">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：生成 200 个 token，每步从头算 K、V，一共要做多少次投影？带 cache 呢？</p>
+<p><strong>题 2</strong>（第二步）：40 层、Q 头 40 个、K/V 组 8 个、d_head = 128、bf16，一条 32,768 个 token 的序列，KV cache 多少 GiB？</p>
+<p><strong>题 3</strong>（第三步）：H = 32、H_kv = 8。第 13 号 Q 头用第几组 K、V？K、V 投影的参数比 MHA 少了多少？</p>
+<h2 id="_3">口诀</h2>
+<blockquote>
+<p>写过的字记草稿本：因果下前面的 K、V 不变，存起来每步只算新的；结果一样，n 方变 n。<br />
+cache 是二乘层乘组乘头维乘长度乘字节，长了、批大了比权重还大；解码每步读一遍，卡的是带宽。<br />
+所有头共用一组是 MQA，几个头一组是 GQA；组内取平均，再训百分之五就改过来。</p>
+</blockquote>
+<h2 id="_4">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B54–B55</a>（B54 KV cache 存什么、为什么不变、多大；B55 MQA / GQA 的分组、缩小倍数和 uptraining）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_5">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_6">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ Fast Transformer Decoding: One Write-Head is All You Need（MQA，Shazeer 2019）</td>
+<td>摘要 L18–L22；引言 L30–L35；性能分析一节</td>
+<td>decode 受带宽限制、MQA</td>
+</tr>
+<tr>
+<td>★ GQA（Ainslie 等 2023）</td>
+<td>摘要 L20–L35；§2.1 L36–L58</td>
+<td>分组、uptraining</td>
+</tr>
+<tr>
+<td>《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/47-inference-cost.html">第 47 章 推理成本</a>、<a href="https://wikieden.github.io/math-and-eval-stats/lessons/48-efficient-attention.html">第 48 章 高效注意力</a></td>
+<td>KV cache、roofline；MQA / GQA / MLA</td>
+<td>cache 和带宽的数学账</td>
+</tr>
+<tr>
+<td>《PyTorch 从里到外》相关章节</td>
+<td>推理与缓存</td>
+<td>框架里的实现</td>
+</tr>
+<tr>
+<td>第 25 章 MLA</td>
+<td>全部</td>
+<td>另一种压 cache 的办法</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">数学原理</h3>
+<ul>
+<li><strong>因果下 K、V 不变</strong>：k_j = W_K x_j^{(l)}，x_j^{(l)} 只依赖位置 ≤ j 的输入，后面的 token 不改变它。</li>
+<li><strong>计算量</strong>：不带 cache 的 n 步生成，K、V 投影共 n(n+1)/2 次；带 cache n 次。注意力本身每步仍要看全部 t 个位置，总共 O(n²)。</li>
+<li><strong>算术强度</strong>：decode 时每读一个 K、V 数只做约 2 次运算，远低于 GPU 的“算力 / 带宽”比，受带宽限制。</li>
+<li><strong>GQA 的插值</strong>：H_kv 从 H 到 1，cache 和 K、V 参数按 H_kv/H 线性缩小。</li>
+</ul>
+<h3 id="_8">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(2\cdot L\cdot H_{kv}\cdot d_{head}\cdot n\cdot \text{bytes}\cdot B\)</span></td>
+<td>KV cache 字节数</td>
+</tr>
+<tr>
+<td>第 h 个 Q 头用第 <span class="arithmatex">\(\lfloor h/(H/H_{kv})\rfloor\)</span> 组</td>
+<td>GQA 的分组</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(W_K^{\text{GQA}, g} = \frac{1}{H/H_{kv}}\sum_{h\in g}W_K^{h}\)</span></td>
+<td>uptraining 的初始化</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch22_kv_cache_gqa.py</code>，配套测试 <code>tests/test_ch22.py</code>，notebook 在 <code>notebooks/ch22_kv_cache_gqa.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch22_kv_cache_gqa.py  
+uv run pytest tests/test_ch22.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 cache vs 从头算</td>
+<td>投影次数</td>
+<td><code>generate(x, use_cache=...)</code></td>
+<td>6 vs 21，输出一样</td>
+</tr>
+<tr>
+<td>第二步 cache 大小</td>
+<td>2·L·H_kv·d·n·字节</td>
+<td><code>cache_bytes(...)</code></td>
+<td>2.000 / 0.500 / 0.062 GiB</td>
+</tr>
+<tr>
+<td>第三步 GQA</td>
+<td>分组、取平均</td>
+<td><code>attend_last</code>、<code>mean_pool_heads</code></td>
+<td>(8, 8) → (8, 4)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">Kc.append((x[t] @ Wk).reshape(n_kv, DH))            # 每步只算新 token 的 K，追加进 cache
+k, v = K[:, h // g], V[:, h // g]                   # 第 h 个 Q 头用第 h // g 组
+return 2 * layers * n_kv * d_head * n_tokens * bytes_per * batch
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>cache 存的是投影之后的 K、V</strong>：不是隐状态 x；存 x 每步还得重算投影，存 K、V 才真正省计算（第 25 章的 MLA 反过来存一个压缩向量，用吸收的技巧避免展开）。</li>
+<li><strong>RoPE 要在存进 cache 之前转好</strong>：k 按它自己的位置转完再存；新 token 的位置等于当前 cache 长度。这里的玩具没有位置编码，看不到这一点。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>cache_bytes</code> 的每数字节改成 1（fp8 cache），MHA batch 32 的 cache 变成多少？</li>
+<li>把 <code>mean_pool_heads</code> 改成“只取组里第一个头”而不是平均，你觉得 uptrain 起来会更好还是更差？（GQA 论文的消融里有答案）</li>
+</ul><nav class="pager"><a href="21-llama.html">← 第 21 章 · LLaMA 配方：Pre-norm + RMSNorm + SwiGLU + RoPE 怎么拼到一起</a><a href="23-sliding-window.html">第 23 章 · 滑动窗口：每层只看前 W 个词，叠起来为什么能看得很远 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

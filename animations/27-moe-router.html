@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoE</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 27 章 · token 分流到专家</h1>
+<p class="sub">配套讲义：<a href="../lessons/27-moe-router.html">第 27 章 · MoE：很多个 FFN 专家，每个词只走其中几个</a>。左边 10 个 token，右边 8 个专家。router 给每个 token 打分（固定的玩具打分 + 可调噪声），取 top-k，在选中的专家上 softmax；连线粗细是权重。下面是每个专家收到的 token 数。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="k">每个 token 选几个专家 k</label><input type="range" id="k" min="1" max="4" step="1" value="2"><span id="kv">2</span><label for="nz">噪声大小</label><input type="range" id="nz" min="0" max="2" step="0.25" value="0"><span id="nzv">0</span></div>
+<p class="note">看点：① k 从 1 拖到 4：连线变多，每个 token 的计算按 k 涨，但专家总数（总参数）不变；② 不加噪声时，有的专家一直很忙、有的几乎没人来；③ 加大噪声：选择变分散，冷门专家也能分到 token。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['k','nz'],F=[[1,0],[2,0],[2,1],[2,2],[4,0]];
+const BASE=memo('b',()=>{seed(5);const s=[];for(let t=0;t<10;t++){const r=[];for(let e=0;e<8;e++)r.push(1.2*Math.cos(t*0.7+e*0.4)+0.6*(e<3?1:0)+0.3*gauss());s.push(r)}return s});
+const NZ=memo('n',()=>{seed(9);return Array.from({length:10},()=>Array.from({length:8},()=>gauss()))});
+function render(k,nz){const load=new Array(8).fill(0);const cols=['var(--accent)','var(--warm)','var(--good)','var(--purple)','var(--bad)','var(--muted)','var(--accent)','var(--warm)'];
+ for(let t=0;t<10;t++){const s=BASE[t].map((v,e)=>v+nz*NZ[t][e]);const idx=s.map((v,e)=>[v,e]).sort((a,b)=>b[0]-a[0]).slice(0,k).map(p=>p[1]);const z=idx.map(e=>Math.exp(s[e]-s[idx[0]])),Z=z.reduce((a,b)=>a+b,0);
+  R(30,30+t*24,90,20,'var(--line)',.5);T('token '+t,75,44+t*24,'middle','s');idx.forEach((e,i)=>{load[e]++;L(120,40+t*24,420,40+e*30,cols[e],1+5*z[i]/Z)})}
+ for(let e=0;e<8;e++){R(420,30+e*30,110,24,cols[e],.5);T('专家 '+e,475,46+e*30,'middle','s');const h=load[e]*6;R(560,54+e*30-20,h,16,cols[e],.8);T(String(load[e]),566+h,48+e*30,'start','s')}
+ cap(`k = ${k}、噪声 ${(+nz).toFixed(2)}：每个专家收到 [${load.join(', ')}] 个 token`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

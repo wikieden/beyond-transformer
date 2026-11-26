@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="320" viewBox="0 0 860 320">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16.0" y="26.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="17" fill="#1f2937" text-anchor="start" font-weight="bold">token 被分到专家（top-2）</text>
+<text x="16.0" y="310.0" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal">左：4 个 token；右：4 个专家。连线是 top-2 的选择，线越粗权重越大。注意力层（未画）所有 token 共用，只有 FFN 按 token 分流。</text>
+<rect x="600.0" y="50.0" width="160.0" height="44.0" rx="8" fill="#e0ecff" stroke="#2563eb" stroke-width="1.4" opacity="1"/>
+<text x="680.0" y="75.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">专家 0</text>
+<rect x="600.0" y="110.0" width="160.0" height="44.0" rx="8" fill="#ffedd5" stroke="#ea580c" stroke-width="1.4" opacity="1"/>
+<text x="680.0" y="135.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">专家 1</text>
+<rect x="600.0" y="170.0" width="160.0" height="44.0" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.4" opacity="1"/>
+<text x="680.0" y="195.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">专家 2</text>
+<rect x="600.0" y="230.0" width="160.0" height="44.0" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.4" opacity="1"/>
+<text x="680.0" y="255.8" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#1f2937" text-anchor="middle" font-weight="bold">专家 3</text>
+<rect x="100.0" y="50.0" width="200.0" height="44.0" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4" opacity="1"/>
+<text x="200.0" y="75.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">token [1, 0.2, 0]</text>
+<line x1="300.0" y1="72.0" x2="600.0" y2="72.0" stroke="#2563eb" stroke-width="6.7527972593310714"/>
+<rect x="539.4" y="63.0" width="31.2" height="15.0" rx="3" fill="#ffffff" stroke="none" stroke-width="1.4" opacity="0.9"/>
+<text x="555.0" y="73.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">0.72</text>
+<line x1="300.0" y1="72.0" x2="600.0" y2="192.0" stroke="#16a34a" stroke-width="3.247202740668929"/>
+<rect x="539.4" y="165.0" width="31.2" height="15.0" rx="3" fill="#ffffff" stroke="none" stroke-width="1.4" opacity="0.9"/>
+<text x="555.0" y="175.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#16a34a" text-anchor="middle" font-weight="normal">0.28</text>
+<rect x="100.0" y="110.0" width="200.0" height="44.0" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4" opacity="1"/>
+<text x="200.0" y="135.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">token [0, 1, 0.3]</text>
+<line x1="300.0" y1="132.0" x2="600.0" y2="132.0" stroke="#ea580c" stroke-width="6.309909579234822"/>
+<rect x="539.4" y="123.0" width="31.2" height="15.0" rx="3" fill="#ffffff" stroke="none" stroke-width="1.4" opacity="0.9"/>
+<text x="555.0" y="133.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#ea580c" text-anchor="middle" font-weight="normal">0.66</text>
+<line x1="300.0" y1="132.0" x2="600.0" y2="252.0" stroke="#7c3aed" stroke-width="3.690090420765179"/>
+<rect x="539.4" y="225.0" width="31.2" height="15.0" rx="3" fill="#ffffff" stroke="none" stroke-width="1.4" opacity="0.9"/>
+<text x="555.0" y="235.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#7c3aed" text-anchor="middle" font-weight="normal">0.34</text>
+<rect x="100.0" y="170.0" width="200.0" height="44.0" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4" opacity="1"/>
+<text x="200.0" y="195.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">token [0.1, 0, 1]</text>
+<line x1="300.0" y1="192.0" x2="600.0" y2="192.0" stroke="#16a34a" stroke-width="6.017182130505565"/>
+<rect x="539.4" y="183.0" width="31.2" height="15.0" rx="3" fill="#ffffff" stroke="none" stroke-width="1.4" opacity="0.9"/>
+<text x="555.0" y="193.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#16a34a" text-anchor="middle" font-weight="normal">0.63</text>
+<line x1="300.0" y1="192.0" x2="600.0" y2="252.0" stroke="#7c3aed" stroke-width="3.982817869494436"/>
+<rect x="539.4" y="234.0" width="31.2" height="15.0" rx="3" fill="#ffffff" stroke="none" stroke-width="1.4" opacity="0.9"/>
+<text x="555.0" y="244.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#7c3aed" text-anchor="middle" font-weight="normal">0.37</text>
+<rect x="100.0" y="230.0" width="200.0" height="44.0" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4" opacity="1"/>
+<text x="200.0" y="255.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="11.5" fill="#1f2937" text-anchor="middle" font-weight="normal">token [0.5, 0.5, 0.5]</text>
+<line x1="300.0" y1="252.0" x2="600.0" y2="72.0" stroke="#2563eb" stroke-width="5.299438762749997"/>
+<rect x="539.4" y="90.0" width="31.2" height="15.0" rx="3" fill="#ffffff" stroke="none" stroke-width="1.4" opacity="0.9"/>
+<text x="555.0" y="100.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#2563eb" text-anchor="middle" font-weight="normal">0.54</text>
+<line x1="300.0" y1="252.0" x2="600.0" y2="192.0" stroke="#16a34a" stroke-width="4.700561237250003"/>
+<rect x="539.4" y="192.0" width="31.2" height="15.0" rx="3" fill="#ffffff" stroke="none" stroke-width="1.4" opacity="0.9"/>
+<text x="555.0" y="202.5" font-family="'PingFang SC','Hiragino Sans GB','Noto Sans CJK SC','Microsoft YaHei',sans-serif" font-size="10" fill="#16a34a" text-anchor="middle" font-weight="normal">0.46</text>
+</svg>

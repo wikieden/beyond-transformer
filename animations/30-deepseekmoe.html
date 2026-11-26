@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DeepSeekMoE</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 30 章 · bias 一步步把负载推平</h1>
+<p class="sub">配套讲义：<a href="../lessons/30-deepseekmoe.html">第 30 章 · DeepSeekMoE：专家切细、共享专家，以及不加 loss 的负载均衡</a>。8 个专家选 2，router 分数 = 固定偏好（前几个专家天然受欢迎）+ 噪声。每步统计负载，b_i ← b_i + u·sign(平均负载 − 负载_i)；bias 只用来选专家，不改权重、不进梯度。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="st">训练步数</label><input type="range" id="st" min="0" max="300" step="25" value="0"><span id="stv">0</span><label for="u">更新速率 u</label><input type="range" id="u" min="0.005" max="0.05" step="0.005" value="0.01"><span id="uv">0.01</span><label><input type="checkbox" id="on"> 调 bias</label></div>
+<p class="note">看点：① 不勾“调 bias”：负载一直偏，前几个专家包揽大部分 token；② 勾上：负载高的专家 bias 往下走、低的往上走，几十到几百步后负载接近红虚线 1/8；③ 把 u 调大：推平更快，但 bias 和负载会来回抖。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['st','u','on'],F=[[0,0.01,1],[50,0.01,1],[150,0.01,1],[300,0.01,1],[300,0.01,0],[100,0.05,1]];
+function run(st,u,on){return memo([st,u,on].join(),()=>{seed(3);const E=8,pref=Array.from({length:E},(_,i)=>1-2*i/7),b=new Array(E).fill(0);let load=new Array(E).fill(0);
+ for(let s=0;s<=st;s++){load=new Array(E).fill(0);for(let t=0;t<256;t++){const sc=pref.map((v,i)=>v+gauss()+b[i]);const o=sc.map((v,i)=>[v,i]).sort((a,c)=>c[0]-a[0]);load[o[0][1]]++;load[o[1][1]]++}
+  load=load.map(v=>v/512);if(on&&s<st){const m=1/E;for(let i=0;i<E;i++)b[i]+=u*Math.sign(m-load[i])}}return{load,b}})}
+function render(st,u,on){const {load,b}=run(+st,+u,+on);frame(40,40,600,170);const M=PM(40,40,600,170,[0,8],[0,0.35]);load.forEach((v,i)=>{const a=M(i+0.2,v),c=M(i+0.8,0);R(a[0],a[1],c[0]-a[0],c[1]-a[1],'var(--accent)',.8)});const y=M(0,0.125)[1];L(40,y,640,y,'var(--bad)',1.2,'5 4');T('负载',44,56,'start','s');
+ frame(40,230,600,100);const z=280;L(40,z,640,z,'var(--line)',1);b.forEach((v,i)=>{const h=Math.max(-48,Math.min(48,v*40));R(40+i*75+20,h>0?z-h:z,35,Math.abs(h),'var(--warm)',.8);T(v.toFixed(2),40+i*75+37,h>0?z-h-4:z-h+13,'middle','s')});T('bias',44,246,'start','s');
+ cap(`第 ${st} 步：最大负载 / 平均 = ${(Math.max(...load)*8).toFixed(2)}`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

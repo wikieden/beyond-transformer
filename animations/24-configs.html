@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大厂怎么选配置</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 24 章 · 拖预算，看缩放律推荐多大的模型</h1>
+<p class="sub">配套讲义：<a href="../lessons/24-configs.html">第 24 章 · 大厂怎么选配置：LLaMA 3 的缩放律选型、长上下文续训、Qwen3 的 QK-norm</a>。LLaMA 3 的缩放律：最优训练 token 数 = A·C^α，参数 ≈ C / (6·token)。左：对数坐标下的直线，红点是当前预算；右：推荐的 token 数和参数量。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="lc">log₁₀ 训练 FLOPs</label><input type="range" id="lc" min="20" max="26" step="0.5" value="25.5"><span id="lcv">25.5</span><label for="fit">拟合参数</label><select id="fit"><option value="0">(0.299, 0.537)</option><option value="1">(0.29, 0.53)</option></select></div>
+<p class="note">看点：① 预算每大 10 倍，推荐的 token 数大约大 10^0.537 ≈ 3.4 倍，参数也大约大 3 倍；② 切换拟合参数：小预算时两者几乎一样，预算越大差得越多；③ 3.8 × 10²⁵ 附近，(0.299, 0.537) 给出约 16T token、390B 参数，接近论文的 16.55T / 402B。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['lc','fit'],F=[[20,0],[22,0],[24,0],[25.5,0],[25.5,1],[26,1]];
+const FITS=[[0.299,0.537],[0.29,0.53]];
+function render(lc,fit){const [A,al]=FITS[fit],tok=c=>A*(10**c)**al;frame(40,50,360,270);const M=PM(40,50,360,270,[18,26.5],[8,14]);
+ FITS.forEach(([a,b],i)=>{const ps=[];for(let c=18;c<=26.5;c+=0.25)ps.push(M(c,Math.log10(a*(10**c)**b)));P(ps,i==fit?'var(--accent)':'var(--muted)',i==fit?2.5:1.2,i==fit?'':'5 4')});
+ const t=tok(+lc),p=M(+lc,Math.log10(t));C(p[0],p[1],6,'var(--bad)',1);[18,20,22,24,26].forEach(v=>T(String(v),M(v,8)[0],336,'middle','s'));T('log₁₀ token',44,66,'start','s');
+ const np=10**lc/6/t;frame(440,50,210,270);const sc=v=>Math.max(2,250*(Math.log10(v)-8)/6);R(470,320-sc(t),60,sc(t),'var(--accent)',.8);R(560,320-sc(np),60,sc(np),'var(--warm)',.8);
+ T((t/1e12).toFixed(2)+'T',500,314-sc(t),'middle','s');T((np/1e9).toFixed(0)+'B',590,314-sc(np),'middle','s');T('token',500,336,'middle','s');T('参数',590,336,'middle','s');
+ cap(`C = 10^${(+lc).toFixed(1)}：最优 token ${(t/1e12).toFixed(2)}T，参数约 ${(np/1e9).toFixed(0)}B`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

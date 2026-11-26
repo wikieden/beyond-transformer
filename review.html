@@ -505,6 +505,166 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <p>口诀：残差乘 α、初始化乘 β：二 N 的四分之一次方，八 N 的负四分之一次方</p>
 </details>
 <hr />
+<h2 id="c-dense">C 现代 dense 配方</h2>
+<h3 id="b53-llama">B53 · LLaMA 在原版块上换了哪几样？训练超参是什么？</h3>
+<p>来源：<a href="lessons/21-llama.html">第 21 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>四样：Pre-norm（GPT-3）+ RMSNorm；SwiGLU（PaLM，d_ff = 2/3·4d）；RoPE（GPTNeo）；去掉 bias。注意力和残差结构不变，参数量几乎不变（d = 96 时一层 111,840 → 110,784）。</li>
+<li>训练：AdamW β₁ = 0.9、β₂ = 0.95；warmup 2000 步后余弦降到峰值的 10%；权重衰减 0.1；梯度裁剪 1.0。</li>
+<li>立场：按 Chinchilla 思路“小模型多训数据”，训练多花，推理便宜（7B 训 1T token）。</li>
+</ul>
+<p>口诀：norm 挪前换 RMS，FFN 换 SwiGLU，位置换 RoPE，bias 全去掉</p>
+</details>
+<hr />
+<h3 id="b54-kv-cache">B54 · KV cache 存什么、为什么结果不变？它有多大？</h3>
+<p>来源：<a href="lessons/22-kv-cache-gqa.html">第 22 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>因果 mask 下，前面位置的 K、V 不受后面 token 影响，算一次就不变；cache 存每层每个位置投影后的 K、V，每步只给新 token 算一次再追加。结果和从头算完全一样，K、V 投影从 n(n+1)/2 次降到 n 次。</li>
+<li>大小 = 2·L·H_kv·d_head·n·字节·batch。32 层、32 组、d_head = 128、bf16、4096 token：一条 2 GiB，batch 32 时 64 GiB，远超 7B 模型的权重。</li>
+<li>decode 每步都要把 cache 从显存读一遍，速度受带宽限制。</li>
+</ul>
+<p>口诀：前面的 K、V 不变，存起来；二乘层乘组乘头维乘长度乘字节</p>
+</details>
+<hr />
+<h3 id="b55-mqagqa-kvcache-mha-gqa">B55 · MQA、GQA 怎么共享 K、V？cache 缩小多少？MHA 怎么改成 GQA？</h3>
+<p>来源：<a href="lessons/22-kv-cache-gqa.html">第 22 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>MQA：所有 Q 头共用一组 K、V；GQA：H 个 Q 头分成 H_kv 组，第 h 个头用第 ⌊h/(H/H_kv)⌋ 组。cache 和 K、V 参数缩小 H/H_kv 倍。</li>
+<li>GQA 质量接近 MHA、速度接近 MQA；LLaMA 3、Qwen3、Mistral 都用 8 组。</li>
+<li>uptraining：组内各头的 K、V 投影取平均当初始化，再用原预训练约 5% 的算力继续训。</li>
+</ul>
+<p>口诀：所有头一组是 MQA，几个头一组是 GQA；组内取平均，再训百分之五</p>
+</details>
+<hr />
+<h3 id="b56-rolling-bufferlocal-global-soft-cap">B56 · 滑动窗口为什么能看得远？rolling buffer、local / global 交替、soft-cap 各是什么？</h3>
+<p>来源：<a href="lessons/23-sliding-window.html">第 23 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>每层只看前 W 个，信息逐层接力，k 层后最远间接看到约 (W − 1)·k（Mistral：4096 × 32 ≈ 131K），越远越模糊。</li>
+<li>rolling buffer cache：W 个槽，第 i 个 token 存在 i mod W，旧的被覆盖，cache 大小固定。</li>
+<li>local / global 交替：local 层省计算和 cache，global 层直接看远处；Gemma 2 隔层交替（4096 / 8192），比例越偏 local 越省。</li>
+<li>soft-cap：cap·tanh(x/cap)，Gemma 2 注意力 50、输出 30（nanochat 输出 15），平滑地防 logit 发散。</li>
+</ul>
+<p>口诀：传话 k 轮听到 W 乘 k；第 i 个放 i 模 W；局部省、全局看全；cap 乘 tanh</p>
+</details>
+<hr />
+<h3 id="b57-llama-3">B57 · LLaMA 3 怎么用缩放律选模型大小？怎么读配置表？</h3>
+<p>来源：<a href="lessons/24-configs.html">第 24 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>小预算下画 IsoFLOPs 曲线找最优点，拟合 token<em>(C) = A·C^α（论文里 N</em> 指 token），外推到 3.8 × 10²⁵：402B 参数、16.55T token（实际 405B / 15.6T）；参数 ≈ C/(6·token）。外推几个数量级时，α 差 0.007 结果差 1.5 倍。</li>
+<li>token / 参数：Chinchilla 约 20；LLaMA 3 405B 约 39；8B 达 1875（故意过度训练，换推理便宜）。</li>
+<li>读配置：每头维数 = d/H（几乎都是 128）；FFN/d 3.25–3.5；KV 组固定 8；RoPE 底数 500,000；同一序列里的不同文档之间加 mask。</li>
+<li>长上下文放在最后，分六段从 8K 拉到 128K（约 800B token）；Qwen3 去掉 QKV bias、加 QK-norm 保稳定。</li>
+</ul>
+<p>口诀：小锅试做外推大锅，指数差一点外推差一截；头维一二八、KV 八组</p>
+</details>
+<hr />
+<h3 id="b58-mla-kv-cache">B58 · MLA 怎么压 KV cache？为什么展开矩阵能被吸收？</h3>
+<p>来源：<a href="lessons/25-mla.html">第 25 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>c = W_DKV·h（d_c = 512）只存这个；k = W_UK c、v = W_UV c 用时展开。K、V 共用一个 c，是低秩分解。</li>
+<li>吸收：qᵀ(W_UK c) = (W_UKᵀ q)ᵀ c，q′ 每步算一次，直接和每个历史 token 的 c 点积，不用展开 k；W_UV 同理吸收进 W_O。</li>
+<li>训练时一般直接展开；吸收用在逐 token 推理、省读写。</li>
+</ul>
+<p>口诀：存压缩包；q 点 W 乘 c 等于 W 转置乘 q 再点 c</p>
+</details>
+<hr />
+<h3 id="b59-rope-mla-decoupled-rope-cache">B59 · RoPE 为什么和 MLA 的吸收冲突？decoupled RoPE 怎么做？cache 多大？</h3>
+<p>来源：<a href="lessons/25-mla.html">第 25 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>加 RoPE 后分数 = qᵀR_{j−t}W_UK c_j，要吸收得算 q′ = W_UKᵀR_{j−t}ᵀq，依赖每个 key 的相对位置，矩阵乘法不可交换，吸收失效。</li>
+<li>decoupled：k、q 拆成两段：内容段（不加 RoPE，可吸收）+ 位置段（d_h^R = 64，k^R 各头共享，单独缓存，带 RoPE）；分数是两段点积之和，除以 √(d_h + d_h^R)。</li>
+<li>cache = (d_c + d_h^R)·l = 576·l ≈ 4.5 d_h·l，相当于 2.25 组 GQA，比 MHA（2·128·128）小 57 倍，效果不降。</li>
+</ul>
+<p>口诀：RoPE 夹中间随位置变就吸收不了；拆一段六十四维共享的 k^R；每层五百七十六</p>
+</details>
+<hr />
+<h3 id="b60-nanochat-nanogpt">B60 · nanochat 相对 nanoGPT 改了什么？</h3>
+<p>来源：<a href="lessons/26-nanochat.html">第 26 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>标准配方：学习的位置表 → RoPE（底数 100000）；LayerNorm → 无参数 RMSNorm，嵌入后也 norm；GELU → ReLU²；MHA → GQA + QK-norm + 滑窗（SSSL，最后一层全局）；输出 soft-cap 15；不共享嵌入和输出层；去掉 bias；残差投影 c_proj 零初始化；矩阵用 Muon、其余 AdamW。</li>
+<li>特有小技巧（速通社区）：每层前 resid_λ·x + x0_λ·x0（1.15 → 1.05、0.20 → 0.05）、隔层 value embedding、smear、backout。</li>
+<li>读源码：先特性列表和配置，再顺着 forward 标零件，最后看初始化和优化器分组；注释可能过时，以代码为准（窗口注释写 768，实际是 512）。</li>
+</ul>
+<p>口诀：位置 RoPE、norm 无参、激活 ReLU 平方、GQA 加 QK-norm 三短一长、cap 十五</p>
+</details>
+<hr />
+<h2 id="d-moe">D MoE</h2>
+<h3 id="b61-moe-router">B61 · MoE 怎么做到参数多、计算少？router 怎么工作？</h3>
+<p>来源：<a href="lessons/27-moe-router.html">第 27 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>FFN 换成 E 个专家，每个 token 只走 k 个；总参数 ∝ E，激活参数（计算）∝ k；注意力共用。省计算不省显存。</li>
+<li>router：x·W_g 打分 → 取 top-k → 只在选中的上 softmax（Mixtral 式 1）→ 加权求和；没选中的专家梯度为 0。</li>
+<li>noisy top-k：H = x·W_g + N(0, 1)·Softplus(x·W_noise)，打破富者愈富，推理时不加。</li>
+<li>Mixtral 8×7B：47B 总参数、13B 激活（共用的注意力和嵌入不重复算）。</li>
+</ul>
+<p>口诀：医院分科；打分取前 k 只在选中里 softmax；八乘七 B 是四十七 B、十三 B 在算</p>
+</details>
+<hr />
+<h3 id="b62-switch-loss">B62 · 为什么会负载不均？专家容量和 Switch 的均衡 loss 怎么起作用？</h3>
+<p>来源：<a href="lessons/28-load-balance.html">第 28 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>富者愈富：被偏爱的专家训得更好、更受偏爱；后果是浪费参数、最忙的卡拖慢并行、死专家。</li>
+<li>Switch top-1；专家容量 = (token 数 / 专家数) × 容量系数，超出的 token 不过这层 FFN、只走残差（CF 1.0 丢 6 个、1.25 丢 2 个的例子）。</li>
+<li>loss = α·N·Σf_i·P_i（α = 0.01）：f 是实际比例（不可导），P 是平均概率（可导）；均匀时最小（= α）；对 P_i 的梯度 α·N·f_i，越忙的专家概率被压得越狠。代价是干扰主任务。</li>
+</ul>
+<p>口诀：容量是平均份额乘系数，满了走残差；阿尔法 N f P，f 不可导，越忙压越狠</p>
+</details>
+<hr />
+<h3 id="b63-router-z-loss-mixtral">B63 · router z-loss 治什么？Mixtral 的参数在哪、专家怎么分工？</h3>
+<p>来源：<a href="lessons/29-router-zloss-mixtral.html">第 29 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>bf16 只有 8 位有效数字，数越大舍入误差越大；router logit 经 exp，绝对误差变成概率的相对误差（logit 73.7 → 18%）。</li>
+<li>router z-loss = (1/B)Σ(log Σ_j e^{x_ij})²，c_z = 0.001：把 router logit 压回 0 附近，softmax 平移不变，选专家的概率不变，训练稳定、质量略升。</li>
+<li>Mixtral：专家占 96.6% 参数，注意力和嵌入不到 4%；每个 token 激活 2/8。专家没有按主题分工，更像按句法、词形，相邻 token 常走同一专家。</li>
+</ul>
+<p>口诀：bf16 数越大刻度越粗；log-sum-exp 平方千分之一；专家不按主题分</p>
+</details>
+<hr />
+<h3 id="b64-deepseekmoe">B64 · DeepSeekMoE 的细粒度切分和共享专家是什么？</h3>
+<p>来源：<a href="lessons/30-deepseekmoe.html">第 30 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>细粒度：每个专家切成 m 份（d_ff → d_ff/m），专家数 mN、激活 mK；参数和计算不变，组合数 C(16, 2) = 120 → C(64, 8) = 4,426,165,368，专家更专精。</li>
+<li>共享专家：每个 token 都走，存公共知识，减少路由专家之间的冗余；DeepSeek-V2 每层 2 共享 + 160 路由选 6。Qwen3 MoE 用细粒度（128 选 8）但去掉了共享专家。</li>
+</ul>
+<p>口诀：大积木拆小积木，组合四十四亿；公共知识给共享专家</p>
+</details>
+<hr />
+<h3 id="b65-loss-free-balancing-loss">B65 · Loss-Free Balancing 怎么做到不加 loss 也均衡？</h3>
+<p>来源：<a href="lessons/30-deepseekmoe.html">第 30 章</a> · 加入 2026-11-26 · 复习记录：（必背，还没考）</p>
+<details>
+<summary>答案</summary>
+<ul>
+<li>每个专家一个 bias b_i，只在选 top-K 时加到分数上；门控权重仍用原始分数（bias 只管选谁、不管加权）。</li>
+<li>每批后：e_i = 平均负载 − c_i，b_i ← b_i + u·sign(e_i)；负载低的加分、高的减分；按上一批更新，不泄露未来 token；不进梯度，不干扰主任务。</li>
+<li>玩具：8 选 2，最大 / 平均从 2.36 降到 1.03；u 太大会来回抖。DeepSeek-V3 用它（外加很小的序列级均衡 loss）。</li>
+</ul>
+<p>口诀：负载低就加、高就减；只管选谁、不管加权；不进梯度</p>
+</details>
+<hr />
 <h2 id="v-transformer">V 视觉 Transformer</h2>
 <h3 id="b04-vit-tokenn-1">B04 · ViT 怎么把一张图变成一串 token？N 和每块的数怎么算？式 1 里加了哪两样东西？</h3>
 <p>来源：<a href="lessons/44-vit.html">第 44 章</a> · 加入 2026-11-18 · 复习记录：（必背，还没考）</p>

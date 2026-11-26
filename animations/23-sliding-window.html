@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>滑动窗口</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 23 章 · 窗口一层层叠，感受野一格格变宽</h1>
+<p class="sub">配套讲义：<a href="../lessons/23-sliding-window.html">第 23 章 · 滑动窗口：每层只看前 W 个词，叠起来为什么能看得很远</a>。24 个输入位置（最下一行）。每一层的最后一个位置只看前 W 个（含自己）；深色是它在这一层能间接看到的输入位置。勾选“交替 global”后，偶数层看全部。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="w">窗口 W</label><input type="range" id="w" min="2" max="8" step="1" value="4"><span id="wv">4</span><label for="k">层数</label><input type="range" id="k" min="1" max="6" step="1" value="3"><span id="kv">3</span><label><input type="checkbox" id="g"> 每隔一层用 global</label></div>
+<p class="note">看点：① 每加一层，深色区往左扩 W − 1 格：k 层后约 (W − 1)·k；② 把 W 调大，扩得更快；③ 勾上“交替 global”：遇到 global 层，深色区一下铺满全部，远处的信息不用接力。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['w','k','g'],F=[[4,1,0],[4,2,0],[4,3,0],[4,6,0],[8,3,0],[4,3,1]];
+function render(w,k,g){const n=24,c=24;let reach=new Array(n).fill(0);reach[n-1]=1;const rows=[];
+ for(let l=1;l<=k;l++){const glob=+g&&l%2==0;const nr=new Array(n).fill(0);for(let i=0;i<n;i++)if(reach[i]){const lo=glob?0:Math.max(0,i-w+1);for(let j=lo;j<=i;j++)nr[j]=1}reach=nr;rows.push([reach.slice(),glob])}
+ rows.forEach(([r,glob],l)=>{const y=290-l*40;T('第 '+(l+1)+' 层'+(glob?'（全局）':''),96,y+18,'end','s');r.forEach((v,j)=>R(100+j*c,y,c-3,28,glob?'var(--warm)':'var(--accent)',v?.8:.08))});
+ const far=n-1-reach.indexOf(1);cap(`W = ${w}、${k} 层：最后一个位置最远能间接看到 ${far} 个位置之前`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

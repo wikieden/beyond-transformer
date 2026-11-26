@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>负载均衡</title><link rel="stylesheet" href="anim.css">
+<style>svg text.cap{font-size:15px;font-weight:500}svg text.num{font-size:15px;font-weight:600}svg text.s{font-size:12px}</style></head>
+<body><main>
+<h1>第 28 章 · 加不加均衡 loss，负载怎么变</h1>
+<p class="sub">配套讲义：<a href="../lessons/28-load-balance.html">第 28 章 · 负载均衡：专家忙闲不均怎么办（Switch 的 top-1、容量系数、均衡 loss）</a>。8 个专家、每批 64 个 token，top-1 路由。router 一开始稍微偏爱前几个专家；不加约束时“富者愈富”。柱子是负载，虚线是容量（64/8 × 容量系数），红色是超出容量被丢掉的 token。</p>
+<div class="panel"><svg id="sv" viewBox="0 0 680 360"></svg></div>
+<div class="row"><button id="play">▶ 播放</button><button id="step">→ 单步</button><button id="reset">↺ 从头开始</button></div>
+<div class="row"><label for="st">训练步数</label><input type="range" id="st" min="0" max="40" step="5" value="0"><span id="stv">0</span><label for="cf">容量系数</label><input type="range" id="cf" min="1" max="2" step="0.25" value="1.25"><span id="cfv">1.25</span><label><input type="checkbox" id="ab"> 均衡 loss</label></div>
+<p class="note">看点：① 不加均衡 loss：步数越多，负载越集中到前几个专家，红色（被丢的 token）越来越多；② 勾上均衡 loss：梯度按 α·N·f 压最忙专家的概率，负载慢慢被推平；③ 容量系数调大，丢得少，但每个专家都要预留更多计算。</p>
+</main>
+<script src="anim.js"></script>
+<script>
+const sv=$('sv');
+function R(x,y,w,h,col,op){return el('rect',{x,y,width:Math.max(w,1),height:Math.max(h,1),rx:3,fill:col,opacity:op??.75},sv)}
+function T(s,x,y,a,c){return txt(s,{x,y,'text-anchor':a||'start',class:c||'m'},sv)}
+function C(x,y,r,col,op){return el('circle',{cx:x,cy:y,r,fill:col,opacity:op??.8},sv)}
+function L(x1,y1,x2,y2,col,w,dash){return el('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w||1.5,'stroke-dasharray':dash||''},sv)}
+function P(pts,col,w,dash){return el('polyline',{points:pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:'none',stroke:col,'stroke-width':w||2,'stroke-dasharray':dash||'','stroke-linejoin':'round'},sv)}
+function AR(x1,y1,x2,y2,col,w){L(x1,y1,x2,y2,col,w||1.8);const a=Math.atan2(y2-y1,x2-x1),h=7;el('polygon',{points:[[x2,y2],[x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45)],[x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45)]].map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' '),fill:col},sv)}
+function cap(s){T(s,340,24,'middle','cap')}
+function PM(x0,y0,w,h,xr,yr){return (x,y)=>[x0+(x-xr[0])/(xr[1]-xr[0])*w,y0+h-(y-yr[0])/(yr[1]-yr[0])*h]}
+function CL(m,x0,y0,w,h){return (a,b)=>{const q=m(a,b);return[Math.min(Math.max(q[0],x0),x0+w),Math.min(Math.max(q[1],y0),y0+h)]}}
+function frame(x0,y0,w,h){el('rect',{x:x0,y:y0,width:w,height:h,fill:'none',stroke:'var(--line)','stroke-width':1},sv)}
+const BETA=[],AB=[];{let a=1;for(let i=0;i<1000;i++){const b=1e-4+(0.02-1e-4)*i/999;BETA.push(b);a*=1-b;AB.push(a)}}
+const abar=t=>t<=0?1:AB[Math.min(Math.round(t),1000)-1];
+function spiral(n,s){seed(s||5);const p=[];for(let i=0;i<n;i++){const th=1.5*Math.PI*(1+2*rnd());p.push([th*Math.cos(th)/10,th*Math.sin(th)/10])}return p}
+function noise(n,s){seed(s||9);const p=[];for(let i=0;i<n;i++)p.push([gauss(),gauss()]);return p}
+const MEMO={};function memo(k,f){if(!(k in MEMO))MEMO[k]=f();return MEMO[k]}
+const GET=ids=>ids.map(i=>{const e=$(i);return e.type==='checkbox'?+e.checked:+e.value});
+function SET(ids,v){ids.forEach((i,k)=>{const e=$(i);if(e.type==='checkbox')e.checked=!!v[k];else e.value=v[k];const o=$(i+'v');if(o)o.textContent=(+v[k]).toString()})}
+const IDS=['st','cf','ab'],F=[[0,1.25,0],[20,1.25,0],[40,1.25,0],[40,1.25,1],[20,1.25,1],[40,2,0]];
+function loads(st,ab){let pref=[0.3,0.2,0.1,0,0,-0.1,-0.2,-0.3];for(let s=0;s<st;s++){const p=pref.map(Math.exp),z=p.reduce((a,b)=>a+b,0),f=p.map(v=>v/z);pref=pref.map((v,i)=>v+(ab?-1.2*(f[i]-1/8):0.12*(f[i]-1/8)))}
+ const p=pref.map(Math.exp),z=p.reduce((a,b)=>a+b,0);return p.map(v=>Math.round(64*v/z))}
+function render(st,cf,ab){const L0=loads(+st,+ab),cap0=Math.floor(64/8*cf);let drop=0;frame(40,50,600,270);const M=CL(PM(40,50,600,270,[0,8],[0,22]),40,50,600,270);
+ L0.forEach((v,e)=>{const kept=Math.min(v,cap0);drop+=Math.max(0,v-cap0);const a=M(e+0.2,kept),b=M(e+0.8,0);R(a[0],a[1],b[0]-a[0],b[1]-a[1],'var(--accent)',.8);if(v>cap0){const c=M(e+0.2,v),d=M(e+0.8,cap0);R(c[0],c[1],d[0]-c[0],d[1]-c[1],'var(--bad)',.8)}T('专家 '+e,M(e+0.5,0)[0],338,'middle','s')});
+ const y=M(0,cap0)[1];L(40,y,640,y,'var(--text)',1.2,'5 4');T('容量 '+cap0,636,y-6,'end','s');
+ cap(`第 ${st} 步${+ab?'（均衡 loss）':''}：负载 [${L0.join(', ')}]，丢掉 ${drop} 个 token`)}
+let k=0,custom=null;
+function draw(){clear(sv);const v=custom||F[k];SET(IDS,v);render(...v)}
+function reset(){k=0;custom=null;draw()}
+function next(){if(custom!==null){custom=null;draw();return true}if(k>=F.length-1)return false;k++;draw();return true}
+IDS.forEach(i=>{const e=$(i);const f=()=>{ANIM.stop();custom=GET(IDS);draw()};e.oninput=f;e.onchange=f});
+setupPlayer({captureSeed:1,reset,next},1600);
+</script><a href="https://wikieden.github.io/ai-books/" style="position:fixed;right:12px;bottom:12px;z-index:99;padding:4px 10px;border-radius:14px;background:rgba(127,127,127,.18);color:inherit;font:13px/1.6 system-ui,sans-serif;text-decoration:none">← 全部讲义书</a>
+</body></html>

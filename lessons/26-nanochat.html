@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 26 章 · 读源码：nanoGPT 和 nanochat 逐项对比 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="21-llama.html"><span class="n">21</span>LLaMA 配方：Pre-norm + RMSNorm + SwiGLU + RoPE 怎么拼到一起</a><a href="22-kv-cache-gqa.html"><span class="n">22</span>KV cache 与 MQA / GQA：生成时为什么要存 K、V，怎么让它变小</a><a href="23-sliding-window.html"><span class="n">23</span>滑动窗口：每层只看前 W 个词，叠起来为什么能看得很远</a><a href="24-configs.html"><span class="n">24</span>大厂怎么选配置：LLaMA 3 的缩放律选型、长上下文续训、Qwen3 的 QK-norm</a><a href="25-mla.html"><span class="n">25</span>MLA：把 K、V 压成一个小向量存，用时再展开；RoPE 为什么要单独拆出来</a><a href="26-nanochat.html" class="cur"><span class="n">26</span>读源码：nanoGPT 和 nanochat 逐项对比</a><a href="27-moe-router.html"><span class="n">27</span>MoE：很多个 FFN 专家，每个词只走其中几个</a><a href="28-load-balance.html"><span class="n">28</span>负载均衡：专家忙闲不均怎么办（Switch 的 top-1、容量系数、均衡 loss）</a><a href="29-router-zloss-mixtral.html"><span class="n">29</span>router z-loss 与 Mixtral：MoE 训练怎么稳住，一个开源 MoE 长什么样</a><a href="30-deepseekmoe.html"><span class="n">30</span>DeepSeekMoE：专家切细、共享专家，以及不加 loss 的负载均衡</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="26-nanogpt-nanochat">第 26 章 · 读源码：nanoGPT 和 nanochat 逐项对比</h1><div class="run"><a class="btn" href="../animations/26-nanochat.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch26_nanochat.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch26_nanochat.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch26_nanochat.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：Karpathy 的 nanoGPT 是 GPT-2 式的最小实现，nanochat 是他几年后按现代配方重写的。两份代码放在一起，到底改了哪些地方？位置编码、norm、激活、注意力、初始化、输出层各换成了什么，又各对应本书哪一章？nanochat 里还多了几样论文里不常见的小技巧（残差系数、value embedding、smear），它们在做什么？<br />
+讲解日期：2026-11-26 · 上一章：<a href="../lessons/25-mla.html">第 25 章 MLA</a> · 下一章：<a href="../lessons/27-moe-router.html">第 27 章 MoE</a><br />
+对应原文：nanoGPT <code>transformer-deep-dive/materials/code/nanoGPT/repo/model.py</code>：LayerNorm（可选 bias）L18–L27、CausalSelfAttention L35–L68、MLP（GELU）L82–L89、Block L98–L100、学习的位置嵌入 wpe L128、嵌入和输出层共享 L138、c_proj 按 0.02/√(2L) 初始化 L144–L145；nanochat <code>transformer-deep-dive/materials/code/nanochat/repo/nanochat/gpt.py</code>：文件头的特性列表 L1–L13、GPTConfig（n_kv_head、window_pattern = "SSSL"）L29–L39、无参数 norm L42–L43、value embedding 的分配 has_ve L53–L55、RoPE 的实现 L57–L65、注意力里的 value embedding 门控和 QK-norm L84–L102、ReLU² MLP L131–L139、Block（Pre-norm）L150–L152、resid / x0 系数与 smear、backout L179–L188、初始化 L220–L241、RoPE 底数 100000 L270、窗口计算 L287–L313、前向（嵌入后 norm、smear、x0 混入、backout、soft-cap = 15）L470–L515；优化器分组（Muon + AdamW）L419–L450<br />
+本章缩写：wpe = word position embedding（学习的位置嵌入表）；wte = word token embedding（词嵌入表）；weight tying（权重共享：嵌入表和输出层用同一个矩阵）；ReLU²（ReLU 再平方）；QK-norm（第 18 章）；value embedding（值嵌入：直接按 token 编号查表加到 V 上）；smear（涂抹：把前一个 token 的嵌入按门控混进当前位置）；backout（退回：输出前减去中间层的残差）；Muon（一种对矩阵参数做正交化更新的优化器）；FA3 = FlashAttention 3。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-26">第一步：差异总表（2026-11-26）</h3>
+<p><strong>类比：同一个作者隔几年重写的同一道菜谱。</strong> 主体流程（嵌入 → N 个块 → norm → 输出层）没变，几乎每样配料都换了新的。</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>nanoGPT（GPT-2 式）</th>
+<th>nanochat（现代配方）</th>
+<th>本书</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>位置编码</td>
+<td>学习的位置表 wpe（L128），加在输入上</td>
+<td>RoPE，底数 100,000（L270），每层转 q、k</td>
+<td><a href="../lessons/15-rope.html">第 15 章</a></td>
+</tr>
+<tr>
+<td>norm 位置</td>
+<td>Pre-norm（L98–L100）</td>
+<td>Pre-norm（L150–L152），<strong>嵌入后也 norm</strong>（L473）</td>
+<td><a href="../lessons/12-pre-ln.html">第 12 章</a></td>
+</tr>
+<tr>
+<td>norm 种类</td>
+<td>LayerNorm，可选 bias（L18–L27）</td>
+<td><code>F.rms_norm</code>，<strong>没有可学参数</strong>（L42–L43）</td>
+<td><a href="../lessons/13-rmsnorm.html">第 13 章</a></td>
+</tr>
+<tr>
+<td>MLP 激活</td>
+<td>GELU（L83）</td>
+<td>ReLU²（L139）</td>
+<td><a href="../lessons/14-swiglu.html">第 14 章</a></td>
+</tr>
+<tr>
+<td>bias</td>
+<td>默认有（GPT-2 兼容）</td>
+<td>全部没有（L77–L80）</td>
+<td>第 13 章</td>
+</tr>
+<tr>
+<td>注意力</td>
+<td>MHA，因果</td>
+<td>GQA（n_kv_head，L34）+ QK-norm（L102）+ 滑窗（SSSL，L39）</td>
+<td><a href="../lessons/18-stability.html">第 18</a>、<a href="../lessons/22-kv-cache-gqa.html">22</a>、<a href="../lessons/23-sliding-window.html">23 章</a></td>
+</tr>
+<tr>
+<td>嵌入与输出层</td>
+<td>共享权重（L138）</td>
+<td>不共享（文件头 L6）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>输出 logit</td>
+<td>直接</td>
+<td>soft-cap = 15（L509–L512）</td>
+<td>第 23 章</td>
+</tr>
+<tr>
+<td>初始化</td>
+<td>正态 0.02，残差投影再除以 √(2L)（L144–L145）</td>
+<td>均匀分布（同方差）；<strong>残差投影 c_proj 初始化为 0</strong>（L230–L232）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>优化器</td>
+<td>AdamW</td>
+<td>矩阵用 Muon，嵌入、标量用 AdamW（L419–L450）</td>
+<td>《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/43-modern-optimizers.html">第 43 章</a></td>
+</tr>
+<tr>
+<td>注意力内核</td>
+<td>PyTorch SDPA（L44–L45）</td>
+<td>FlashAttention 3，不行时退回 SDPA</td>
+<td>第 33 章</td>
+</tr>
+</tbody>
+</table>
+<p>几乎每一行都对应本书前面的某一章：nanochat 就是段 B、段 C 讲过的零件的一份“标准答案”。</p>
+<p><strong>一句话</strong>：nanochat 相对 nanoGPT 换了位置编码（RoPE）、norm（无参数 RMSNorm，嵌入后也 norm）、激活（ReLU²）、注意力（GQA + QK-norm + 滑窗）、输出（soft-cap）、初始化（残差投影为 0）和优化器（Muon）。</p>
+<h3 id="2026-11-26_1">第二步：几个零件算一遍（2026-11-26）</h3>
+<p><strong>ReLU² 和 GELU</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>x</th>
+<th>−2</th>
+<th>−0.5</th>
+<th>0.5</th>
+<th>1</th>
+<th>2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GELU</td>
+<td>−0.0454</td>
+<td>−0.1543</td>
+<td>0.3457</td>
+<td>0.8412</td>
+<td>1.9546</td>
+</tr>
+<tr>
+<td>ReLU²</td>
+<td>0</td>
+<td>0</td>
+<td>0.25</td>
+<td>1</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<p>ReLU² 在负半轴严格为 0（更稀疏），正半轴增长得比线性快；不用门控，也不用 SwiGLU 的第三个矩阵（MLP 还是 d → 4d → d）。</p>
+<p><strong>无参数 RMSNorm</strong>：[1, 2, 3, 6] → [0.2828, 0.5657, 0.8485, 1.6971]，和第 13 章一样，只是没有 g。</p>
+<p><strong>输出 soft-cap = 15</strong>：[5, 15, 30, 100] → [4.82, 11.42, 14.46, 15.0]。</p>
+<p><strong>窗口模式 SSSL</strong>（12 层、上下文 2048；S = 四分之一上下文，向上取到 128 的倍数；最后一层强制 L）：</p>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>…</th>
+<th>12</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>窗口</td>
+<td>512</td>
+<td>512</td>
+<td>512</td>
+<td>2048</td>
+<td>512</td>
+<td>…</td>
+<td>2048</td>
+</tr>
+</tbody>
+</table>
+<p>三层局部、一层全局，和第 23 章的 Gemma 系列是同一个思路。</p>
+<p><img alt="SSSL 窗口模式" src="../figures/26-nanochat-windows.png" />
+<em>图 26-1 · 12 层的窗口大小。蓝色是局部层（512），橙色是全局层（2048）；最后一层强制全局</em></p>
+<p><strong>一句话</strong>：nanochat 的 MLP 用 ReLU²（负半轴为 0、正半轴平方），norm 没有参数，输出 logit 压在 ±15，窗口按 SSSL 平铺。</p>
+<h3 id="2026-11-26_2">第三步：论文里不常见的几个小技巧（2026-11-26）</h3>
+<p>nanochat 里还有几样在大厂技术报告里不常见的东西，多来自 modded-nanogpt 这类“速通”社区的实验：</p>
+<table>
+<thead>
+<tr>
+<th>技巧</th>
+<th>代码</th>
+<th>做什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>残差系数 resid_lambda</td>
+<td>L182、L238</td>
+<td>每层进入前主干乘一个可学标量，初始化从第 1 层的 1.15 线性降到最后一层的 1.05</td>
+</tr>
+<tr>
+<td>x0 混入 x0_lambda</td>
+<td>L183、L241、L497</td>
+<td>每层把最初的嵌入 x0 按可学系数加回来，初始化 0.20 → 0.05</td>
+</tr>
+<tr>
+<td>value embedding</td>
+<td>L53–L55、L93–L97、L192</td>
+<td>隔一层（含最后一层）直接按 token 编号查一张表，按门控加到 V 上；12 层时是第 1、3、5、7、9、11 层（从 0 数）</td>
+</tr>
+<tr>
+<td>smear</td>
+<td>L185–L186、L475–L479</td>
+<td>把前一个 token 的嵌入按门控混进当前位置（便宜的二元组信息）</td>
+</tr>
+<tr>
+<td>backout</td>
+<td>L188、L499–L507</td>
+<td>输出前减去中间层残差的 0.2 倍，去掉低层特征</td>
+</tr>
+<tr>
+<td>残差投影初始化为 0</td>
+<td>L230、L232</td>
+<td>每个块一开始是恒等映射，训练从“浅网络”起步（和第 20 章 DeepNorm 的 β 是同一个直觉）</td>
+</tr>
+</tbody>
+</table>
+<p>这些改动在小模型、短训练上有收益，是否适用于大模型还没有定论。读源码时把它们和“标准配方”分开看。</p>
+<p><strong>一句话</strong>：nanochat 还加了残差系数、x0 混入、value embedding、smear、backout 和零初始化残差投影，多来自速通社区，属于“实验性”的部分。</p>
+<h3 id="2026-11-26_3">第四步：读源码的方法（2026-11-26）</h3>
+<p>对照读两份代码时：</p>
+<ol>
+<li><strong>先读文件头的特性列表和配置类</strong>（nanochat L1–L39）：作者自己总结了改动；</li>
+<li><strong>再顺着 forward 读一遍</strong>（L470–L515）：嵌入 → 前处理 → 每层 → 后处理 → 输出，标出每一步对应哪个零件；</li>
+<li><strong>最后读初始化和优化器分组</strong>（L204–L260、L419–L450）：这部分最容易被忽略，却直接影响能不能训好。</li>
+</ol>
+<p><strong>场景代码</strong>：nanochat 的块和前向（摘自 <code>gpt.py</code> L150–L152、L470–L512，节选）：</p>
+<pre><code class="language-python">def forward(self, x, ve, cos_sin, window_size, kv_cache):          # Block
+    x = x + self.attn(norm(x), ve, cos_sin, window_size, kv_cache)  # Pre-norm，norm 无参数
+    x = x + self.mlp(norm(x))
+...
+x = norm(self.transformer.wte(idx))                                 # 嵌入后先 norm
+for i, block in enumerate(self.transformer.h):
+    x = self.resid_lambdas[i] * x + self.x0_lambdas[i] * x0         # 残差系数 + x0 混入
+    x = block(x, ve, cos_sin, self.window_sizes[i], kv_cache)
+logits = 15 * torch.tanh(self.lm_head(norm(x)).float() / 15)        # soft-cap
+</code></pre>
+<p>把这张差异表写进自己的笔记、在 a1 模型上实现 GQA、滑窗、QK-norm、soft-cap 和 KV cache 解码，是里程碑 T-M5。</p>
+<p><strong>一句话</strong>：读源码先看特性列表和配置，再顺着 forward 标零件，最后别漏了初始化和优化器分组。</p>
+<h3 id="_2">动画演示：两份代码逐行对照</h3>
+<p><img alt="读源码" src="../animations/26-nanochat.gif" /></p>
+<p>可交互版：<a href="../animations/26-nanochat.html">animations/26-nanochat.html</a>（▶ 播放 / → 单步：每一步高亮一个差异）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>左边是 nanoGPT 的一个块，右边是 nanochat 的一个块，按数据流从下往上排；</li>
+<li>每一步高亮一处差异（位置编码、norm、激活、注意力、输出……），中间写出对应本书哪一章（第一步）；</li>
+<li>最后几步出现 nanochat 特有的小技巧（第三步）。</li>
+</ol>
+<h2 id="_3">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：nanoGPT 把嵌入表和输出层共享权重，nanochat 不共享。共享能省多少参数（词表 32,768、d = 768）？为什么大模型通常不共享？</p>
+<p><strong>题 2</strong>（第二步）：24 层、上下文 4096、模式 SSSL，每层的窗口是多少？有几层是全局的？</p>
+<p><strong>题 3</strong>（第三步）：残差投影 c_proj 初始化为 0。第一次反向传播时，c_proj 自己的梯度是不是 0？块里 c_q、c_fc 这些在它前面的权重，梯度又是多少？第二步之后会怎样？</p>
+<h2 id="_4">口诀</h2>
+<blockquote>
+<p>同一本菜谱重写：位置换 RoPE，norm 换无参 RMS、嵌入后也 norm，激活换 ReLU 平方，注意力加 GQA、QK-norm、三短一长，输出 cap 十五。<br />
+初始化残差投影为零，优化器矩阵用 Muon。<br />
+速通小技巧：残差系数、x0 混入、值嵌入、smear、backout，分开看。<br />
+读源码：先特性、再 forward、最后初始化和优化器。</p>
+</blockquote>
+<h2 id="_5">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B60</a>（nanoGPT → nanochat 的差异表和各自对应的章、nanochat 特有的技巧）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_6">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_7">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ nanochat <code>gpt.py</code></td>
+<td>L1–L313、L419–L515</td>
+<td>现代配方的一份完整实现</td>
+</tr>
+<tr>
+<td>★ nanoGPT <code>model.py</code></td>
+<td>L18–L180</td>
+<td>GPT-2 式的基准</td>
+</tr>
+<tr>
+<td>modded-nanogpt（GitHub，在线）</td>
+<td>README 的改动记录</td>
+<td>value embedding、smear 等技巧的来源</td>
+</tr>
+<tr>
+<td>《数学与实验统计》<a href="https://wikieden.github.io/math-and-eval-stats/lessons/43-modern-optimizers.html">第 43 章 现代优化器</a></td>
+<td>Muon 一节</td>
+<td>nanochat 用的优化器</td>
+</tr>
+<tr>
+<td>本书 <a href="../lessons/11-annotated-transformer.html">第 11 章 读原版源码</a></td>
+<td>全部</td>
+<td>读源码的另一个例子</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_8">数学原理</h3>
+<ul>
+<li><strong>零初始化残差投影</strong>：块 f(x) = W_O·g(x)，W_O = 0 时 f ≡ 0，整个网络在初始化时是恒等映射加最后的输出层。</li>
+<li><strong>ReLU²</strong>：(max(0, x))²，导数 2·max(0, x)；比 ReLU 更稀疏的“开关”加上平方的放大。</li>
+<li><strong>weight tying</strong>：嵌入表 E（V × d）同时当输出层 W_out = E，省 V·d 个参数。</li>
+</ul>
+<h3 id="_9">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(x \leftarrow x + f(\text{RMSNorm}(x))\)</span>（无参数）</td>
+<td>nanochat 的块</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\text{ReLU}^2(x) = \max(0, x)^2\)</span></td>
+<td>MLP 激活</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(x \leftarrow \lambda^{resid}_i x + \lambda^{x0}_i x_0\)</span></td>
+<td>每层前的残差系数和 x0 混入</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(15\cdot\tanh(\text{logits}/15)\)</span></td>
+<td>输出 soft-cap</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_10">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch26_nanochat.py</code>，配套测试 <code>tests/test_ch26.py</code>，notebook 在 <code>notebooks/ch26_nanochat.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch26_nanochat.py  
+uv run pytest tests/test_ch26.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第二步 激活</td>
+<td>GELU vs ReLU²</td>
+<td><code>gelu</code>、<code>relu2</code></td>
+<td>ReLU²(2) = 4</td>
+</tr>
+<tr>
+<td>第二步 norm、soft-cap</td>
+<td>无参数 RMS；15·tanh</td>
+<td><code>rms_norm_noparam</code>、<code>softcap</code></td>
+<td>100 → 15.0</td>
+</tr>
+<tr>
+<td>第二步 窗口</td>
+<td>SSSL</td>
+<td><code>window_sizes()</code></td>
+<td>[512, 512, 512, 2048] × 3</td>
+</tr>
+<tr>
+<td>第三步 小技巧</td>
+<td>初始化</td>
+<td><code>resid_x0_init()</code>、<code>has_ve(i)</code></td>
+<td>1.15 → 1.05；第 1、3 … 11 层</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">return np.maximum(x, 0) ** 2                          # ReLU²
+short = -(-seq // 4 // 128) * 128                     # 四分之一上下文，向上取到 128 的倍数
+resid = [1.15 - 0.10 * i / max(n_layer - 1, 1) for i in range(n_layer)]
+return i % 2 == (n_layer - 1) % 2                     # 隔一层有 value embedding，含最后一层
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>注释和代码对不上</strong>：nanochat 的窗口计算旁边注释写着“2048 → 768”，可按代码 <code>-(-2048 // 4 // 128) * 128</code> 算出来是 512。读源码时以代码为准，注释可能是旧版本留下的。</li>
+<li><strong>RoPE 的写法是“前后两半配对”</strong>：nanochat 的 <code>apply_rotary_emb</code>（L57–L65）把向量切成前后两半，和 a1 的相邻配对不同（第 15 章），而且注释说转的是 −θ；只要训练和推理一致就没问题。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>window_sizes</code> 的模式改成 "SL"，12 层里有几层全局？</li>
+<li>把 <code>resid_x0_init</code> 的层数改成 24，第 12 层的两个系数各是多少？</li>
+</ul><nav class="pager"><a href="25-mla.html">← 第 25 章 · MLA：把 K、V 压成一个小向量存，用时再展开；RoPE 为什么要单独拆出来</a><a href="27-moe-router.html">第 27 章 · MoE：很多个 FFN 专家，每个词只走其中几个 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>

@@ -68,11 +68,11 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
 <span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
 </div></header>
-<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html" class="cur">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html" class="cur">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="21-llama.html"><span class="n">21</span>LLaMA 配方：Pre-norm + RMSNorm + SwiGLU + RoPE 怎么拼到一起</a><a href="22-kv-cache-gqa.html"><span class="n">22</span>KV cache 与 MQA / GQA：生成时为什么要存 K、V，怎么让它变小</a><a href="23-sliding-window.html"><span class="n">23</span>滑动窗口：每层只看前 W 个词，叠起来为什么能看得很远</a><a href="24-configs.html"><span class="n">24</span>大厂怎么选配置：LLaMA 3 的缩放律选型、长上下文续训、Qwen3 的 QK-norm</a><a href="25-mla.html"><span class="n">25</span>MLA：把 K、V 压成一个小向量存，用时再展开；RoPE 为什么要单独拆出来</a><a href="26-nanochat.html"><span class="n">26</span>读源码：nanoGPT 和 nanochat 逐项对比</a><a href="27-moe-router.html"><span class="n">27</span>MoE：很多个 FFN 专家，每个词只走其中几个</a><a href="28-load-balance.html"><span class="n">28</span>负载均衡：专家忙闲不均怎么办（Switch 的 top-1、容量系数、均衡 loss）</a><a href="29-router-zloss-mixtral.html"><span class="n">29</span>router z-loss 与 Mixtral：MoE 训练怎么稳住，一个开源 MoE 长什么样</a><a href="30-deepseekmoe.html"><span class="n">30</span>DeepSeekMoE：专家切细、共享专家，以及不加 loss 的负载均衡</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
 <h1 id="transformer">超越 Transformer · 讲义目录</h1>
 <blockquote>
 <p>英文名：<strong>Beyond Transformer</strong> · 在线阅读：<a href="https://wikieden.github.io/beyond-transformer/">https://wikieden.github.io/beyond-transformer/</a> · 前作：《<a href="https://wikieden.github.io/transformer-visual/">从零读懂 Transformer</a>》（24 章）<br />
-计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1–20 章、第 44–51 章（练习待做）· 52 张复习卡片 · 36 张静态图</p>
+计划 51 章 · 8 段 · 每章一个动画（GIF + 可交互页面）· 已写第 1–30 章、第 44–51 章（练习待做）· 65 张复习卡片 · 52 张静态图</p>
 </blockquote>
 <h2 id="_1">这本书讲什么</h2>
 <p>《从零读懂 Transformer》讲完了 2017 年的原版。可今天的大模型早就不是原版的样子了：训练要用 AdamW 和精心排过的学习率，LayerNorm 换成了 RMSNorm，位置编码换成了 RoPE，attention 加了 GQA、滑动窗口和 FlashAttention，FFN 变成了 MoE，有的模型干脆用 Mamba、线性注意力替掉一部分 attention，图片和视频也被切成小块送进同一套结构。这本书沿着这条路线，把 2017 年到现在每一处改动讲清楚：<strong>改了什么、为什么改、代价是什么</strong>。</p>
@@ -423,7 +423,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>llama-2302.13971.txt</code> §2.2（C1）</td>
 <td>12–15</td>
 <td>原版块 → LLaMA 块，零件逐个替换</td>
-<td>待写</td>
+<td><a href="../lessons/21-llama.html">正文完成</a>，练习待做 · <a href="../animations/21-llama.gif">GIF</a> · <a href="../animations/21-llama.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>22</td>
@@ -431,7 +431,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>llm-full-stack/materials/text/papers/mqa-1911.02150.txt</code>、<code>llm-full-stack/materials/text/papers/gqa-2305.13245.txt</code>（C2）</td>
 <td>T13、T21、T23</td>
 <td>几个 Q 头共用一套 K、V，cache 变 1/4</td>
-<td>待写</td>
+<td><a href="../lessons/22-kv-cache-gqa.html">正文完成</a>，练习待做 · <a href="../animations/22-kv-cache-gqa.gif">GIF</a> · <a href="../animations/22-kv-cache-gqa.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>23</td>
@@ -439,7 +439,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>mistral-7b-2310.06825.txt</code> §2（C3）；<code>gemma2-2408.00118.txt</code> §2（C5）</td>
 <td>T23、22</td>
 <td>感受野随层数一格格变宽</td>
-<td>待写</td>
+<td><a href="../lessons/23-sliding-window.html">正文完成</a>，练习待做 · <a href="../animations/23-sliding-window.gif">GIF</a> · <a href="../animations/23-sliding-window.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>24</td>
@@ -447,7 +447,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>llama3-herd-2407.21783.txt</code> §3.2、§3.4.2（C4）；<code>qwen3-2505.09388.txt</code> §2（C6）</td>
 <td>17、18、21</td>
 <td>几代模型的配置表对比</td>
-<td>待写</td>
+<td><a href="../lessons/24-configs.html">正文完成</a>，练习待做 · <a href="../animations/24-configs.gif">GIF</a> · <a href="../animations/24-configs.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>25</td>
@@ -455,7 +455,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>llm-full-stack/materials/text/papers/deepseek-v2-mla-2405.04434.txt</code> §2.1（C7）；<code>distributed-pretraining/materials/papers/deepseek-v3-2412.19437.pdf</code> §2（C8）</td>
 <td>15、22</td>
 <td>512 维 K、V → 压成小向量 → 用时再展开</td>
-<td>待写</td>
+<td><a href="../lessons/25-mla.html">正文完成</a>，练习待做 · <a href="../animations/25-mla.gif">GIF</a> · <a href="../animations/25-mla.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>26</td>
@@ -463,7 +463,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>materials/code/nanoGPT/repo/model.py</code> vs <code>materials/code/nanochat/repo/nanochat/gpt.py</code>（C9、C10）</td>
 <td>21–25</td>
 <td>两份代码的差异高亮</td>
-<td>待写</td>
+<td><a href="../lessons/26-nanochat.html">正文完成</a>，练习待做 · <a href="../animations/26-nanochat.gif">GIF</a> · <a href="../animations/26-nanochat.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>★</td>
@@ -494,7 +494,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td>CS336 <code>2025 Lecture 4 - MoEs.txt</code>（D1，当目录读）；<code>sparsely-gated-moe-1701.06538.txt</code> §2（D2）</td>
 <td>T20、T22</td>
 <td>词被路由到不同专家的分拣图</td>
-<td>待写</td>
+<td><a href="../lessons/27-moe-router.html">正文完成</a>，练习待做 · <a href="../animations/27-moe-router.gif">GIF</a> · <a href="../animations/27-moe-router.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>28</td>
@@ -502,7 +502,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>switch-transformer-2101.03961.txt</code> §2.1–§2.2、§2.4（D3）；<code>gshard-2006.16668.txt</code> §2（D4，待核对）</td>
 <td>1、27</td>
 <td>专家负载直方图：加均衡 loss 前后</td>
-<td>待写</td>
+<td><a href="../lessons/28-load-balance.html">正文完成</a>，练习待做 · <a href="../animations/28-load-balance.gif">GIF</a> · <a href="../animations/28-load-balance.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>29</td>
@@ -510,7 +510,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>st-moe-2202.08906.txt</code> §3、§5（D5）；<code>mixtral-2401.04088.txt</code> §2（D6）</td>
 <td>18、28</td>
 <td>router 分数被 z-loss 压住</td>
-<td>待写</td>
+<td><a href="../lessons/29-router-zloss-mixtral.html">正文完成</a>，练习待做 · <a href="../animations/29-router-zloss-mixtral.gif">GIF</a> · <a href="../animations/29-router-zloss-mixtral.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>30</td>
@@ -518,7 +518,7 @@ footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-
 <td><code>deepseekmoe-2401.06066.txt</code> §3.1–§3.2（D7）；<code>aux-loss-free-balancing-2408.15664.txt</code> §2–§3（D8，待核对）</td>
 <td>28</td>
 <td>细粒度组合数；bias 怎么把负载拉平</td>
-<td>待写</td>
+<td><a href="../lessons/30-deepseekmoe.html">正文完成</a>，练习待做 · <a href="../animations/30-deepseekmoe.gif">GIF</a> · <a href="../animations/30-deepseekmoe.html">▶ 交互</a></td>
 </tr>
 <tr>
 <td>★</td>
@@ -914,6 +914,70 @@ softmax 不管平移，log Z 后期漂走；z-loss 万分之一乘 log Z 平方�
 <p>一人一份力，人多车推得远：初始化管住前向，Adam 一步却按宽度涨。<br />
 μP 隐藏层学习率除以宽度，小模型调好直接搬。<br />
 DeepNorm 残差乘 α、初始化乘 β：α 是二 N 的四分之一次方，β 是八 N 的负四分之一次方，一千层也能训。</p>
+</blockquote>
+<h3 id="21-llama-pre-norm-rmsnorm-swiglu-rope"><a href="../lessons/21-llama.html">第 21 章 · LLaMA 配方：Pre-norm + RMSNorm + SwiGLU + RoPE 怎么拼到一起</a></h3>
+<blockquote>
+<p>老车换四样：norm 挪前面换 RMS，FFN 换 SwiGLU，位置换 RoPE，bias 全去掉；参数几乎不变。<br />
+训练照前几章：AdamW 贝塔二零点九五，warmup 两千，余弦降到一成，衰减零点一，裁剪一。<br />
+小模型多训数据：训练贵一点，推理一直便宜。</p>
+</blockquote>
+<h3 id="22-kv-cache-mqa-gqa-kv"><a href="../lessons/22-kv-cache-gqa.html">第 22 章 · KV cache 与 MQA / GQA：生成时为什么要存 K、V，怎么让它变小</a></h3>
+<blockquote>
+<p>写过的字记草稿本：因果下前面的 K、V 不变，存起来每步只算新的；结果一样，n 方变 n。<br />
+cache 是二乘层乘组乘头维乘长度乘字节，长了、批大了比权重还大；解码每步读一遍，卡的是带宽。<br />
+所有头共用一组是 MQA，几个头一组是 GQA；组内取平均，再训百分之五就改过来。</p>
+</blockquote>
+<h3 id="23-w"><a href="../lessons/23-sliding-window.html">第 23 章 · 滑动窗口：每层只看前 W 个词，叠起来为什么能看得很远</a></h3>
+<blockquote>
+<p>传话游戏：每层只听近处 W 个，叠 k 层间接听到 W 乘 k；越远越模糊。<br />
+滚动缓存开 W 个槽，第 i 个放 i 模 W，旧的被盖掉。<br />
+局部层省、全局层看全，交替着用；cap 乘 tanh 压住大分数，注意力五十、输出三十。</p>
+</blockquote>
+<h3 id="24-llama-3-qwen3-qk-norm"><a href="../lessons/24-configs.html">第 24 章 · 大厂怎么选配置：LLaMA 3 的缩放律选型、长上下文续训、Qwen3 的 QK-norm</a></h3>
+<blockquote>
+<p>小锅试做找最优，点连成线外推大锅；指数差一点，外推差一截。<br />
+旗舰按缩放律，小模型多训数据，一个参数喂上千个 token。<br />
+读配置：头维一二八，FFN 三倍半，KV 固定八组，RoPE 底数调大。<br />
+长上下文放最后，分段拉长；Qwen3 去掉 QKV bias 换 QK-norm。</p>
+</blockquote>
+<h3 id="25-mla-kv-rope"><a href="../lessons/25-mla.html">第 25 章 · MLA：把 K、V 压成一个小向量存，用时再展开；RoPE 为什么要单独拆出来</a></h3>
+<blockquote>
+<p>存压缩包，用时再解压：K、V 共用一个五百一十二维的 c。<br />
+q 点 W 乘 c，等于 W 转置乘 q 再点 c：展开矩阵吸收进 query，不用解压。<br />
+RoPE 夹在中间随位置变，吸收就失效：单独拆一段六十四维、各头共享的 k^R 带位置。<br />
+每层五百七十六个数，相当于两组多的 GQA，比 MHA 小五十七倍。</p>
+</blockquote>
+<h3 id="26-nanogpt-nanochat"><a href="../lessons/26-nanochat.html">第 26 章 · 读源码：nanoGPT 和 nanochat 逐项对比</a></h3>
+<blockquote>
+<p>同一本菜谱重写：位置换 RoPE，norm 换无参 RMS、嵌入后也 norm，激活换 ReLU 平方，注意力加 GQA、QK-norm、三短一长，输出 cap 十五。<br />
+初始化残差投影为零，优化器矩阵用 Muon。<br />
+速通小技巧：残差系数、x0 混入、值嵌入、smear、backout，分开看。<br />
+读源码：先特性、再 forward、最后初始化和优化器。</p>
+</blockquote>
+<h3 id="27-moe-ffn"><a href="../lessons/27-moe-router.html">第 27 章 · MoE：很多个 FFN 专家，每个词只走其中几个</a></h3>
+<blockquote>
+<p>医院分科：知识多（总参数），看病快（激活参数）；只有 FFN 分科，注意力共用。<br />
+打分、取前 k、只在选中里 softmax，加权求和。<br />
+加点噪声防富者愈富，推理时不加。<br />
+八乘七 B 不是五十六：共用的不重复，四十七 B 装着、十三 B 在算；省计算不省显存。</p>
+</blockquote>
+<h3 id="28-switch-top-1-loss"><a href="../lessons/28-load-balance.html">第 28 章 · 负载均衡：专家忙闲不均怎么办（Switch 的 top-1、容量系数、均衡 loss）</a></h3>
+<blockquote>
+<p>奶茶店富者愈富：偏一点就越偏越狠，浪费参数、拖慢并行、专家会死。<br />
+Switch 只选一个：容量是平均份额乘系数，满了后来的走残差跳过。<br />
+均衡 loss 阿尔法乘 N 乘 f 乘 P：f 不可导、P 可导；对 P 的梯度是阿尔法 N f，越忙压越狠；均匀时最小。</p>
+</blockquote>
+<h3 id="29-router-z-loss-mixtralmoe-moe"><a href="../lessons/29-router-zloss-mixtral.html">第 29 章 · router z-loss 与 Mixtral：MoE 训练怎么稳住，一个开源 MoE 长什么样</a></h3>
+<blockquote>
+<p>八格尺子量大数：bf16 数越大刻度越粗，exp 一放大，概率差两成。<br />
+router z-loss 是 log-sum-exp 的平方，系数千分之一：logit 压回零附近，概率不变、误差变小。<br />
+Mixtral 九成七在专家，激活两个；专家不按主题分，按句法分，邻居常同路。</p>
+</blockquote>
+<h3 id="30-deepseekmoe-loss"><a href="../lessons/30-deepseekmoe.html">第 30 章 · DeepSeekMoE：专家切细、共享专家，以及不加 loss 的负载均衡</a></h3>
+<blockquote>
+<p>大积木拆小积木，选得更多，组合从一百二十涨到四十四亿；参数和计算都不变。<br />
+公共知识交给共享专家，人人都走；路由专家各自专精。<br />
+不加 loss 只调 bias：负载低就加、高就减，只管选谁、不管加权，不进梯度，均衡不扰主任务。</p>
 </blockquote>
 <h3 id="44-vit"><a href="../lessons/44-vit.html">第 44 章 · ViT：把图片切成小块，当成一句话</a></h3>
 <blockquote>

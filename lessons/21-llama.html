@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第 21 章 · LLaMA 配方：Pre-norm + RMSNorm + SwiGLU + RoPE 怎么拼到一起 · 超越 Transformer</title>
+<script>(function(){try{var d=document.documentElement,t=localStorage.getItem("ab-theme"),f=localStorage.getItem("ab-fs");if(t)d.dataset.theme=t;if(f)d.dataset.fs=f}catch(e){}})();</script>
+<style>:root{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa;--fs:16px}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}}
+:root[data-theme="light"]{--bg:#fbfbfa;--fg:#1f2328;--mute:#5d6470;--line:#e3e5e8;--card:#fff;--acc:#2f6fdf;--code:#f2f3f5;--quote:#f4f6fa}
+:root[data-theme="dark"]{--bg:#15181d;--fg:#e4e7ec;--mute:#9aa3b2;--line:#2c323b;--card:#1c2026;--acc:#7aa7ff;--code:#22272f;--quote:#1b2029}
+:root[data-theme="sepia"]{--bg:#f6efe1;--fg:#3b3127;--mute:#7a6a58;--line:#e2d6bf;--card:#fbf6ec;--acc:#a0522d;--code:#ece2cd;--quote:#efe5d2}
+:root[data-theme="green"]{--bg:#e3eddf;--fg:#22301f;--mute:#566650;--line:#c9d8c3;--card:#eef5eb;--acc:#2e7d4f;--code:#d6e4d0;--quote:#dae7d5}
+:root[data-theme="navy"]{--bg:#0f1a2b;--fg:#dde6f3;--mute:#93a4bd;--line:#23324a;--card:#15233a;--acc:#6cc4ff;--code:#1a2a44;--quote:#16243b}
+:root[data-fs="s"]{--fs:15px}
+:root[data-fs="m"]{--fs:16px}
+:root[data-fs="l"]{--fs:18px}
+:root[data-fs="xl"]{--fs:20px}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.75 -apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",sans-serif}
+a{color:var(--acc)}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .in{max-width:860px;margin:0 auto;padding:10px 16px;display:flex;gap:6px 16px;align-items:center;flex-wrap:wrap;font-size:14px}
+header.top .brand{font-weight:600;color:var(--fg);text-decoration:none;margin-right:auto}
+header.top a{text-decoration:none}
+.prefs{display:inline-flex;gap:4px;align-items:center}
+.prefs button,.prefs select,#nav-toggle{font:inherit;font-size:13px;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+main{max-width:860px;margin:0 auto;padding:24px 16px 72px;overflow-wrap:anywhere}
+h1{font-size:1.75em;line-height:1.35;margin:8px 0 16px} h2{font-size:1.375em;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)} h3{font-size:1.125em;margin:28px 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1180px;margin:0 auto}
+.layout main{margin:0;max-width:880px}
+nav.side{position:sticky;top:49px;align-self:start;max-height:calc(100vh - 49px);overflow-y:auto;padding:20px 8px 40px 16px;border-right:1px solid var(--line);font-size:14px;line-height:1.5}
+nav.side .h{font-weight:600;color:var(--mute);margin:4px 8px 8px;font-size:13px}
+nav.side a{display:block;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav.side a:hover{background:var(--code)} nav.side a.cur{background:var(--quote);color:var(--acc);font-weight:600}
+nav.side a .n{color:var(--mute);margin-right:6px;font-variant-numeric:tabular-nums}
+#nav-toggle{display:none}
+@media (max-width:960px){.layout{display:block} nav.side{display:none;position:fixed;z-index:6;top:49px;left:0;bottom:0;width:min(300px,85vw);max-height:none;background:var(--bg);box-shadow:2px 0 12px rgba(0,0,0,.2)} nav.side.open{display:block} #nav-toggle{display:inline-block}}
+.run{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 12px}
+.run details{flex-basis:100%;margin:6px 0 0;font-size:.94em}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#fff}
+blockquote{margin:16px 0;padding:10px 16px;background:var(--quote);border-left:3px solid var(--acc);border-radius:4px;color:var(--mute)}
+blockquote p{margin:4px 0}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:12px 14px;border-radius:8px;overflow-x:auto} pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow-x:auto;max-width:100%;margin:12px 0;font-size:.94em}
+th,td{border:1px solid var(--line);padding:6px 10px;vertical-align:top} th{background:var(--code)}
+details{border:1px solid var(--line);border-radius:8px;padding:6px 12px;margin:8px 0;background:var(--card)}
+details[open]{padding-bottom:10px} summary{cursor:pointer;color:var(--acc);font-weight:500}
+mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.btn{display:inline-block;margin:4px 8px 4px 0;padding:6px 14px;border:1px solid var(--acc);border-radius:999px;text-decoration:none;font-size:14px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin:16px 0}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;color:inherit;text-decoration:none}
+.card:hover{border-color:var(--acc)} .card img{border:0;border-bottom:1px solid var(--line);border-radius:0;aspect-ratio:16/10;object-fit:contain;width:100%}
+.card .no{color:var(--mute);font-size:13px;padding:8px 12px 0} .card .t{padding:0 12px 12px;font-weight:500;line-height:1.5}
+.lead{font-size:1.06em;color:var(--mute)}
+footer{max-width:860px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:13px}
+</style>
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"],["$$","$$"]],processEscapes:true,processEnvironments:true}};</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+</head><body>
+<header class="top"><div class="in">
+<button type="button" id="nav-toggle" aria-label="打开章节列表">☰ 章节</button><a class="brand" href="../index.html">超越 Transformer</a>
+<a href="../lessons/index.html">讲义目录</a>
+<a href="../animations/index.html">动画</a>
+<a href="../review.html">复习卡片</a>
+<a href="../lessons/appendix-glossary.html">缩写表</a>
+<a href="https://wikieden.github.io/ai-books/glossary.html">全局词汇</a>
+<a href="https://wikieden.github.io/ai-books/">← 全部讲义书</a>
+<span class="prefs" title="字号与主题"><button type="button" data-fs-step="-1" aria-label="字号变小">A−</button><button type="button" data-fs-step="1" aria-label="字号变大">A+</button><select id="ab-theme" aria-label="主题色"><option value="">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option><option value="sepia">米黄护眼</option><option value="green">豆沙绿护眼</option><option value="navy">夜蓝</option></select></span>
+</div></header>
+<div class="layout"><nav class="side" aria-label="章节"><div class="h">超越 Transformer</div><a href="index.html">讲义目录</a><a href="01-cross-entropy.html"><span class="n">1</span>交叉熵 loss：模型猜错了多少，怎么量</a><a href="02-backprop.html"><span class="n">2</span>梯度与反向传播：“往猜得更对的方向挪”到底怎么算</a><a href="03-optimizers.html"><span class="n">3</span>优化器：SGD → Momentum → Adam → AdamW，每一步怎么挪</a><a href="04-lr-schedule.html"><span class="n">4</span>学习率调度与梯度裁剪：步子怎么排、梯度太大怎么办</a><a href="05-training-loop.html"><span class="n">5</span>一次完整训练：切 batch、每一步做什么、存档、看哪几条曲线</a><a href="06-bahdanau.html"><span class="n">6</span>attention 的起源：Bahdanau 的加性打分 vs 点积打分</a><a href="07-formal-algorithms.html"><span class="n">7</span>把 Transformer 写成伪代码：和前作章节、a1 的函数一一对上</a><a href="08-flops.html"><span class="n">8</span>数 FLOPs：训练 ≈ 6 × 参数 × token 数从哪来，注意力什么时候不能忽略</a><a href="09-bert.html"><span class="n">9</span>encoder-only 的 BERT：遮词再猜，以及为什么现在几乎都是 decoder-only</a><a href="10-induction-heads.html"><span class="n">10</span>残差流与 induction head：模型怎么学会“照着前面抄”</a><a href="11-annotated-transformer.html"><span class="n">11</span>读原版源码：The Annotated Transformer 里藏着哪些和论文不一样的地方</a><a href="12-pre-ln.html"><span class="n">12</span>Pre-LN：为什么 Post-LN 离不开 warmup，把 LayerNorm 挪个位置就好了</a><a href="13-rmsnorm.html"><span class="n">13</span>RMSNorm：不减平均值行不行，省在哪</a><a href="14-swiglu.html"><span class="n">14</span>SwiGLU：门控为什么有用，8/3 怎么保住参数量</a><a href="15-rope.html"><span class="n">15</span>RoPE：要分数只看相对距离，就把 q、k 按位置转一个角度</a><a href="16-alibi-nope.html"><span class="n">16</span>ALiBi 与 NoPE：不加位置编码行不行</a><a href="17-long-context.html"><span class="n">17</span>长文本外推：PI → NTK-aware → YaRN</a><a href="18-stability.html"><span class="n">18</span>训练稳定性：注意力 logit 越涨越大、输出 logit 发散；QK-norm 和 z-loss 各治什么</a><a href="19-attention-sink.html"><span class="n">19</span>巨大激活与 attention sink：为什么大家都盯着第一个词</a><a href="20-mup-deepnorm.html"><span class="n">20</span>μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="21-llama.html" class="cur"><span class="n">21</span>LLaMA 配方：Pre-norm + RMSNorm + SwiGLU + RoPE 怎么拼到一起</a><a href="22-kv-cache-gqa.html"><span class="n">22</span>KV cache 与 MQA / GQA：生成时为什么要存 K、V，怎么让它变小</a><a href="23-sliding-window.html"><span class="n">23</span>滑动窗口：每层只看前 W 个词，叠起来为什么能看得很远</a><a href="24-configs.html"><span class="n">24</span>大厂怎么选配置：LLaMA 3 的缩放律选型、长上下文续训、Qwen3 的 QK-norm</a><a href="25-mla.html"><span class="n">25</span>MLA：把 K、V 压成一个小向量存，用时再展开；RoPE 为什么要单独拆出来</a><a href="26-nanochat.html"><span class="n">26</span>读源码：nanoGPT 和 nanochat 逐项对比</a><a href="27-moe-router.html"><span class="n">27</span>MoE：很多个 FFN 专家，每个词只走其中几个</a><a href="28-load-balance.html"><span class="n">28</span>负载均衡：专家忙闲不均怎么办（Switch 的 top-1、容量系数、均衡 loss）</a><a href="29-router-zloss-mixtral.html"><span class="n">29</span>router z-loss 与 Mixtral：MoE 训练怎么稳住，一个开源 MoE 长什么样</a><a href="30-deepseekmoe.html"><span class="n">30</span>DeepSeekMoE：专家切细、共享专家，以及不加 loss 的负载均衡</a><a href="44-vit.html"><span class="n">44</span>ViT：把图片切成小块，当成一句话</a><a href="45-swin-vivit.html"><span class="n">45</span>Swin 与 ViViT：只在小窗口里看，窗口每层错开半格；视频再加一条时间轴</a><a href="46-clip-siglip.html"><span class="n">46</span>CLIP 与 SigLIP：图和文字配不配，用点积打分</a><a href="47-mae-dino.html"><span class="n">47</span>MAE 与 DINO：不要标签也能学会看图</a><a href="48-ddpm.html"><span class="n">48</span>DDPM：一步步加噪声，再学着一步步去噪</a><a href="49-latent-diffusion-flow.html"><span class="n">49</span>Latent Diffusion 与 Rectified Flow：在压缩空间里扩散，走直线少走几步</a><a href="50-dit-mmdit.html"><span class="n">50</span>DiT 与 MM-DiT：用 Transformer 当扩散的主干</a><a href="51-vision-llm.html"><span class="n">51</span>视觉接到大语言模型：图片变成&quot;外语单词&quot;，插进文字序列</a><a href="appendix-glossary.html">附录 · 缩写与术语表</a></nav><main>
+<h1 id="21-llama-pre-norm-rmsnorm-swiglu-rope">第 21 章 · LLaMA 配方：Pre-norm + RMSNorm + SwiGLU + RoPE 怎么拼到一起</h1><div class="run"><a class="btn" href="../animations/21-llama.html">▶ 打开本章可交互动画</a><a class="btn" href="https://colab.research.google.com/github/wikieden/beyond-transformer/blob/main/code/notebooks/ch21_llama.ipynb" target="_blank" rel="noopener">在 Colab 运行本章代码</a><a class="btn" href="../code/notebooks/ch21_llama.ipynb" download>下载 notebook</a><details><summary>本地运行</summary><pre><code>git clone https://github.com/wikieden/beyond-transformer
+cd beyond-transformer/code/notebooks
+pip install jupyterlab torch numpy
+jupyter lab ch21_llama.ipynb</code></pre><p>也可以下载后直接用 VS Code 打开 .ipynb 运行。需要 GPU 的章节在 Colab 里选「代码执行程序 → 更改运行时类型 → GPU」。</p></details></div>
+<blockquote>
+<p>本章回答：段 B 讲了一个个零件，LLaMA 是第一个把它们拼成一套“标准配方”、又公开了权重的模型，后来的开源模型几乎都照着它改。从原版块到 LLaMA 块，到底换了几样东西、每样从哪来？参数量怎么变？训练超参（AdamW β₂ = 0.95、余弦降到 10%、权重衰减 0.1、裁剪 1.0）各对应前面哪一章？<br />
+讲解日期：2026-11-26 · 上一章：<a href="../lessons/20-mup-deepnorm.html">第 20 章 μP 与 DeepNorm</a> · 下一章：<a href="../lessons/22-kv-cache-gqa.html">第 22 章 KV cache 与 GQA</a><br />
+对应原文：LLaMA <code>transformer-deep-dive/materials/text/papers/llama-2302.13971.txt</code> 引言 L36–L48（按 Chinchilla 的思路“小模型多训数据”）、Table 2 L126–L132（各尺寸的 d、头数、层数、学习率、batch、token 数）、§2.2 Architecture L149–L180（Pre-normalization [GPT3]、SwiGLU [PaLM]（d_ff = 2/3·4d）、Rotary Embeddings [GPTNeo]）、§2.3 Optimizer L181–L195（AdamW β₁ = 0.9、β₂ = 0.95，余弦降到 10%，权重衰减 0.1，裁剪 1.0，warmup 2000 步）<br />
+本章缩写：LLaMA = Large Language Model Meta AI（Meta 的大语言模型）；Pre-norm（子层前做 norm，第 12 章）；RMSNorm（第 13 章）；SwiGLU（第 14 章）；RoPE（第 15 章）；bias（偏置项）；β₂（Adam 二阶矩的衰减系数，第 3 章）。全部缩写见 <a href="../lessons/appendix-glossary.html">附录 · 缩写与术语表</a></p>
+</blockquote>
+<h2 id="_1">讲解</h2>
+<h3 id="2026-11-26">第一步：四样零件，一样一样换（2026-11-26）</h3>
+<p><strong>类比：一辆老车换四样东西就成了新车型。</strong> 发动机（FFN）、悬挂（norm）、导航（位置编码）都换了新款，车身（注意力 + 残差）没变。LLaMA §2.2（L149–L180）把它说得很直白：每一项都标了“抄自谁”。</p>
+<table>
+<thead>
+<tr>
+<th>零件</th>
+<th>原版 Transformer</th>
+<th>LLaMA</th>
+<th>出处</th>
+<th>本书</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>norm 的位置</td>
+<td>Post-LN（相加后 norm）</td>
+<td>Pre-norm（子层前 norm）</td>
+<td>GPT-3</td>
+<td><a href="../lessons/12-pre-ln.html">第 12 章</a></td>
+</tr>
+<tr>
+<td>norm 的种类</td>
+<td>LayerNorm（γ、β）</td>
+<td>RMSNorm（只有 g）</td>
+<td>Zhang &amp; Sennrich</td>
+<td><a href="../lessons/13-rmsnorm.html">第 13 章</a></td>
+</tr>
+<tr>
+<td>FFN</td>
+<td>ReLU，d → 4d → d</td>
+<td>SwiGLU，d_ff = 2/3·4d</td>
+<td>PaLM</td>
+<td><a href="../lessons/14-swiglu.html">第 14 章</a></td>
+</tr>
+<tr>
+<td>位置编码</td>
+<td>正弦，加在嵌入上</td>
+<td>RoPE，每层转 q、k</td>
+<td>GPTNeo</td>
+<td><a href="../lessons/15-rope.html">第 15 章</a></td>
+</tr>
+<tr>
+<td>bias</td>
+<td>有</td>
+<td>全部去掉</td>
+<td>—</td>
+<td>第 13 章</td>
+</tr>
+</tbody>
+</table>
+<p>注意力本身（多头、缩放点积、因果 mask）和残差结构都没变。</p>
+<p><strong>数字演示</strong>（d = 96 的一层，看参数怎么变；位置编码换成 RoPE 后不占参数）：</p>
+<table>
+<thead>
+<tr>
+<th>换到哪一步</th>
+<th>注意力</th>
+<th>FFN</th>
+<th>norm</th>
+<th>一层合计</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原版（LayerNorm、ReLU FFN、有 bias）</td>
+<td>37,248</td>
+<td>74,208</td>
+<td>384</td>
+<td>111,840</td>
+</tr>
+<tr>
+<td>换成 Pre-norm + RMSNorm</td>
+<td>37,248</td>
+<td>74,208</td>
+<td>192</td>
+<td>111,648</td>
+</tr>
+<tr>
+<td>FFN 换成 SwiGLU（d_ff = 256 = 8/3·96）</td>
+<td>37,248</td>
+<td>73,728</td>
+<td>192</td>
+<td>111,168</td>
+</tr>
+<tr>
+<td>去掉所有 bias</td>
+<td>36,864</td>
+<td>73,728</td>
+<td>192</td>
+<td>110,784</td>
+</tr>
+</tbody>
+</table>
+<p>d = 96 时 8/3·d 正好是 256（64 的倍数），SwiGLU 的三个矩阵和原来的两个矩阵参数完全一样多。四步改完，参数量几乎没变：LLaMA 换的是<strong>结构</strong>，不是<strong>大小</strong>。</p>
+<p><img alt="原版块和 LLaMA 块" src="../figures/21-llama-blocks.png" />
+<em>图 21-1 · 左：原版块（Post-LN、ReLU FFN、位置编码加在输入上）；右：LLaMA 块（RMSNorm 放在子层前、SwiGLU、RoPE 在注意力里转 q、k、没有 bias）。橙色是被换掉的零件</em></p>
+<p><strong>一句话</strong>：LLaMA 块 = 原版块把 norm 挪到子层前并换成 RMSNorm、FFN 换成 SwiGLU、位置编码换成 RoPE、去掉 bias；参数量几乎不变。</p>
+<h3 id="2026-11-26_1">第二步：训练超参，各对应前面哪一章（2026-11-26）</h3>
+<p>LLaMA §2.3（L181–L195）：</p>
+<table>
+<thead>
+<tr>
+<th>超参</th>
+<th>值</th>
+<th>本书</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>优化器</td>
+<td>AdamW，β₁ = 0.9、β₂ = 0.95</td>
+<td><a href="../lessons/03-optimizers.html">第 3 章</a>（β₂ 比默认 0.999 小，更快忘掉旧梯度）</td>
+</tr>
+<tr>
+<td>学习率调度</td>
+<td>余弦，最后降到峰值的 10%</td>
+<td><a href="../lessons/04-lr-schedule.html">第 4 章</a></td>
+</tr>
+<tr>
+<td>warmup</td>
+<td>2000 步</td>
+<td>第 4 章</td>
+</tr>
+<tr>
+<td>权重衰减</td>
+<td>0.1</td>
+<td>第 3 章（AdamW 的解耦衰减）</td>
+</tr>
+<tr>
+<td>梯度裁剪</td>
+<td>1.0</td>
+<td>第 4 章</td>
+</tr>
+</tbody>
+</table>
+<p><strong>数字演示</strong>（峰值 3 × 10⁻⁴、warmup 2000、共 10 万步）：</p>
+<table>
+<thead>
+<tr>
+<th>t</th>
+<th>0</th>
+<th>1,000</th>
+<th>2,000</th>
+<th>51,000</th>
+<th>100,000</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>lr</td>
+<td>0</td>
+<td>1.5 × 10⁻⁴</td>
+<td>3.0 × 10⁻⁴</td>
+<td>1.65 × 10⁻⁴</td>
+<td>3.0 × 10⁻⁵</td>
+</tr>
+</tbody>
+</table>
+<p>和第 4 章的唯一区别：αmin 是峰值的 10%，不是另设的一个数。</p>
+<p><strong>一句话</strong>：LLaMA 的训练超参就是本书第 3、4 章的那一套：AdamW（β₂ = 0.95）、warmup 2000 步后余弦降到 10%、权重衰减 0.1、裁剪 1.0。</p>
+<h3 id="2026-11-26_2">第三步：“小模型多训数据”（2026-11-26）</h3>
+<p>LLaMA 引言（L36–L48）的立场：按 Chinchilla 的缩放律，给定<strong>训练</strong>预算有一个最优的模型大小；但模型训完后要被用很多次，<strong>推理</strong>成本只和模型大小有关。所以宁可训一个小一点的模型、喂更多数据，训练时多花点，推理时便宜很多。LLaMA-7B 训了 1T token（Table 2，L130），每个参数 149 个 token，远超 Chinchilla 的约 20 个（第 24 章接着算）。</p>
+<p>这条思路决定了之后的开源模型：LLaMA 2 训 2T，LLaMA 3 的 8B 训了 15T token。</p>
+<p><strong>场景代码</strong>：Hugging Face 的 <code>LlamaConfig</code> 把这套配方写成了配置项（真实库调用；本书 chapter-code 只用 NumPy，这段没跑过）：</p>
+<pre><code class="language-python">cfg = LlamaConfig(hidden_size=4096, intermediate_size=11008, num_hidden_layers=32,
+                  num_attention_heads=32, num_key_value_heads=32,   # LLaMA 1 还没有 GQA（第 22 章）
+                  hidden_act=&quot;silu&quot;, rms_norm_eps=1e-6, rope_theta=10000.0,
+                  attention_bias=False, mlp_bias=False, tie_word_embeddings=False)
+model = LlamaForCausalLM(cfg)
+</code></pre>
+<p>给 Llama 的配置逐项数参数、和官方的 6.7B 对上，是里程碑 T-M1 的一部分。</p>
+<p><strong>一句话</strong>：LLaMA 选择“小模型多训数据”：训练多花一点，换来推理便宜，7B 模型训了 1T token。</p>
+<h3 id="llama">动画演示：原版块一个零件一个零件变成 LLaMA 块</h3>
+<p><img alt="LLaMA 配方" src="../animations/21-llama.gif" /></p>
+<p>可交互版：<a href="../animations/21-llama.html">animations/21-llama.html</a>（▶ 播放 / → 单步：每一步换一个零件）。</p>
+<p><strong>怎么看</strong>：</p>
+<ol>
+<li>左边是一个块的结构图，当前被换掉的零件变橙（第一步）；</li>
+<li>右边的柱子是这一层的参数（注意力、FFN、norm），换零件后几乎不变；</li>
+<li>最后一步出现 LLaMA 的训练超参表（第二步）。</li>
+</ol>
+<h2 id="_2">练习与作答记录</h2>
+<p><strong>题 1</strong>（第一步）：d = 192，按 8/3·d 再取 64 的倍数，SwiGLU 的 d_ff 是多少？三个矩阵的参数和 d_ff = 4d 的两个矩阵相比如何？</p>
+<p><strong>题 2</strong>（第二步）：峰值学习率 1.5 × 10⁻⁴、warmup 2000、共 50,000 步，余弦降到 10%，第 26,000 步的学习率是多少？</p>
+<p><strong>题 3</strong>（第三步）：用自己的话说，为什么一个要被大量使用的模型，值得“训练时多花算力、做得小一点”？</p>
+<h2 id="_3">口诀</h2>
+<blockquote>
+<p>老车换四样：norm 挪前面换 RMS，FFN 换 SwiGLU，位置换 RoPE，bias 全去掉；参数几乎不变。<br />
+训练照前几章：AdamW 贝塔二零点九五，warmup 两千，余弦降到一成，衰减零点一，裁剪一。<br />
+小模型多训数据：训练贵一点，推理一直便宜。</p>
+</blockquote>
+<h2 id="_4">本章复习卡片</h2>
+<p>必背：<a href="../review.html">B53</a>（LLaMA 换的四样零件和出处、训练超参、“小模型多训数据”）。练习做完后，按答错、卡住的地方再补。</p>
+<h2 id="_5">附录 · 延伸阅读</h2>
+<blockquote>
+<p>留给以后深入学习用，不影响本章主线。★ 是建议先读的。</p>
+</blockquote>
+<h3 id="_6">推荐阅读</h3>
+<table>
+<thead>
+<tr>
+<th>读什么</th>
+<th>读哪里</th>
+<th>读它为了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★ LLaMA（Touvron 等 2023）</td>
+<td>引言 L36–L48；Table 2 L126–L132；§2.2–§2.3 L149–L195</td>
+<td>标准配方的出处</td>
+</tr>
+<tr>
+<td>本书 <a href="../lessons/12-pre-ln.html">第 12–15 章</a></td>
+<td>全部</td>
+<td>四样零件各自为什么</td>
+</tr>
+<tr>
+<td>Raschka，“The Big LLM Architecture Comparison”（在线）</td>
+<td>全文</td>
+<td>后来的模型在 LLaMA 上又改了什么</td>
+</tr>
+<tr>
+<td>第 24 章</td>
+<td>配置表</td>
+<td>LLaMA 3、Qwen3 的选型</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_7">数学原理</h3>
+<ul>
+<li><strong>SwiGLU 的参数对齐</strong>：3·d·(8d/3) = 8d² = 2·d·4d；d 是 24 的倍数时 8d/3 是整数，是 64 的倍数还要 d 是 24 的倍数且 8d/3 能被 64 整除（如 d = 96）。</li>
+<li><strong>去掉 bias 的参数</strong>：注意力 4 个矩阵各少 d 个，FFN 少 d_ff + d 个，相对于 d² 级别的矩阵可以忽略。</li>
+<li><strong>训练 vs 推理成本</strong>：训练 ≈ 6ND（一次），推理每个 token ≈ 2N（很多次）；推理量足够大时，减小 N 比减小 D 更划算。</li>
+</ul>
+<h3 id="_8">公式清单</h3>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>意思</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(h = x + \text{Attn}(\text{RMSNorm}(x))\)</span>，<span class="arithmatex">\(y = h + \text{SwiGLU}(\text{RMSNorm}(h))\)</span></td>
+<td>LLaMA 块</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(d_{ff} = \frac23\cdot 4d\)</span></td>
+<td>SwiGLU 的中间层</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\alpha_t = 0.1\alpha_{\max} + \frac12(1 + \cos\pi p)\cdot 0.9\alpha_{\max}\)</span></td>
+<td>余弦降到 10%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">代码对照：把本章的数字用代码算一遍</h3>
+<blockquote>
+<p>NumPy。代码在仓库本地 <code>beyond-transformer/solutions/chapter-code/ch21_llama.py</code>，配套测试 <code>tests/test_ch21.py</code>，notebook 在 <code>notebooks/ch21_llama.ipynb</code>：</p>
+<p><code>bash  
+cd beyond-transformer/solutions/chapter-code  
+uv run python ch21_llama.py  
+uv run pytest tests/test_ch21.py</code></p>
+</blockquote>
+<p><strong>讲义 ↔ 代码</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>讲义</th>
+<th>公式</th>
+<th>写法</th>
+<th>跑出来</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一步 换零件</td>
+<td>一层的参数</td>
+<td><code>layer_params(**kw)</code>、<code>STEPS</code></td>
+<td>111,840 → 110,784</td>
+</tr>
+<tr>
+<td>第二步 学习率</td>
+<td>余弦到 10%</td>
+<td><code>cosine_to_10pct(t)</code></td>
+<td>第 100,000 步 3.0e-5</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键几行</strong>：</p>
+<pre><code class="language-python">mlp = 2 * d * f + ((f + d) if bias else 0)          # ReLU FFN：两个矩阵 + 偏置
+f = int(math.ceil(8 * d / 3 / 64) * 64); mlp = 3 * d * f   # SwiGLU：三个矩阵，8d/3 取 64 倍数
+norms = 2 * (2 * d if norm == &quot;layer&quot; else d)       # LayerNorm 有 γ、β；RMSNorm 只有 g
+</code></pre>
+<p><strong>代码里才看得到的 2 件事</strong>：</p>
+<ul>
+<li><strong>只数了一层的矩阵</strong>：嵌入层、输出层、最后的 norm 都没算进来；完整地给真实配置数参数是里程碑 T-M1。</li>
+<li><strong>d = 64 时对不齐</strong>：8/3·64 = 170.7，取 64 的倍数是 192，SwiGLU 反而多 12% 参数；所以这里选了 d = 96。实际模型（d = 4096）误差在 1% 以内。</li>
+</ul>
+<p><strong>自己改一改</strong>（不影响练习答案）：</p>
+<ul>
+<li>把 <code>D</code> 改回 64，四步的合计怎么变？SwiGLU 那一步多了多少？</li>
+<li>把 <code>cosine_to_10pct</code> 的最低点改成 0（降到 0），最后 1000 步的学习率差多少？</li>
+</ul><nav class="pager"><a href="20-mup-deepnorm.html">← 第 20 章 · μP 与 DeepNorm：换宽度为什么要换学习率，很深的 Post-LN 能不能救</a><a href="22-kv-cache-gqa.html">第 22 章 · KV cache 与 MQA / GQA：生成时为什么要存 K、V，怎么让它变小 →</a></nav>
+</main></div>
+<footer>来自个人学习仓库的对话讲义，含练习作答记录。源码：<a href="https://github.com/wikieden/beyond-transformer">github.com/wikieden/beyond-transformer</a>。更多讲义书：<a href="https://wikieden.github.io/ai-books/">Physical AI 0-1-♾️（合集）</a><br>联系与合作：<a href="mailto:wikieden@gmail.com">wikieden@gmail.com</a>（讲义勘误与建议、课程 / 企业内训、内容合作与转载授权）· 赞助请发邮件联系</footer>
+<script>(function(){var d=document.documentElement,K=["s","m","l","xl"];
+function save(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}
+var s=document.getElementById("ab-theme");if(s){s.value=d.dataset.theme||"";s.onchange=function(){if(s.value)d.dataset.theme=s.value;else delete d.dataset.theme;save("ab-theme",s.value)}}
+document.querySelectorAll("[data-fs-step]").forEach(function(b){b.onclick=function(){var i=K.indexOf(d.dataset.fs||"m")+(+b.dataset.fsStep);i=Math.max(0,Math.min(K.length-1,i));d.dataset.fs=K[i];save("ab-fs",K[i])}});
+var nb=document.getElementById("nav-toggle"),side=document.querySelector("nav.side");if(nb&&side){nb.onclick=function(){side.classList.toggle("open")}}
+var cur=side&&side.querySelector(".cur");if(cur)cur.scrollIntoView({block:"center"});
+})();</script>
+</body></html>
